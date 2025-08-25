@@ -8,7 +8,8 @@ import {
   Settings, 
   BarChart3,
   User,
-  Database
+  Database,
+  Upload
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +22,7 @@ const navigation = [
   { name: "Agents", href: "/agents", icon: Settings },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Sample Data", href: "/sample-data", icon: Database },
+  { name: "Simple Staging", href: "/simple-staging", icon: Upload },
 ];
 
 export default function Sidebar() {

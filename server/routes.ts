@@ -2,9 +2,13 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { stagingAPI } from "./fixtures/staging-api";
+import { simpleStagingAPI } from "./simple-staging";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Staging and sample data routes
+  // Simple staging routes
+  app.use("/api/simple", simpleStagingAPI);
+  
+  // Complex staging and sample data routes
   app.use("/api/staging", stagingAPI);
 
   // Basic health check
