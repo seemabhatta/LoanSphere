@@ -153,3 +153,26 @@ class StagedFileModel(Base):
     type = Column(String, nullable=False)
     data = Column(Text, nullable=False)  # JSON string
     uploaded_at = Column(DateTime, server_default=func.now())
+
+# NoSQL-style models for processed documents and tracking
+class ProcessedDocumentModel(Base):
+    __tablename__ = "processed_documents"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    document_id = Column(String, nullable=False)  # e.g., "XP12345678"
+    collection = Column(String, nullable=False)  # e.g., "purchaseAdvice", "uldd", "commitment"
+    document_data = Column(JSON, nullable=False)  # Full document as JSON
+    processed_at = Column(DateTime, server_default=func.now())
+    source_file_id = Column(String)  # Reference to original staged file
+
+class LoanTrackingModel(Base):
+    __tablename__ = "loan_tracking"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    xp_loan_number = Column(String, unique=True, nullable=False)
+    tenant_id = Column(String, nullable=False)
+    external_ids = Column(JSON)  # All external IDs as JSON
+    status = Column(JSON)  # Status object with boardingReadiness, lastEvaluated, etc.
+    meta_data = Column(JSON)  # Complete metadata with links to documents (renamed from metadata)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())

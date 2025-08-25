@@ -47,24 +47,17 @@ export default function Scheduler() {
       if (result.success) {
         const fileData = result.file.data;
         
-        // Route to appropriate staging endpoint based on type
-        let stagingEndpoint = "";
-        if (type.includes("Commitment")) {
-          stagingEndpoint = "/api/staging/stage/commitment";
-        } else if (type.includes("Loan")) {
-          stagingEndpoint = "/api/staging/stage/loan";
-        } else if (type.includes("Purchase")) {
-          stagingEndpoint = "/api/staging/stage/purchase";
-        } else {
-          // For other types, use commitment endpoint as fallback
-          stagingEndpoint = "/api/staging/stage/commitment";
-        }
-        
-        // Send to staging pipeline
-        const stagingResponse = await fetch(stagingEndpoint, {
+        // Use the loan tracking service for processing
+        const stagingResponse = await fetch("/api/staging/process", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(fileData)
+          body: JSON.stringify({
+            fileData: fileData,
+            fileType: type.includes("Commitment") ? "commitment" : 
+                     type.includes("Loan") ? "loan_data" :
+                     type.includes("Purchase") ? "purchase_advice" : "unknown",
+            sourceFileId: id
+          })
         });
         
         const stagingResult = await stagingResponse.json();

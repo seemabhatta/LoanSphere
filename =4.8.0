@@ -1,0 +1,5 @@
+Collecting tinydb
+  Downloading tinydb-4.8.2-py3-none-any.whl.metadata (6.7 kB)
+Downloading tinydb-4.8.2-py3-none-any.whl (24 kB)
+Installing collected packages: tinydb
+Successfully installed tinydb-4.8.2
