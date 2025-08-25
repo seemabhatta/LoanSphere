@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Menu, Search, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import xpanseLogo from "@assets/image_1756159502281.png";
+import xpanseLogo from "@assets/image_1756163798491.png";
 
 interface TopHeaderProps {
   onToggleSidebar: () => void;
