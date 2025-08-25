@@ -45,28 +45,66 @@ class LoanTrackingService:
     
     def process_file_to_nosql(self, file_data: Dict[str, Any], file_type: str, source_file_id: str) -> Dict[str, Any]:
         """
-        Process file: move to NoSQL storage and create/update tracking record
+        Process file: move to NoSQL storage and handle different workflows
         
         Args:
             file_data: The file data to process
-            file_type: Type of file (commitment, purchase_advice, loan_data)
+            file_type: Type of file (commitment, purchase_advice, loan_data, documents)
             source_file_id: ID of the original staged file
             
         Returns:
             Dictionary with processing results
         """
         
-        # 1. Find or create loan tracking record
-        tracking_record = self.find_existing_tracking_record(file_data)
-        
-        if tracking_record:
-            logger.info(f"Updating existing tracking record: {tracking_record['xpLoanNumber']}")
-            updated_record = self._update_tracking_record(tracking_record, file_data, file_type, source_file_id)
+        if file_type == 'commitment':
+            # Commitment workflow: standalone, no loan tracking
+            return self._process_commitment_standalone(file_data, source_file_id)
         else:
-            logger.info("Creating new loan tracking record")
-            updated_record = self._create_tracking_record(file_data, file_type, source_file_id)
+            # Other workflows: create/update loan tracking
+            return self._process_with_loan_tracking(file_data, file_type, source_file_id)
+    
+    def _process_commitment_standalone(self, file_data: Dict[str, Any], source_file_id: str) -> Dict[str, Any]:
+        """Process commitment as standalone document without loan tracking"""
         
-        # 2. Store document in NoSQL collection
+        # Extract commitment ID to use as document ID
+        commitment_id = self._extract_commitment_id(file_data)
+        
+        # Store only in commitments collection
+        document_record_id = self._store_document_in_nosql(
+            file_data, 'commitment', commitment_id, source_file_id
+        )
+        
+        logger.info(f"Processed commitment standalone: {commitment_id}")
+        
+        return {
+            "tracking_record": None,
+            "document_record_id": document_record_id,
+            "commitment_id": commitment_id,
+            "action": "commitment_stored"
+        }
+    
+    def _process_with_loan_tracking(self, file_data: Dict[str, Any], file_type: str, source_file_id: str) -> Dict[str, Any]:
+        """Process with loan tracking (purchase_advice, loan_data, documents)"""
+        
+        # For purchase advice, always create new loan tracking (don't look for existing)
+        if file_type == 'purchase_advice':
+            logger.info("Creating new loan tracking record for purchase advice")
+            updated_record = self._create_tracking_record_for_purchase_advice(file_data, source_file_id)
+            
+            # Try to associate with existing commitment
+            self._associate_with_commitment(updated_record, file_data)
+        else:
+            # For loan_data and documents, try to find existing tracking record
+            tracking_record = self.find_existing_tracking_record(file_data)
+            
+            if tracking_record:
+                logger.info(f"Updating existing tracking record: {tracking_record['xpLoanNumber']}")
+                updated_record = self._update_tracking_record(tracking_record, file_data, file_type, source_file_id)
+            else:
+                logger.info("Creating new loan tracking record")
+                updated_record = self._create_tracking_record(file_data, file_type, source_file_id)
+        
+        # Store document in appropriate collection
         document_record_id = self._store_document_in_nosql(
             file_data, file_type, updated_record['xpLoanNumber'], source_file_id
         )
@@ -75,7 +113,7 @@ class LoanTrackingService:
             "tracking_record": updated_record,
             "document_record_id": document_record_id,
             "xp_loan_number": updated_record['xpLoanNumber'],
-            "action": "updated" if tracking_record else "created"
+            "action": "created" if file_type == 'purchase_advice' else "updated_or_created"
         }
     
     def _create_tracking_record(self, file_data: Dict[str, Any], file_type: str, source_file_id: str) -> Dict[str, Any]:
@@ -379,3 +417,195 @@ class LoanTrackingService:
     def get_all_tracking_records(self) -> List[Dict[str, Any]]:
         """Get all loan tracking records for UI display"""
         return self.tinydb.get_all_loan_tracking_records()
+    
+    def _extract_commitment_id(self, commitment_data: Dict[str, Any]) -> str:
+        """Extract commitment ID from commitment data"""
+        # Try various fields where commitment ID might be
+        commitment_fields = ['commitmentId', 'commitmentNo', 'commitment_id']
+        
+        for field in commitment_fields:
+            value = commitment_data.get(field)
+            if value:
+                return str(value)
+        
+        # Fallback to timestamp if no ID found
+        return f"COMMIT_{int(datetime.now().timestamp())}"
+    
+    def _create_tracking_record_for_purchase_advice(self, purchase_data: Dict[str, Any], source_file_id: str) -> Dict[str, Any]:
+        """Create new loan tracking record specifically for purchase advice"""
+        
+        # Extract identifiers from purchase advice
+        if self.matching_service:
+            identifiers = self.matching_service._extract_loan_identifiers(purchase_data)
+        else:
+            identifiers = self._extract_loan_identifiers_local(purchase_data)
+        
+        # Check if loan tracking record already exists based on investor loan number or fannie mae loan number
+        loan_numbers = identifiers.get('loan_numbers', [])
+        existing_record = None
+        
+        for loan_num in loan_numbers:
+            existing_record = self.tinydb.find_loan_tracking_by_external_ids({'loan_numbers': [loan_num]})
+            if existing_record:
+                logger.info(f"Found existing loan tracking record for loan number {loan_num}: {existing_record['xpLoanNumber']}")
+                break
+        
+        if existing_record:
+            # Update existing record with purchase advice
+            xp_loan_number = existing_record['xpLoanNumber']
+            return self._update_tracking_record(existing_record, purchase_data, 'purchase_advice', source_file_id)
+        
+        # Generate new XP loan number for purchase advice if no existing record found
+        xp_loan_number = f"XP{int(datetime.now().timestamp())}"
+        
+        # Build external IDs
+        external_ids = {}
+        servicer_numbers = identifiers.get('servicer_numbers', [])
+        
+        if loan_numbers:
+            external_ids['correspondentLoanNumber'] = loan_numbers[0]
+            if len(loan_numbers) > 1:
+                external_ids['aggregatorLoanNumber'] = loan_numbers[1]
+            if len(loan_numbers) > 2:
+                external_ids['investorLoanNumber'] = loan_numbers[2]
+        
+        if servicer_numbers:
+            external_ids['servicerNumber'] = servicer_numbers[0]
+        
+        # Extract investor name
+        external_ids['investorName'] = self._extract_investor_name(purchase_data, 'purchase_advice')
+        
+        # Build status
+        status = {
+            "boardingReadiness": "PurchaseAdviceReceived",
+            "lastEvaluated": datetime.now().isoformat()
+        }
+        
+        # Build metadata for purchase advice
+        document_id = f"{xp_loan_number}_{int(datetime.now().timestamp())}"
+        metadata = {
+            "purchase_advice": [{
+                "links": {
+                    "raw": f"stage/{source_file_id}",
+                    "transformed": f"processed/purchase_advice/{document_id}.json",
+                    "documentDb": {
+                        "collection": "purchase_advice",
+                        "documentId": document_id
+                    }
+                }
+            }]
+        }
+        
+        # Create tracking record using TinyDB
+        tracking_record = self.tinydb.create_loan_tracking_record(
+            xp_loan_number=xp_loan_number,
+            tenant_id="default_tenant",
+            external_ids=external_ids,
+            status=status,
+            metadata=metadata
+        )
+        
+        logger.info(f"Created new loan tracking record for purchase advice: {xp_loan_number}")
+        return tracking_record
+    
+    def _associate_with_commitment(self, tracking_record: Dict[str, Any], purchase_data: Dict[str, Any]):
+        """Try to associate loan tracking record with existing commitment"""
+        
+        # Extract commitment identifiers from purchase advice
+        commitment_fields = ['commitmentId', 'commitment_id', 'investorCommitmentId', 'investorCommitmentIdentifier']
+        commitment_ids_to_try = []
+        
+        for field in commitment_fields:
+            value = purchase_data.get(field)
+            if value:
+                commitment_ids_to_try.append(str(value))
+        
+        # Also try to extract from nested data structures if they exist
+        if 'commitmentData' in purchase_data:
+            commitment_data = purchase_data['commitmentData']
+            for field in commitment_fields:
+                value = commitment_data.get(field)
+                if value:
+                    commitment_ids_to_try.append(str(value))
+        
+        # Also try to extract from loan-level data like investor loan number matching
+        loan_numbers = []
+        loan_fields = ['investorLoanNumber', 'loanNumber', 'fannieMaeLn', 'lenderLoanNo']
+        for field in loan_fields:
+            value = purchase_data.get(field)
+            if value:
+                loan_numbers.append(str(value))
+        
+        matched_commitments = []
+        
+        # Try to find commitments by commitment ID first
+        for commitment_id in commitment_ids_to_try:
+            commitment = self.tinydb.get_commitment(commitment_id)
+            if commitment:
+                matched_commitments.append((commitment_id, commitment))
+                logger.info(f"Found commitment by ID {commitment_id}")
+        
+        # If no direct commitment ID match, try to find by loan numbers in commitment data
+        if not matched_commitments and loan_numbers:
+            # Search all commitments for matching loan numbers
+            all_commitments = self.tinydb.get_all_commitments()
+            for commitment_record in all_commitments:
+                commitment_data = commitment_record.get('commitment_data', {})
+                
+                # Check if any loan number from purchase advice matches commitment
+                for loan_num in loan_numbers:
+                    commitment_loan_fields = ['investorLoanNumber', 'loanNumber', 'fannieMaeLn', 'lenderLoanNo']
+                    for field in commitment_loan_fields:
+                        commitment_loan_value = commitment_data.get(field)
+                        if commitment_loan_value and str(commitment_loan_value) == loan_num:
+                            matched_commitments.append((commitment_record['id'], commitment_record))
+                            logger.info(f"Found commitment by matching loan number {loan_num}: {commitment_record['id']}")
+                            break
+                    
+                    if matched_commitments:
+                        break
+                
+                if matched_commitments:
+                    break
+        
+        if matched_commitments:
+            # Use the first matched commitment
+            commitment_id, commitment = matched_commitments[0]
+            
+            # Update tracking record to link to commitment
+            existing_metadata = tracking_record.get('metaData', {})
+            existing_metadata['commitment'] = {
+                "links": {
+                    "documentDb": {
+                        "collection": "commitments",
+                        "documentId": commitment_id
+                    }
+                },
+                "matchedBy": "commitment_mapping"
+            }
+            
+            # Update external IDs with commitment info
+            existing_external_ids = tracking_record.get('externalIds', {})
+            existing_external_ids['commitmentId'] = commitment_id
+            
+            # Extract additional info from commitment if available
+            commitment_data = commitment.get('commitment_data', {})
+            if 'investorName' in commitment_data and commitment_data['investorName']:
+                existing_external_ids['investorName'] = commitment_data['investorName']
+            
+            # Update the tracking record
+            updates = {
+                'externalIds': existing_external_ids,
+                'metaData': existing_metadata,
+                'status': {
+                    **tracking_record.get('status', {}),
+                    'boardingReadiness': 'CommitmentLinked',
+                    'lastEvaluated': datetime.now().isoformat()
+                }
+            }
+            
+            self.tinydb.update_loan_tracking_record(tracking_record['xpLoanNumber'], updates)
+            
+            logger.info(f"Associated loan {tracking_record['xpLoanNumber']} with commitment {commitment_id}")
+        else:
+            logger.info(f"No matching commitments found for purchase advice. Tried IDs: {commitment_ids_to_try}, Loan numbers: {loan_numbers}")

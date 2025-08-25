@@ -300,19 +300,31 @@ async def process_file_with_tracking(request_data: dict):
         tracking_service = LoanTrackingService()
         result = tracking_service.process_file_to_nosql(file_data, file_type, source_file_id)
         
-        return {
-            "success": True,
-            "xpLoanNumber": result["xp_loan_number"],
-            "action": result["action"],  # "created" or "updated"
-            "trackingRecord": {
-                "xpLoanNumber": result["tracking_record"]["xpLoanNumber"],
-                "tenantId": result["tracking_record"]["tenantId"],
-                "externalIds": result["tracking_record"]["externalIds"],
-                "status": result["tracking_record"]["status"],
-                "metaData": result["tracking_record"]["metaData"]
-            },
-            "message": f"{file_type.replace('_', ' ').title()} processed successfully - tracking record {result['action']}"
-        }
+        # Handle different response formats based on file type
+        if result.get("tracking_record"):
+            # Regular processing with loan tracking
+            return {
+                "success": True,
+                "xpLoanNumber": result["xp_loan_number"],
+                "action": result["action"],  # "created" or "updated"
+                "trackingRecord": {
+                    "xpLoanNumber": result["tracking_record"]["xpLoanNumber"],
+                    "tenantId": result["tracking_record"]["tenantId"],
+                    "externalIds": result["tracking_record"]["externalIds"],
+                    "status": result["tracking_record"]["status"],
+                    "metaData": result["tracking_record"]["metaData"]
+                },
+                "message": f"{file_type.replace('_', ' ').title()} processed successfully - tracking record {result['action']}"
+            }
+        else:
+            # Commitment processing - no loan tracking
+            return {
+                "success": True,
+                "commitmentId": result.get("commitment_id"),
+                "action": result["action"],
+                "documentRecordId": result["document_record_id"],
+                "message": f"{file_type.replace('_', ' ').title()} processed successfully - {result['action']}"
+            }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to process file: {str(e)}")
 

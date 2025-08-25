@@ -1,0 +1,42 @@
+{
+  "_default": {
+    "1": {
+      "xpLoanNumber": "XP1756154597",
+      "tenantId": "default_tenant",
+      "externalIds": {
+        "correspondentLoanNumber": "IL12345",
+        "investorName": "Test Investor",
+        "commitmentId": "TEST_COMMIT_001"
+      },
+      "status": {
+        "boardingReadiness": "CommitmentLinked",
+        "lastEvaluated": "2025-08-25T16:43:17.192546"
+      },
+      "metaData": {
+        "purchase_advice": [
+          {
+            "links": {
+              "raw": "stage/test_purchase_001",
+              "transformed": "processed/purchase_advice/XP1756154597_1756154597.json",
+              "documentDb": {
+                "collection": "purchase_advice",
+                "documentId": "XP1756154597_1756154597"
+              }
+            }
+          }
+        ],
+        "commitment": {
+          "links": {
+            "documentDb": {
+              "collection": "commitments",
+              "documentId": "TEST_COMMIT_001"
+            }
+          },
+          "matchedBy": "commitment_mapping"
+        }
+      },
+      "createdAt": "2025-08-25T16:43:17.173658",
+      "updatedAt": "2025-08-25T16:43:17.192580"
+    }
+  }
+}

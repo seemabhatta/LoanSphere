@@ -1,0 +1,17 @@
+{
+  "_default": {
+    "1": {
+      "id": "XP1756154597_1756154597",
+      "purchase_data": {
+        "commitmentId": "TEST_COMMIT_001",
+        "investorLoanNumber": "IL12345",
+        "loanAmount": 450000,
+        "purchasePrice": 450000,
+        "investorName": "Test Investor",
+        "purchaseDate": "2024-08-25"
+      },
+      "source_file_id": "test_purchase_001",
+      "processed_at": "2025-08-25T16:43:17.201403"
+    }
+  }
+}
