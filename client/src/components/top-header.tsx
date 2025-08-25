@@ -11,7 +11,7 @@ export default function TopHeader({ onToggleSidebar }: TopHeaderProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
   return (
-    <header className="h-12 bg-gray-50 border-b border-gray-200 flex items-center px-4 sticky top-0 z-30">
+    <header className="h-12 bg-gray-50 flex items-center px-4 sticky top-0 z-30">
       {/* Left side - Hamburger and Logo */}
       <div className="flex items-center space-x-4 w-64">
         <button
