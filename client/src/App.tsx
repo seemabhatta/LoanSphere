@@ -26,12 +26,12 @@ function Router() {
       <TopHeader onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
       
       {/* Main Layout */}
-      <div className="flex-1 relative overflow-hidden">
-        {/* Floating Sidebar */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Sidebar */}
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         
         {/* Main Content Panel */}
-        <div className="h-full p-4">
+        <div className={`flex-1 p-4 transition-all duration-300 ${sidebarOpen ? 'ml-0' : 'ml-0'}`}>
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-full overflow-hidden">
             <Switch>
               <Route path="/" component={CommandCenter} />
