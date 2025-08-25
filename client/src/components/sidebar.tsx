@@ -54,18 +54,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   return (
     <div className="w-60 bg-white border-r border-gray-200 flex flex-col">
-      {/* Logo/Brand */}
-      <div className="px-4 py-4 border-b border-gray-200">
-        <div className="flex items-center space-x-2">
-          <div className="w-6 h-6 bg-orange-500 rounded flex items-center justify-center">
-            <Home className="w-3 h-3 text-white" />
-          </div>
-          <h1 className="text-sm font-medium text-gray-900" data-testid="brand-title">
-            Co-Issue Boarding
-          </h1>
-        </div>
-      </div>
-      
       {/* Navigation */}
       <nav className="flex-1 py-2 overflow-y-auto">
         {navigationSections.map((section) => (
