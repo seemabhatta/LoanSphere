@@ -170,7 +170,7 @@ export default function Documents() {
                     <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-3">
                       <Eye className="text-blue-600 text-2xl w-8 h-8" />
                     </div>
-                    <h4 className="font-medium text-neutral-800 mb-2">OCR Processing</h4>
+                    <h4 className="section-header text-neutral-800 mb-2">OCR Processing</h4>
                     <div className="metric-large text-blue-600 mb-1" data-testid="ocr-queue">
                       {pipelineData?.ocr_processing?.queue || 0}
                     </div>
@@ -191,7 +191,7 @@ export default function Documents() {
                     <div className="w-16 h-16 bg-cyan-100 rounded-lg flex items-center justify-center mx-auto mb-3">
                       <Tags className="text-cyan-600 text-2xl w-8 h-8" />
                     </div>
-                    <h4 className="font-medium text-neutral-800 mb-2">Classification</h4>
+                    <h4 className="section-header text-neutral-800 mb-2">Classification</h4>
                     <div className="metric-large text-cyan-600 mb-1" data-testid="classification-completed">
                       {pipelineData?.classification?.completed || 0}
                     </div>
@@ -212,11 +212,11 @@ export default function Documents() {
                     <div className="w-16 h-16 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-3">
                       <Database className="text-green-600 text-2xl w-8 h-8" />
                     </div>
-                    <h4 className="font-medium text-neutral-800 mb-2">Data Extraction</h4>
-                    <div className="text-2xl font-bold text-green-600 mb-1" data-testid="extraction-completed">
+                    <h4 className="section-header text-neutral-800 mb-2">Data Extraction</h4>
+                    <div className="metric-large text-green-600 mb-1" data-testid="extraction-completed">
                       {pipelineData?.extraction?.completed || 0}
                     </div>
-                    <p className="text-xs text-neutral-500">Fields extracted</p>
+                    <p className="detail-text text-neutral-500">Fields extracted</p>
                     <div className="w-full bg-neutral-200 rounded-full h-1 mt-2">
                       <div 
                         className="bg-green-600 h-1 rounded-full transition-all duration-500" 
@@ -233,11 +233,11 @@ export default function Documents() {
                     <div className="w-16 h-16 bg-yellow-100 rounded-lg flex items-center justify-center mx-auto mb-3">
                       <CheckCircle className="text-yellow-600 text-2xl w-8 h-8" />
                     </div>
-                    <h4 className="font-medium text-neutral-800 mb-2">Validation</h4>
-                    <div className="text-2xl font-bold text-yellow-600 mb-1" data-testid="validation-pending">
+                    <h4 className="section-header text-neutral-800 mb-2">Validation</h4>
+                    <div className="metric-large text-yellow-600 mb-1" data-testid="validation-pending">
                       {pipelineData?.validation?.queue || 0}
                     </div>
-                    <p className="text-xs text-neutral-500">Pending review</p>
+                    <p className="detail-text text-neutral-500">Pending review</p>
                     <div className="w-full bg-neutral-200 rounded-full h-1 mt-2">
                       <div 
                         className="bg-yellow-600 h-1 rounded-full transition-all duration-500" 
@@ -271,7 +271,7 @@ export default function Documents() {
                         <div>
                           <div className="flex items-center space-x-3 mb-2">
                             <FileText className="w-5 h-5 text-gray-500" />
-                            <h3 className="font-medium text-neutral-800">
+                            <h3 className="section-header text-neutral-800">
                               {document.xp_doc_id}
                             </h3>
                             <Badge className={getStatusColor(document.status)}>
@@ -279,7 +279,7 @@ export default function Documents() {
                             </Badge>
                           </div>
                           
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 body-text">
                             <div>
                               <span className="text-neutral-500">Loan:</span>
                               <span className="ml-2 font-mono">
@@ -314,7 +314,7 @@ export default function Documents() {
                           <div className={getStageStatusColor(document.ocr_status)}>
                             {getStageIcon(document.ocr_status)}
                           </div>
-                          <span className="text-sm text-neutral-600">OCR</span>
+                          <span className="body-text text-neutral-600">OCR</span>
                           <span className={`text-xs ${getStageStatusColor(document.ocr_status)}`}>
                             {document.ocr_status}
                           </span>

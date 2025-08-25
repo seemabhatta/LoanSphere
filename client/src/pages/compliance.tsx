@@ -209,17 +209,17 @@ export default function Compliance() {
                         }`}></div>
                         
                         <div className="flex-1">
-                          <p className="text-sm font-medium text-neutral-800">
+                          <p className="label-text text-neutral-800">
                             {event.description}
                           </p>
-                          <p className="text-xs text-neutral-500">
+                          <p className="detail-text text-neutral-500">
                             {event.xp_loan_number} • {new Date(event.created_at).toLocaleDateString()}
                           </p>
                         </div>
                         
                         <Badge 
                           variant="outline"
-                          className={`text-xs ${
+                          className={`detail-text ${
                             event.status === 'completed' ? 'border-green-500 text-green-600' :
                             event.status === 'overdue' ? 'border-red-500 text-red-600' :
                             'border-yellow-500 text-yellow-600'
@@ -262,19 +262,19 @@ export default function Compliance() {
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <p className="text-sm font-medium text-red-800">
+                            <p className="label-text text-red-800">
                               {event.description}
                             </p>
-                            <p className="text-xs text-red-600 mt-1">
+                            <p className="detail-text text-red-600 mt-1">
                               {event.xp_loan_number}
                             </p>
-                            <p className="text-xs text-red-500 mt-1">
+                            <p className="detail-text text-red-500 mt-1">
                               Due: {new Date(event.due_date).toLocaleDateString()}
                             </p>
                           </div>
                           
                           <div className="text-right">
-                            <Badge className="bg-error text-white text-xs">
+                            <Badge className="bg-error text-white detail-text">
                               {event.days_overdue} days overdue
                             </Badge>
                           </div>

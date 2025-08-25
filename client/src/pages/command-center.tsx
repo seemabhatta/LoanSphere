@@ -138,7 +138,7 @@ export default function CommandCenter() {
               <input
                 type="text"
                 placeholder="Search loans, documents, and more..."
-                className="w-80 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-80 px-3 py-2 border border-gray-300 rounded-md body-text focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
             <Button 
@@ -163,11 +163,11 @@ export default function CommandCenter() {
         
         {/* Tab Navigation */}
         <div className="flex items-center space-x-8 mt-4">
-          <a className="text-blue-600 border-b-2 border-blue-600 pb-2 text-sm font-medium">Overview</a>
-          <a className="text-gray-500 hover:text-gray-700 pb-2 text-sm">Staging</a>
-          <a className="text-gray-500 hover:text-gray-700 pb-2 text-sm">Processing</a>
-          <a className="text-gray-500 hover:text-gray-700 pb-2 text-sm">Compliance</a>
-          <a className="text-gray-500 hover:text-gray-700 pb-2 text-sm">Reports</a>
+          <a className="text-blue-600 border-b-2 border-blue-600 pb-2 button-text">Overview</a>
+          <a className="text-gray-500 hover:text-gray-700 pb-2 nav-text">Staging</a>
+          <a className="text-gray-500 hover:text-gray-700 pb-2 nav-text">Processing</a>
+          <a className="text-gray-500 hover:text-gray-700 pb-2 nav-text">Compliance</a>
+          <a className="text-gray-500 hover:text-gray-700 pb-2 nav-text">Reports</a>
         </div>
       </header>
 
@@ -176,24 +176,24 @@ export default function CommandCenter() {
         {/* Key Metrics Row */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <div className="text-sm text-gray-500">First-Pass Yield</div>
-            <div className="text-2xl font-semibold text-gray-900">{metrics.fpy || 0}%</div>
-            <div className="text-xs text-green-600">+2.1% vs last week</div>
+            <div className="label-text text-gray-500">First-Pass Yield</div>
+            <div className="metric-large text-gray-900">{metrics.fpy || 0}%</div>
+            <div className="detail-text text-green-600">+2.1% vs last week</div>
           </div>
           <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <div className="text-sm text-gray-500">Time-to-Board</div>
-            <div className="text-2xl font-semibold text-gray-900">{metrics.ttb || 0}h</div>
-            <div className="text-xs text-green-600">-0.3h vs target</div>
+            <div className="label-text text-gray-500">Time-to-Board</div>
+            <div className="metric-large text-gray-900">{metrics.ttb || 0}h</div>
+            <div className="detail-text text-green-600">-0.3h vs target</div>
           </div>
           <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <div className="text-sm text-gray-500">Auto-Clear Rate</div>
-            <div className="text-2xl font-semibold text-gray-900">{metrics.auto_clear_rate || 0}%</div>
-            <div className="text-xs text-green-600">+5.2% vs last month</div>
+            <div className="label-text text-gray-500">Auto-Clear Rate</div>
+            <div className="metric-large text-gray-900">{metrics.auto_clear_rate || 0}%</div>
+            <div className="detail-text text-green-600">+5.2% vs last month</div>
           </div>
           <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <div className="text-sm text-gray-500">Open Exceptions</div>
-            <div className="text-2xl font-semibold text-gray-900">{metrics.open_exceptions || 0}</div>
-            <div className="text-xs text-orange-600">3 high priority</div>
+            <div className="label-text text-gray-500">Open Exceptions</div>
+            <div className="metric-large text-gray-900">{metrics.open_exceptions || 0}</div>
+            <div className="detail-text text-orange-600">3 high priority</div>
           </div>
         </div>
 
