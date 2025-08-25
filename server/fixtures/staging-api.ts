@@ -2,6 +2,7 @@ import express from "express";
 import { SampleDataGenerator, FixtureLoader } from "./sample-data-generator";
 import { storage } from "../storage";
 import { documentSearch } from "../database-config";
+import { commitmentStorage } from "../commitment-storage";
 
 const router = express.Router();
 
@@ -109,34 +110,54 @@ router.post("/stage/commitment", async (req, res) => {
   try {
     const commitmentData = req.body;
     
-    // Validate commitment data structure
-    if (!commitmentData.commitmentId || !commitmentData.investorLoanNumber) {
-      return res.status(400).json({ error: "Missing required commitment fields" });
+    // Validate commitment data structure - handle nested structure
+    const commitmentId = commitmentData.commitmentId || commitmentData.commitmentData?.commitmentId;
+    const investorLoanNumber = commitmentData.investorLoanNumber || commitmentData.commitmentData?.investorLoanNumber;
+    
+    if (!commitmentId || !investorLoanNumber) {
+      return res.status(400).json({ 
+        error: "Missing required commitment fields",
+        received: { commitmentId, investorLoanNumber },
+        data: commitmentData
+      });
     }
     
-    // Create loan from commitment
+    // Store in NoSQL commitment storage
+    const agency = detectAgency(commitmentData);
+    const commitment = await commitmentStorage.storeCommitment(commitmentData, agency);
+    
+    // Also create loan from commitment for pipeline processing
+    const actualCommitmentData = commitmentData.commitmentData || commitmentData;
     const loanData = {
-      xpLoanNumber: commitmentData.investorLoanNumber,
+      xpLoanNumber: investorLoanNumber,
       tenantId: "staged_commitment",
-      commitmentId: commitmentData.commitmentId,
-      commitmentDate: new Date(commitmentData.commitmentDate).getTime(),
-      expirationDate: new Date(commitmentData.expirationDate).getTime(),
-      currentCommitmentAmount: commitmentData.currentCommitmentAmount,
-      product: commitmentData.product?.productType,
-      sellerName: `Seller ${commitmentData.sellerNumber}`,
-      sellerNumber: commitmentData.sellerNumber,
-      servicerNumber: commitmentData.servicerNumber,
+      commitmentId: commitmentId,
+      commitmentDate: actualCommitmentData.commitmentDate ? new Date(actualCommitmentData.commitmentDate).getTime() : Date.now(),
+      expirationDate: actualCommitmentData.expirationDate ? new Date(actualCommitmentData.expirationDate).getTime() : Date.now() + 90 * 24 * 60 * 60 * 1000,
+      currentCommitmentAmount: actualCommitmentData.currentCommitmentAmount || 0,
+      product: actualCommitmentData.product?.productType || "Unknown",
+      sellerName: actualCommitmentData.sellerNumber ? `Seller ${actualCommitmentData.sellerNumber}` : "Unknown Seller",
+      sellerNumber: actualCommitmentData.sellerNumber || null,
+      servicerNumber: actualCommitmentData.servicerNumber || null,
       status: "staged",
-      boardingReadiness: "pending",
+      boardingReadiness: "data_received",
       metadata: JSON.stringify({
         source: "commitment_staging",
         stagedAt: new Date().toISOString(),
+        commitmentDocumentId: commitment.id,
+        agency: agency,
         originalData: commitmentData
       })
     };
     
     const loan = await storage.createLoan(loanData);
-    res.json({ success: true, loan, message: "Commitment data staged successfully" });
+    res.json({ 
+      success: true, 
+      loan, 
+      commitment,
+      agency,
+      message: "Commitment data staged successfully in NoSQL storage" 
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -204,6 +225,9 @@ router.get("/staged/summary", async (req, res) => {
       loan.status === "staged" || loan.boardingReadiness === "data_received"
     );
     
+    // Get commitment storage summary
+    const commitmentSummary = await commitmentStorage.getSummary();
+    
     const summary = {
       totalStaged: stagedLoans.length,
       bySource: stagedLoans.reduce((acc, loan) => {
@@ -214,12 +238,13 @@ router.get("/staged/summary", async (req, res) => {
       }, {}),
       readyForBoarding: stagedLoans.filter(loan => 
         loan.boardingReadiness === "data_received"
-      ).length
+      ).length,
+      commitments: commitmentSummary
     };
     
     res.json({ success: true, summary, stagedLoans });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error as Error).message });
   }
 });
 
@@ -266,6 +291,55 @@ router.delete("/staged/clear", async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Helper function to detect agency from commitment data
+function detectAgency(commitmentData: any): string {
+  const data = commitmentData.commitmentData || commitmentData;
+  
+  if (data.commitmentId?.startsWith("FNMA")) return "fannie_mae";
+  if (data.commitmentId?.startsWith("FHLMC")) return "freddie_mac";
+  if (data.commitmentId?.startsWith("GNMA")) return "ginnie_mae";
+  
+  // Check other indicators
+  if (data.agency) return data.agency.toLowerCase().replace(/ /g, "_");
+  if (data.investor) return data.investor.toLowerCase().replace(/ /g, "_");
+  
+  return "unknown";
+}
+
+// Get commitment data endpoints
+router.get("/commitments", async (req, res) => {
+  try {
+    const commitments = await commitmentStorage.getAllCommitments();
+    res.json({ success: true, commitments });
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+router.get("/commitments/summary", async (req, res) => {
+  try {
+    const summary = await commitmentStorage.getSummary();
+    res.json({ success: true, summary });
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+router.get("/commitments/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const commitment = await commitmentStorage.getByCommitmentId(id);
+    
+    if (!commitment) {
+      return res.status(404).json({ error: "Commitment not found" });
+    }
+    
+    res.json({ success: true, commitment });
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
   }
 });
 

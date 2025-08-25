@@ -37,7 +37,9 @@ export default function SampleData() {
 
   // Generate synthetic data mutations
   const generateLoansMutation = useMutation({
-    mutationFn: (count: number) => apiRequest(`/api/staging/generate/loans/${count}`, { method: "POST" }),
+    mutationFn: (count: number) => 
+      fetch(`/api/staging/generate/loans/${count}`, { method: "POST" })
+        .then(res => res.json()),
     onSuccess: () => {
       toast({ title: "Success", description: "Synthetic loans generated successfully" });
       queryClient.invalidateQueries({ queryKey: ["/api/staging/staged/summary"] });
@@ -48,7 +50,9 @@ export default function SampleData() {
   });
 
   const generateScenariosMutation = useMutation({
-    mutationFn: () => apiRequest("/api/staging/generate/scenarios", { method: "POST" }),
+    mutationFn: () => 
+      fetch("/api/staging/generate/scenarios", { method: "POST" })
+        .then(res => res.json()),
     onSuccess: () => {
       toast({ title: "Success", description: "Test scenarios generated successfully" });
       queryClient.invalidateQueries({ queryKey: ["/api/staging/staged/summary"] });
@@ -56,14 +60,18 @@ export default function SampleData() {
   });
 
   const loadFixturesMutation = useMutation({
-    mutationFn: () => apiRequest("/api/staging/load/fixtures", { method: "POST" }),
+    mutationFn: () => 
+      fetch("/api/staging/load/fixtures", { method: "POST" })
+        .then(res => res.json()),
     onSuccess: () => {
       toast({ title: "Success", description: "Business rules and configurations loaded" });
     }
   });
 
   const clearStagedMutation = useMutation({
-    mutationFn: () => apiRequest("/api/staging/staged/clear", { method: "DELETE" }),
+    mutationFn: () => 
+      fetch("/api/staging/staged/clear", { method: "DELETE" })
+        .then(res => res.json()),
     onSuccess: () => {
       toast({ title: "Success", description: "Staged data cleared successfully" });
       queryClient.invalidateQueries({ queryKey: ["/api/staging/staged/summary"] });
@@ -72,11 +80,12 @@ export default function SampleData() {
 
   // Stage data mutations
   const stageCommitmentMutation = useMutation({
-    mutationFn: (data: any) => apiRequest("/api/staging/stage/commitment", { 
-      method: "POST", 
-      body: JSON.stringify(data),
-      headers: { "Content-Type": "application/json" }
-    }),
+    mutationFn: (data: any) => 
+      fetch("/api/staging/stage/commitment", { 
+        method: "POST", 
+        body: JSON.stringify(data),
+        headers: { "Content-Type": "application/json" }
+      }).then(res => res.json()),
     onSuccess: () => {
       toast({ title: "Success", description: "Commitment data staged successfully" });
       queryClient.invalidateQueries({ queryKey: ["/api/staging/staged/summary"] });
@@ -84,11 +93,12 @@ export default function SampleData() {
   });
 
   const stageUlddMutation = useMutation({
-    mutationFn: (data: any) => apiRequest("/api/staging/stage/uldd", { 
-      method: "POST", 
-      body: JSON.stringify(data),
-      headers: { "Content-Type": "application/json" }
-    }),
+    mutationFn: (data: any) => 
+      fetch("/api/staging/stage/uldd", { 
+        method: "POST", 
+        body: JSON.stringify(data),
+        headers: { "Content-Type": "application/json" }
+      }).then(res => res.json()),
     onSuccess: () => {
       toast({ title: "Success", description: "ULDD data staged successfully" });
       queryClient.invalidateQueries({ queryKey: ["/api/staging/staged/summary"] });
@@ -118,7 +128,7 @@ export default function SampleData() {
   };
 
   const downloadSampleFile = (type: string) => {
-    const sampleData = {
+    const sampleData: { [key: string]: any } = {
       commitment: {
         commitmentId: "SAMPLE001",
         investorLoanNumber: "LN123456",
@@ -193,7 +203,7 @@ export default function SampleData() {
                     <div>
                       <p className="text-neutral-500 text-sm font-medium">Total Staged</p>
                       <p className="text-3xl font-bold text-neutral-800 mt-2" data-testid="stat-total-staged">
-                        {stagedSummary?.summary?.totalStaged || 0}
+                        {(stagedSummary as any)?.summary?.totalStaged || 0}
                       </p>
                     </div>
                     <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -209,7 +219,7 @@ export default function SampleData() {
                     <div>
                       <p className="text-neutral-500 text-sm font-medium">Ready for Boarding</p>
                       <p className="text-3xl font-bold text-green-600 mt-2" data-testid="stat-ready-boarding">
-                        {stagedSummary?.summary?.readyForBoarding || 0}
+                        {(stagedSummary as any)?.summary?.readyForBoarding || 0}
                       </p>
                     </div>
                     <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -225,7 +235,7 @@ export default function SampleData() {
                     <div>
                       <p className="text-neutral-500 text-sm font-medium">Data Sources</p>
                       <p className="text-3xl font-bold text-neutral-800 mt-2" data-testid="stat-data-sources">
-                        {Object.keys(stagedSummary?.summary?.bySource || {}).length}
+                        {Object.keys((stagedSummary as any)?.summary?.bySource || {}).length}
                       </p>
                     </div>
                     <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -243,7 +253,7 @@ export default function SampleData() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {Object.entries(stagedSummary?.summary?.bySource || {}).map(([source, count]) => (
+                  {Object.entries((stagedSummary as any)?.summary?.bySource || {}).map(([source, count]: [string, any]) => (
                     <div key={source} className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <FileText className="w-4 h-4 text-neutral-500" />
@@ -442,9 +452,9 @@ export default function SampleData() {
                   <div className="flex items-center justify-center py-8">
                     <RefreshCw className="w-6 h-6 animate-spin text-neutral-500" />
                   </div>
-                ) : stagedSummary?.stagedLoans?.length > 0 ? (
+                ) : (stagedSummary as any)?.stagedLoans?.length > 0 ? (
                   <div className="space-y-4">
-                    {stagedSummary.stagedLoans.map((loan: any) => (
+                    {(stagedSummary as any).stagedLoans.map((loan: any) => (
                       <div key={loan.id} className="flex items-center justify-between p-4 border rounded-lg">
                         <div className="flex items-center space-x-4">
                           <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -466,7 +476,7 @@ export default function SampleData() {
                               size="sm"
                               onClick={() => {
                                 // Promote to active pipeline
-                                apiRequest(`/api/staging/staged/${loan.id}/promote`, { method: "POST" })
+                                fetch(`/api/staging/staged/${loan.id}/promote`, { method: "POST" })
                                   .then(() => {
                                     toast({ title: "Success", description: "Loan promoted to active pipeline" });
                                     queryClient.invalidateQueries({ queryKey: ["/api/staging/staged/summary"] });

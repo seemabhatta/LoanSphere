@@ -1,5 +1,4 @@
 import Database from "better-sqlite3";
-import { TinyDB } from "tinydb";
 import { graph, NamedNode, literal } from "rdflib";
 import { Client } from "@opensearch-project/opensearch";
 
@@ -97,26 +96,21 @@ export class SQLiteDB {
   }
 }
 
-// TinyDB Configuration for fixtures and configuration
+// Simple JSON Configuration for fixtures and configuration
 export class ConfigDB {
-  private tinydb: any;
+  private data: Map<string, any> = new Map();
 
   constructor(filename: string = "config.json") {
-    this.tinydb = new TinyDB(filename);
+    // Use simple in-memory storage for now
   }
 
   // Store system configuration
   getConfig(key: string) {
-    return this.tinydb.search({ key })[0]?.value || null;
+    return this.data.get(key) || null;
   }
 
   setConfig(key: string, value: any) {
-    const existing = this.tinydb.search({ key });
-    if (existing.length > 0) {
-      this.tinydb.update({ value }, { key });
-    } else {
-      this.tinydb.insert({ key, value });
-    }
+    this.data.set(key, value);
   }
 
   // Store rule definitions and business logic fixtures
