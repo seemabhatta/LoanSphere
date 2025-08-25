@@ -17,7 +17,7 @@ router.post("/generate/loans/:count", async (req, res) => {
       count 
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error as Error).message });
   }
 });
 
@@ -29,7 +29,7 @@ router.post("/generate/scenarios", async (req, res) => {
       message: "Generated realistic test scenarios"
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error as Error).message });
   }
 });
 
@@ -42,7 +42,7 @@ router.post("/load/fixtures", async (req, res) => {
       message: "Loaded business rules and agency configurations"
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error as Error).message });
   }
 });
 
@@ -54,7 +54,7 @@ router.post("/generate/loan", async (req, res) => {
     const loan = await storage.createLoan(loanData);
     res.json({ success: true, loan });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error as Error).message });
   }
 });
 
@@ -72,7 +72,7 @@ router.post("/generate/exception/:loanId", async (req, res) => {
     const exception = await storage.createException(exceptionData);
     res.json({ success: true, exception });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error as Error).message });
   }
 });
 
@@ -101,7 +101,7 @@ router.post("/generate/document/:loanId", async (req, res) => {
     
     res.json({ success: true, document });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error as Error).message });
   }
 });
 
@@ -110,17 +110,25 @@ router.post("/stage/commitment", async (req, res) => {
   try {
     const commitmentData = req.body;
     
+    console.log("Received commitment data:", JSON.stringify(commitmentData, null, 2));
+    
     // Validate commitment data structure - handle nested structure
     const commitmentId = commitmentData.commitmentId || commitmentData.commitmentData?.commitmentId;
     const investorLoanNumber = commitmentData.investorLoanNumber || commitmentData.commitmentData?.investorLoanNumber;
     
-    if (!commitmentId || !investorLoanNumber) {
+    console.log("Extracted values:", { commitmentId, investorLoanNumber });
+    
+    if (!commitmentId && !investorLoanNumber) {
       return res.status(400).json({ 
         error: "Missing required commitment fields",
         received: { commitmentId, investorLoanNumber },
         data: commitmentData
       });
     }
+    
+    // Use fallback values if only one is missing
+    const finalCommitmentId = commitmentId || `GEN_${Date.now()}`;
+    const finalLoanNumber = investorLoanNumber || `LN_${Date.now()}`;
     
     // Store in NoSQL commitment storage
     const agency = detectAgency(commitmentData);
@@ -129,9 +137,9 @@ router.post("/stage/commitment", async (req, res) => {
     // Also create loan from commitment for pipeline processing
     const actualCommitmentData = commitmentData.commitmentData || commitmentData;
     const loanData = {
-      xpLoanNumber: investorLoanNumber,
+      xpLoanNumber: finalLoanNumber,
       tenantId: "staged_commitment",
-      commitmentId: commitmentId,
+      commitmentId: finalCommitmentId,
       commitmentDate: actualCommitmentData.commitmentDate ? new Date(actualCommitmentData.commitmentDate).getTime() : Date.now(),
       expirationDate: actualCommitmentData.expirationDate ? new Date(actualCommitmentData.expirationDate).getTime() : Date.now() + 90 * 24 * 60 * 60 * 1000,
       currentCommitmentAmount: actualCommitmentData.currentCommitmentAmount || 0,
@@ -159,7 +167,7 @@ router.post("/stage/commitment", async (req, res) => {
       message: "Commitment data staged successfully in NoSQL storage" 
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error as Error).message });
   }
 });
 
@@ -213,7 +221,7 @@ router.post("/stage/uldd", async (req, res) => {
     
     res.json({ success: true, loan, message: "ULDD data staged successfully" });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error as Error).message });
   }
 });
 
@@ -233,7 +241,7 @@ router.get("/staged/summary", async (req, res) => {
       bySource: stagedLoans.reduce((acc, loan) => {
         const metadata = JSON.parse(loan.metadata || "{}");
         const source = metadata.source || "unknown";
-        acc[source] = (acc[source] || 0) + 1;
+        acc[source] = ((acc as any)[source] || 0) + 1;
         return acc;
       }, {}),
       readyForBoarding: stagedLoans.filter(loan => 
@@ -268,7 +276,7 @@ router.post("/staged/:loanId/promote", async (req, res) => {
       message: "Loan promoted to active boarding pipeline" 
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error as Error).message });
   }
 });
 
@@ -290,7 +298,7 @@ router.delete("/staged/clear", async (req, res) => {
       deletedCount 
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error as Error).message });
   }
 });
 
