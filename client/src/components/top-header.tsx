@@ -5,36 +5,23 @@ import xpanseLogo from "@assets/image_1756159502281.png";
 
 interface TopHeaderProps {
   onToggleSidebar: () => void;
-  sidebarOpen?: boolean;
   sidebarCollapsed?: boolean;
 }
 
-export default function TopHeader({ onToggleSidebar, sidebarOpen = true, sidebarCollapsed = false }: TopHeaderProps) {
+export default function TopHeader({ onToggleSidebar, sidebarCollapsed = false }: TopHeaderProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
   return (
     <header className="h-12 bg-gray-50 flex items-center px-4 sticky top-0 z-30">
-      {/* Left side - Sidebar Toggle and Logo */}
+      {/* Left side - Hamburger and Logo */}
       <div className="flex items-center space-x-4 w-64">
         <button
           onClick={onToggleSidebar}
           className="p-1 hover:bg-gray-100 rounded"
-          data-testid="sidebar-toggle"
-          title={
-            !sidebarOpen 
-              ? "Open sidebar" 
-              : sidebarCollapsed 
-                ? "Close sidebar" 
-                : "Collapse to icons"
-          }
+          data-testid="hamburger-menu"
+          title={sidebarCollapsed ? "Expand sidebar" : "Collapse to icons"}
         >
-          {!sidebarOpen ? (
-            <PanelLeftOpen className="w-5 h-5 text-gray-600" />
-          ) : sidebarCollapsed ? (
-            <Menu className="w-5 h-5 text-gray-600" />
-          ) : (
-            <PanelLeftClose className="w-5 h-5 text-gray-600" />
-          )}
+          <Menu className="w-5 h-5 text-gray-600" />
         </button>
         
         <div className="flex items-center space-x-2">
