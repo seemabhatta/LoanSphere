@@ -1,0 +1,17 @@
+{
+  "tenantId": "tenant123",
+  "xpLoanNumber": "XP12345678",
+  "xpDocGUID": "1234567890",
+  "xpDocId": "XP-APP-001",
+  "externalIds": {
+    "investorDocId": "INV-APP-001",
+    "aggregatorDocId": "AGG-APP-001"
+  },
+  "documentType": "Appraisal",
+  "links": {
+    "location": "s3://bucket/document/xpDocId/XP12345678-Appraisal.pdf"
+  },
+  "status": {
+    "classified": true
+  }
+}

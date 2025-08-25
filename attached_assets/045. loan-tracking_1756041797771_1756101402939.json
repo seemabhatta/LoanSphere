@@ -1,0 +1,62 @@
+{
+  "xpLoanNumber": "XP12345678",
+  "tenantId": "tenant123",
+  "externalIds": {
+    "aggregatorLoanNumber": "AGG987654",
+    "correspondentLoanNumber": "COR456789",
+    "investorLoanNumber": "AGY123789",
+    "investorName" : "Fannie SNP / Freeddie"
+  },
+  "status": {
+    "boardingReadiness": "ReadyToBoard",
+    "lastEvaluated": "2025-07-11T19:58:18.778845Z"
+  },
+  "metaData": {
+    "investorPurchaseAdvice": {
+      "links": {
+        "transformed": "s3://bucket/transformed/investorPurchaseAdvice/XP12345678.json",
+        "raw": "s3://bucket/raw/investorPurchaseAdvice/XP12345678.csv",
+        "documentDb": {
+          "collection": "purchaseAdvice",
+          "documentId": "XP12345678"
+        }
+      }
+    },
+    "uldd": {
+      "links": {
+        "transformed": "s3://bucket/transformed/uldd/XP12345678.json",
+        "raw": "s3://bucket/raw/uldd/XP12345678.csv",
+        "documentDb": {
+          "collection": "uldd",
+          "documentId": "XP12345678"
+        }
+      }
+    },
+    "gapData": {
+      "links": {
+        "transformed": "s3://bucket/transformed/gapData/XP12345678.json",
+        "raw": "s3://bucket/raw/gapData/XP12345678.csv",
+        "documentDb": {
+          "collection": "TBD_MaybeSameAsULDD",
+          "documentId": "XP12345678"
+        }
+      }
+    },
+    "supplementalData": {
+      "links": {
+        "transformed": "s3://bucket/transformed/supplementalData/XP12345678.json",
+        "raw": "s3://bucket/raw/supplementalData/XP12345678.csv",
+        "documentDb": {
+          "collection": "TBD_MaybeSameAsULDD",
+          "documentId": "XP12345678"
+        }
+      }
+    },
+    "boardingFiles": {
+      "links": {
+        "transformed": "s3://bucket/transformed/boardingFiles/XP12345678.json",
+        "raw": "s3://bucket/raw/boardingFiles/XP12345678.csv"
+      }
+    }
+  }
+}

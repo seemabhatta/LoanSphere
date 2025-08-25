@@ -1,0 +1,25 @@
+{
+  "commitmentId": "925998",
+  "sellerName": "NFM, Inc",
+  "sellerNumber": "268590005",
+  "servicerNumber": "237740092",
+  "status": "Open",
+  "product": "30-Year Fixed Rate",
+  "commitmentDate": "2025-05-27",
+  "expirationDate": "2025-06-16",
+  "currentCommitmentAmount": 1496000,
+  "purchasedAmount": 0,
+  "remainingBalance": 1496000,
+  "minPTR": 6.375,
+  "srpGridId": "tdeMT3ds",
+  "eventMetadata": {
+    "eventId": "VND-COMP-20250716-001",
+    "correlationId": "SCH-20250716-001",
+    "vendorIntTaskId": "VND-TASK-987654321",
+    "created": "2025-07-16T10:14:58Z",
+    "notes": "Vendor successfully processed the commitment task.",
+    "s3": {
+      "raw": "s3://lap/stage/commitments/2025-07-16/raw/VND-TASK-987654321.json"
+    }
+  }
+}
