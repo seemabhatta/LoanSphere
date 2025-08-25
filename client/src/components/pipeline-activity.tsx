@@ -57,7 +57,7 @@ export default function PipelineActivity({ activity }: PipelineActivityProps) {
     <Card className="bg-white shadow-sm border border-neutral-200">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-medium text-neutral-800">
+          <CardTitle className="section-header text-neutral-800">
             Pipeline Activity
           </CardTitle>
           <div className="flex space-x-2">
@@ -86,31 +86,31 @@ export default function PipelineActivity({ activity }: PipelineActivityProps) {
           <div className="text-center">
             <BarChart3 className="w-12 h-12 text-neutral-300 mx-auto mb-2" />
             <p className="text-neutral-500">Pipeline Throughput Chart</p>
-            <p className="text-xs text-neutral-400">Updates every 30 seconds</p>
+            <p className="detail-text text-neutral-400">Updates every 30 seconds</p>
           </div>
         </div>
         
         {/* Recent Activity */}
         <div className="space-y-3">
-          <h4 className="font-medium text-neutral-800 text-sm mb-3">Recent Activity</h4>
+          <h4 className="label-text text-neutral-800 mb-3">Recent Activity</h4>
           
           {activity.slice(0, 10).map((item, index) => (
             <div 
               key={item.id || index}
-              className="flex items-center space-x-4 text-sm"
+              className="flex items-center space-x-4 body-text"
               data-testid={`activity-${index}`}
             >
-              <span className="text-xs text-neutral-400 font-mono min-w-[70px]">
+              <span className="detail-text text-neutral-400 font-mono min-w-[70px]">
                 {formatTime(item.timestamp)}
               </span>
               <span className={getStatusColor(item.status)}></span>
               <span className="flex-1">{item.message}</span>
               {item.xp_loan_number && (
-                <span className="text-xs font-mono text-neutral-500">
+                <span className="detail-text font-mono text-neutral-500">
                   {item.xp_loan_number}
                 </span>
               )}
-              <span className={`text-xs font-mono ${getStatusBadgeColor(item.status)}`}>
+              <span className={`detail-text font-mono ${getStatusBadgeColor(item.status)}`}>
                 {item.status}
               </span>
             </div>

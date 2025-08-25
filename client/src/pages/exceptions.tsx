@@ -117,7 +117,7 @@ export default function Exceptions() {
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Header */}
       <header className="px-6 py-4 border-b border-gray-200">
-        <div className="flex items-center text-sm text-gray-500 mb-1">
+        <div className="flex items-center caption-text mb-1">
           <span>Loan Boarding</span>
           <span className="mx-2">›</span>
           <span className="text-gray-900">Exceptions</span>
@@ -171,8 +171,8 @@ export default function Exceptions() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-neutral-500 text-sm font-medium">Total Open</p>
-                  <p className="text-3xl font-bold text-neutral-800 mt-2" data-testid="stat-total-open">
+                  <p className="label-text text-neutral-500">Total Open</p>
+                  <p className="metric-large text-neutral-800 mt-2" data-testid="stat-total-open">
                     {statsData?.total_open || 0}
                   </p>
                 </div>
@@ -187,8 +187,8 @@ export default function Exceptions() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-neutral-500 text-sm font-medium">High Priority</p>
-                  <p className="text-3xl font-bold text-neutral-800 mt-2" data-testid="stat-high-priority">
+                  <p className="label-text text-neutral-500">High Priority</p>
+                  <p className="metric-large text-neutral-800 mt-2" data-testid="stat-high-priority">
                     {statsData?.by_severity?.high || 0}
                   </p>
                 </div>
@@ -203,8 +203,8 @@ export default function Exceptions() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-neutral-500 text-sm font-medium">Resolved</p>
-                  <p className="text-3xl font-bold text-neutral-800 mt-2" data-testid="stat-resolved">
+                  <p className="label-text text-neutral-500">Resolved</p>
+                  <p className="metric-large text-neutral-800 mt-2" data-testid="stat-resolved">
                     {statsData?.total_resolved || 0}
                   </p>
                 </div>
@@ -219,8 +219,8 @@ export default function Exceptions() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-neutral-500 text-sm font-medium">Avg Resolution Time</p>
-                  <p className="text-3xl font-bold text-neutral-800 mt-2">2.4h</p>
+                  <p className="label-text text-neutral-500">Avg Resolution Time</p>
+                  <p className="metric-large text-neutral-800 mt-2">2.4h</p>
                 </div>
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
                   <Clock className="w-6 h-6 text-blue-600" />
@@ -250,7 +250,7 @@ export default function Exceptions() {
                         <Badge className={getSeverityColor(exception.severity)}>
                           {exception.severity}
                         </Badge>
-                        <span className="text-sm font-mono text-neutral-600">
+                        <span className="code-text text-neutral-600">
                           {exception.xp_loan_number}
                         </span>
                         <Badge className={getStatusColor(exception.status)} variant="outline">
@@ -258,14 +258,14 @@ export default function Exceptions() {
                         </Badge>
                       </div>
                       
-                      <p className="text-sm font-medium text-neutral-800 mb-1">
+                      <p className="label-text text-neutral-800 mb-1">
                         {exception.rule_name}
                       </p>
-                      <p className="text-xs text-neutral-500">
+                      <p className="detail-text text-neutral-500">
                         {exception.description}
                       </p>
                       
-                      <div className="flex items-center space-x-4 mt-3 text-xs text-neutral-500">
+                      <div className="flex items-center space-x-4 mt-3 detail-text text-neutral-500">
                         <span>
                           <Clock className="w-3 h-3 inline mr-1" />
                           {new Date(exception.detected_at).toLocaleString()}
@@ -309,10 +309,10 @@ export default function Exceptions() {
                   
                   {exception.auto_fix_suggestion && (
                     <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                      <p className="text-xs text-blue-600 font-medium mb-1">
+                      <p className="detail-text text-blue-600 font-medium mb-1">
                         Auto-Fix Available
                       </p>
-                      <p className="text-xs text-blue-800">
+                      <p className="detail-text text-blue-800">
                         {exception.auto_fix_suggestion.description}
                       </p>
                     </div>

@@ -111,10 +111,10 @@ export default function ExceptionDetailModal({
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
         {/* Modal Header */}
         <DialogHeader className="border-b border-neutral-200 pb-4">
-          <DialogTitle className="text-xl font-medium text-neutral-800">
+          <DialogTitle className="page-title text-neutral-800">
             Exception Details
           </DialogTitle>
-          <p className="text-sm text-neutral-500 mt-1">
+          <p className="body-text text-neutral-500 mt-1">
             Loan {exception.xp_loan_number} - {exception.rule_name}
           </p>
         </DialogHeader>
@@ -134,11 +134,11 @@ export default function ExceptionDetailModal({
                 </div>
                 <div className="flex justify-between">
                   <span className="text-neutral-600">Rule ID:</span>
-                  <span className="font-mono text-sm">{exception.rule_id}</span>
+                  <span className="code-text">{exception.rule_id}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-neutral-600">Detected:</span>
-                  <span className="text-sm">
+                  <span className="body-text">
                     {new Date(exception.detected_at).toLocaleString()}
                   </span>
                 </div>
@@ -151,7 +151,7 @@ export default function ExceptionDetailModal({
                 {exception.sla_due && (
                   <div className="flex justify-between">
                     <span className="text-neutral-600">SLA Due:</span>
-                    <span className="text-sm text-error">
+                    <span className="body-text text-error">
                       {new Date(exception.sla_due).toLocaleString()}
                     </span>
                   </div>
@@ -161,7 +161,7 @@ export default function ExceptionDetailModal({
               {/* Description */}
               <div className="mt-6">
                 <h4 className="font-medium text-neutral-800 mb-2">Description</h4>
-                <p className="text-sm text-neutral-700 bg-neutral-50 p-3 rounded-lg">
+                <p className="body-text text-neutral-700 bg-neutral-50 p-3 rounded-lg">
                   {exception.description}
                 </p>
               </div>
@@ -174,10 +174,10 @@ export default function ExceptionDetailModal({
                     <div className="grid grid-cols-1 gap-4">
                       {Object.entries(exception.evidence).map(([key, value]: [string, any]) => (
                         <div key={key} className="border-l-4 border-error pl-3">
-                          <p className="text-sm font-medium text-neutral-800 capitalize">
+                          <p className="label-text text-neutral-800 capitalize">
                             {key.replace(/_/g, ' ')}
                           </p>
-                          <p className="font-mono text-sm text-error">
+                          <p className="code-text text-error">
                             {typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)}
                           </p>
                         </div>
@@ -197,7 +197,7 @@ export default function ExceptionDetailModal({
                     <h5 className="font-medium text-blue-800 mb-2">
                       {exception.auto_fix_suggestion.type?.replace(/_/g, ' ') || 'Auto-Fix Available'}
                     </h5>
-                    <p className="text-sm text-blue-700 mb-4">
+                    <p className="body-text text-blue-700 mb-4">
                       {exception.auto_fix_suggestion.description || 'An automatic fix is available for this exception.'}
                     </p>
                     
@@ -205,13 +205,13 @@ export default function ExceptionDetailModal({
                       <div className="space-y-3">
                         <div className="flex justify-between">
                           <span className="text-blue-700">Proposed Action:</span>
-                          <span className="font-mono text-sm">
+                          <span className="code-text">
                             {exception.auto_fix_suggestion.type}
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-blue-700">New Value:</span>
-                          <span className="font-mono text-sm text-success">
+                          <span className="code-text text-success">
                             {exception.auto_fix_suggestion.new_value}
                           </span>
                         </div>
@@ -261,7 +261,7 @@ export default function ExceptionDetailModal({
               
               {/* Comments */}
               <div className="mt-6">
-                <Label htmlFor="comment" className="text-sm font-medium text-neutral-700">
+                <Label htmlFor="comment" className="label-text text-neutral-700">
                   Add Comment (Optional)
                 </Label>
                 <Textarea

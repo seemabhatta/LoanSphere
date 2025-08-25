@@ -100,11 +100,11 @@ export default function ComplianceStatus({ status }: ComplianceStatusProps) {
     <Card className="bg-white shadow-sm border border-neutral-200">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-medium text-neutral-800">
+          <CardTitle className="section-header text-neutral-800">
             Compliance Status
           </CardTitle>
           <Badge 
-            className={`text-xs font-medium px-2 py-1 ${
+            className={`detail-text font-medium px-2 py-1 ${
               status.overall_status === 'on_track' 
                 ? 'text-success bg-green-50' 
                 : 'text-warning bg-yellow-50'
@@ -124,8 +124,8 @@ export default function ComplianceStatus({ status }: ComplianceStatusProps) {
               data-testid={`compliance-item-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
             >
               <div className="flex items-center justify-between mb-2">
-                <h4 className="text-sm font-medium text-neutral-800">{item.title}</h4>
-                <span className="text-xs text-success">
+                <h4 className="label-text text-neutral-800">{item.title}</h4>
+                <span className="detail-text text-success">
                   {item.data?.percentage || 0}% On Time
                 </span>
               </div>
@@ -135,7 +135,7 @@ export default function ComplianceStatus({ status }: ComplianceStatusProps) {
                   style={{ width: `${item.data?.percentage || 0}%` }}
                 ></div>
               </div>
-              <p className="text-xs text-neutral-500">
+              <p className="detail-text text-neutral-500">
                 {item.data?.on_time || 0} on time of {item.data?.total || 0} total
               </p>
             </div>
@@ -144,8 +144,8 @@ export default function ComplianceStatus({ status }: ComplianceStatusProps) {
         
         {/* Recent Compliance Events */}
         <div className="mt-6 pt-6 border-t border-neutral-200">
-          <h4 className="text-sm font-medium text-neutral-800 mb-4">Recent Events</h4>
-          <div className="space-y-3 text-xs">
+          <h4 className="label-text text-neutral-800 mb-4">Recent Events</h4>
+          <div className="space-y-3 detail-text">
             {recentEvents.map((event, index) => (
               <div 
                 key={index}

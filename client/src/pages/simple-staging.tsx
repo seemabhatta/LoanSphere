@@ -119,7 +119,7 @@ export default function SimpleStaging() {
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Header */}
       <header className="px-6 py-4 border-b border-gray-200">
-        <div className="flex items-center text-sm text-gray-500 mb-1">
+        <div className="flex items-center caption-text mb-1">
           <span>Loan Boarding</span>
           <span className="mx-2">›</span>
           <span className="text-gray-900">Simple Staging</span>
@@ -210,7 +210,7 @@ export default function SimpleStaging() {
                               {fileTypeInfo.type}
                             </Badge>
                           </div>
-                          <p className="text-sm text-gray-500">
+                          <p className="caption-text">
                             {file.type} • {Math.round(file.size / 1024)}KB • {new Date(file.uploadedAt).toLocaleString()}
                           </p>
                         </div>

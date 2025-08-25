@@ -87,7 +87,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       {/* User Profile */}
       <div className="px-4 py-3 border-t border-gray-200">
         <div className="flex items-center space-x-2" data-testid="user-profile">
-          <div className="w-6 h-6 bg-gray-400 text-white rounded-full flex items-center justify-center text-xs">
+          <div className="w-6 h-6 bg-gray-400 text-white rounded-full flex items-center justify-center detail-text">
             <User className="w-3 h-3" />
           </div>
           <div className="flex-1 min-w-0">

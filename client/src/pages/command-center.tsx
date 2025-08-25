@@ -122,7 +122,7 @@ export default function CommandCenter() {
         <div className="flex items-center justify-between">
           {/* Breadcrumb and Title */}
           <div>
-            <div className="flex items-center text-sm text-gray-500 mb-1">
+            <div className="flex items-center caption-text mb-1">
               <span>Loan Boarding</span>
               <span className="mx-2">›</span>
               <span className="text-gray-900">Command Center</span>

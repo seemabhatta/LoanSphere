@@ -88,7 +88,7 @@ export default function MetricCard({
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-neutral-500 text-sm font-medium">{title}</p>
+            <p className="label-text text-neutral-500">{title}</p>
             <p 
               className="text-3xl font-bold text-neutral-800 mt-2" 
               data-testid={testId}
@@ -96,7 +96,7 @@ export default function MetricCard({
               {value}
             </p>
             {trend && (
-              <p className={`text-sm mt-2 flex items-center ${getTrendColor()}`}>
+              <p className={`body-text mt-2 flex items-center ${getTrendColor()}`}>
                 {getTrendIcon()}
                 {trend}
               </p>

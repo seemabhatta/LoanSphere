@@ -32,15 +32,15 @@ export default function AgentStatus({ agents }: AgentStatusProps) {
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
       case 'running':
-        return 'text-xs text-primary font-mono';
+        return 'detail-text text-primary font-mono';
       case 'active':
-        return 'text-xs text-success font-mono';
+        return 'detail-text text-success font-mono';
       case 'error':
-        return 'text-xs text-error font-mono';
+        return 'detail-text text-error font-mono';
       case 'wait':
-        return 'text-xs text-warning font-mono';
+        return 'detail-text text-warning font-mono';
       default:
-        return 'text-xs text-neutral-500 font-mono';
+        return 'detail-text text-neutral-500 font-mono';
     }
   };
 
@@ -62,7 +62,7 @@ export default function AgentStatus({ agents }: AgentStatusProps) {
   return (
     <Card className="bg-white shadow-sm border border-neutral-200">
       <CardHeader>
-        <CardTitle className="text-lg font-medium text-neutral-800">
+        <CardTitle className="section-header text-neutral-800">
           Agent Status
         </CardTitle>
       </CardHeader>
