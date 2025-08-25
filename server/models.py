@@ -36,7 +36,7 @@ class LoanModel(Base):
     first_pass_yield = Column(Boolean, default=False)
     time_to_board = Column(Integer)  # in hours
     auto_clear_rate = Column(Numeric(5, 4))
-    metadata = Column(JSON)
+    model_metadata = Column(JSON)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
     
@@ -80,7 +80,7 @@ class AgentModel(Base):
     tasks_completed = Column(Integer, default=0)
     tasks_errored = Column(Integer, default=0)
     last_activity = Column(DateTime)
-    metadata = Column(JSON)
+    model_metadata = Column(JSON)
 
 class ComplianceEventModel(Base):
     __tablename__ = "compliance_events"
@@ -93,7 +93,7 @@ class ComplianceEventModel(Base):
     due_date = Column(DateTime)
     completed_at = Column(DateTime)
     description = Column(String)
-    metadata = Column(JSON)
+    model_metadata = Column(JSON)
     created_at = Column(DateTime, server_default=func.now())
     
     # Relationships
@@ -115,7 +115,7 @@ class DocumentModel(Base):
     validation_status = Column(String, default="pending")
     s3_location = Column(String)
     extracted_data = Column(JSON)
-    metadata = Column(JSON)
+    model_metadata = Column(JSON)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
     
@@ -130,7 +130,7 @@ class MetricModel(Base):
     value = Column(Numeric(10, 4), nullable=False)
     period = Column(String, nullable=False)  # hourly, daily, weekly
     timestamp = Column(DateTime, server_default=func.now())
-    metadata = Column(JSON)
+    model_metadata = Column(JSON)
 
 class PipelineActivityModel(Base):
     __tablename__ = "pipeline_activity"
@@ -143,7 +143,7 @@ class PipelineActivityModel(Base):
     message = Column(String, nullable=False)
     agent_name = Column(String)
     timestamp = Column(DateTime, server_default=func.now())
-    metadata = Column(JSON)
+    model_metadata = Column(JSON)
 
 class StagedFileModel(Base):
     __tablename__ = "staged_files"

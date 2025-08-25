@@ -53,9 +53,9 @@ class LoanService:
         loan.updated_at = datetime.now()
         
         if metadata:
-            current_metadata = loan.metadata or {}
+            current_metadata = loan.model_metadata or {}
             current_metadata.update(metadata)
-            loan.metadata = current_metadata
+            loan.model_metadata = current_metadata
         
         self.db.commit()
         self.db.refresh(loan)
@@ -301,7 +301,7 @@ class LoanService:
             source = "uldd"
         
         # Update metadata to track data sources
-        current_metadata = loan.metadata or {}
+        current_metadata = loan.model_metadata or {}
         current_metadata[f"{source}_data"] = new_data
         current_metadata["last_updated_source"] = source
         current_metadata["last_updated"] = datetime.now().isoformat()
