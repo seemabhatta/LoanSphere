@@ -55,27 +55,27 @@ export default function CommandCenter() {
 
   // Update store when data changes
   useEffect(() => {
-    if (dashboardData) {
+    if (dashboardData && dashboardData.loan_metrics) {
       updateMetrics(dashboardData.loan_metrics);
-      updateRecentActivity(dashboardData.recent_activity);
-      updateDocumentProcessing(dashboardData.document_metrics);
+      updateRecentActivity(dashboardData.recent_activity || []);
+      updateDocumentProcessing(dashboardData.document_metrics || {});
     }
   }, [dashboardData, updateMetrics, updateRecentActivity, updateDocumentProcessing]);
 
   useEffect(() => {
-    if (agentsData) {
+    if (agentsData && agentsData.agents) {
       updateAgents(agentsData.agents);
     }
   }, [agentsData, updateAgents]);
 
   useEffect(() => {
-    if (exceptionsData) {
+    if (exceptionsData && exceptionsData.exceptions) {
       updateExceptions(exceptionsData.exceptions);
     }
   }, [exceptionsData, updateExceptions]);
 
   useEffect(() => {
-    if (complianceData) {
+    if (complianceData && complianceData.status) {
       updateComplianceStatus(complianceData.status);
     }
   }, [complianceData, updateComplianceStatus]);
@@ -166,7 +166,7 @@ export default function CommandCenter() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <MetricCard
             title="First-Pass Yield"
-            value={`${metrics.fpy}%`}
+            value={`${metrics.fpy || 0}%`}
             trend="+2.1% vs last week"
             trendType="positive"
             icon="check-circle"
@@ -174,7 +174,7 @@ export default function CommandCenter() {
           />
           <MetricCard
             title="Time-to-Board"
-            value={`${metrics.ttb}h`}
+            value={`${metrics.ttb || 0}h`}
             trend="-0.3h vs target"
             trendType="positive"
             icon="clock"
@@ -182,7 +182,7 @@ export default function CommandCenter() {
           />
           <MetricCard
             title="Auto-Clear Rate"
-            value={`${metrics.auto_clear_rate}%`}
+            value={`${metrics.auto_clear_rate || 0}%`}
             trend="+5.2% vs last month"
             trendType="positive"
             icon="zap"
@@ -190,7 +190,7 @@ export default function CommandCenter() {
           />
           <MetricCard
             title="Open Exceptions"
-            value={metrics.open_exceptions.toString()}
+            value={`${metrics.open_exceptions || 0}`}
             trend="3 high priority"
             trendType="warning"
             icon="alert-triangle"
