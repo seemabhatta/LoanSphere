@@ -12,7 +12,7 @@ export default function TopHeader({ onToggleSidebar }: TopHeaderProps) {
   return (
     <header className="h-12 bg-white border-b border-gray-200 flex items-center px-4 sticky top-0 z-30">
       {/* Left side - Hamburger and Logo */}
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center space-x-4 w-64">
         <button
           onClick={onToggleSidebar}
           className="p-1 hover:bg-gray-100 rounded"
@@ -32,8 +32,8 @@ export default function TopHeader({ onToggleSidebar }: TopHeaderProps) {
       </div>
 
       {/* Center - Search */}
-      <div className="flex-1 max-w-2xl mx-4">
-        <div className="relative">
+      <div className="flex-1 flex justify-center">
+        <div className="relative w-full max-w-md">
           <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
           <Input
             placeholder="Search loans, documents, exceptions, and more..."
@@ -46,7 +46,7 @@ export default function TopHeader({ onToggleSidebar }: TopHeaderProps) {
       </div>
 
       {/* Right side - Shortcuts */}
-      <div className="flex items-center space-x-2 text-sm text-gray-500">
+      <div className="flex items-center justify-end space-x-2 text-sm text-gray-500 w-64">
         <span className="hidden md:inline">⌘ + P</span>
       </div>
     </header>
