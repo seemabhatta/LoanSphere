@@ -26,7 +26,7 @@ function Router() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
+    <div className="h-screen flex flex-col bg-gray-100">
       {/* Top Header */}
       <TopHeader 
         onToggleSidebar={toggleSidebar}
