@@ -116,9 +116,9 @@ export default function SimpleStaging() {
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-white">
+    <div className="flex-1 flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="bg-white px-6 py-4">
+      <header className="px-6 py-4 border-b border-gray-200">
         <div className="flex items-center text-sm text-gray-500 mb-1">
           <span>Loan Boarding</span>
           <span className="mx-2">›</span>
@@ -132,7 +132,7 @@ export default function SimpleStaging() {
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
         
         {/* 1. Stage Files */}
-        <div className="bg-white rounded-lg p-6">
+        <div className="bg-gray-50 rounded-lg p-6">
           <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2 mb-4">
             <Upload className="w-5 h-5" />
             Stage File
@@ -185,7 +185,7 @@ export default function SimpleStaging() {
         </div>
 
         {/* 2. List Files */}
-        <div className="bg-white rounded-lg p-6">
+        <div className="bg-gray-50 rounded-lg p-6">
           <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2 mb-4">
             <List className="w-5 h-5" />
             Staged Files ({stagedFiles?.total || 0})

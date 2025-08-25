@@ -87,9 +87,9 @@ export default function Documents() {
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-white">
+    <div className="flex-1 flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="bg-white px-6 py-4">
+      <header className="px-6 py-4 border-b border-gray-200">
         <div className="flex items-center text-sm text-gray-500 mb-1">
           <span>Loan Boarding</span>
           <span className="mx-2">›</span>

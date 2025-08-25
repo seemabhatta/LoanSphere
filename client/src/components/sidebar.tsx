@@ -44,11 +44,26 @@ const navigationSections = [
   }
 ];
 
-export default function Sidebar() {
+interface SidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const [location] = useLocation();
 
+  if (!isOpen) return null;
+
   return (
-    <div className="w-60 bg-white border-r border-gray-200 flex flex-col h-full">
+    <>
+      {/* Backdrop */}
+      <div 
+        className="fixed inset-0 bg-black bg-opacity-20 z-40 lg:hidden"
+        onClick={onClose}
+      />
+      
+      {/* Sidebar */}
+      <div className="fixed left-0 top-12 bottom-0 w-60 bg-white border-r border-gray-200 flex flex-col z-50 shadow-lg">
       {/* Logo/Brand */}
       <div className="px-4 py-4 border-b border-gray-200">
         <div className="flex items-center space-x-2">
@@ -102,6 +117,7 @@ export default function Sidebar() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
