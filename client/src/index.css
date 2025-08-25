@@ -70,27 +70,53 @@
 
 /* Global Typography System */
 .page-title {
-  @apply text-xl font-medium text-gray-900;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 20px !important;
+  font-weight: 500 !important;
+  line-height: 1.4 !important;
+  letter-spacing: -0.02em !important;
+  color: rgb(17 24 39) !important; /* text-gray-900 */
 }
 
 .section-header {
-  @apply text-lg font-medium text-gray-900;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 18px !important;
+  font-weight: 500 !important;
+  line-height: 1.4 !important;
+  letter-spacing: -0.02em !important;
+  color: rgb(17 24 39) !important; /* text-gray-900 */
 }
 
 .metric-large {
-  @apply text-3xl font-bold;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 30px !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+  letter-spacing: -0.02em !important;
 }
 
 .metric-medium {
-  @apply text-2xl font-bold;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 24px !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+  letter-spacing: -0.02em !important;
 }
 
 .body-text {
-  @apply text-sm;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  line-height: 1.4 !important;
+  letter-spacing: -0.02em !important;
 }
 
 .detail-text {
-  @apply text-xs;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  line-height: 1.4 !important;
+  letter-spacing: -0.02em !important;
 }
 
 .nav-text {
@@ -102,7 +128,11 @@
 }
 
 .label-text {
-  @apply text-sm font-medium;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  line-height: 1.4 !important;
+  letter-spacing: -0.02em !important;
 }
 
 .caption-text {
