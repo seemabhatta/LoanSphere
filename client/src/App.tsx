@@ -21,17 +21,28 @@ function Router() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // Toggle sidebar collapsed state
-  const toggleSidebarCollapsed = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
+  // Combined sidebar control: open -> collapsed -> closed
+  const handleSidebarToggle = () => {
+    if (!sidebarOpen) {
+      // Sidebar is closed -> Open it expanded
+      setSidebarOpen(true);
+      setSidebarCollapsed(false);
+    } else if (!sidebarCollapsed) {
+      // Sidebar is open and expanded -> Collapse to icons
+      setSidebarCollapsed(true);
+    } else {
+      // Sidebar is open and collapsed -> Close it
+      setSidebarOpen(false);
+      setSidebarCollapsed(false);
+    }
   };
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
       {/* Top Header */}
       <TopHeader 
-        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-        onToggleCollapse={toggleSidebarCollapsed}
+        onToggleSidebar={handleSidebarToggle}
+        sidebarOpen={sidebarOpen}
         sidebarCollapsed={sidebarCollapsed}
       />
       
