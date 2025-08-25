@@ -28,7 +28,7 @@ export default function TopHeader({ onToggleSidebar }: TopHeaderProps) {
             alt="Xpanse" 
             className="w-8 h-8"
           />
-          <span className="text-sm font-bold text-gray-900 hidden sm:inline">
+          <span className="text-sm font-bold text-gray-900 hidden sm:inline font-sans tracking-tight">
             Xpanse Loan Xchange
           </span>
         </div>
