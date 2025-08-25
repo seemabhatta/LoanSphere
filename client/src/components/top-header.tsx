@@ -26,7 +26,7 @@ export default function TopHeader({ onToggleSidebar }: TopHeaderProps) {
           <img 
             src={xpanseLogo} 
             alt="Xpanse" 
-            className="w-6 h-6"
+            className="w-8 h-8"
           />
           <span className="text-sm font-medium text-gray-900 hidden sm:inline">
             Correspondent Loan Boarding
