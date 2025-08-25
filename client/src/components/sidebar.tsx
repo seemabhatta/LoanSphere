@@ -22,7 +22,6 @@ const navigation = [
   { name: "Compliance", href: "/compliance", icon: Shield },
   { name: "Agents", href: "/agents", icon: Settings },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
-  { name: "Sample Data", href: "/sample-data", icon: Database },
   { name: "Simple Staging", href: "/simple-staging", icon: Upload },
   { name: "Scheduler", href: "/scheduler", icon: Calendar },
 ];
