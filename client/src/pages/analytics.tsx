@@ -65,7 +65,7 @@ export default function Analytics() {
             <h1 className="page-title text-gray-900" data-testid="page-title">
               Analytics
             </h1>
-            <p className="text-gray-500 mt-1">
+            <p className="body-text text-gray-500 mt-1">
               Performance insights and trends
             </p>
           </div>
@@ -164,7 +164,7 @@ export default function Analytics() {
                 <CardContent className="p-6">
                   <div className="text-center">
                     <Clock className="w-8 h-8 text-blue-500 mx-auto mb-2" />
-                    <h3 className="font-medium text-neutral-800 mb-1">Avg Time-to-Board</h3>
+                    <h3 className="section-header text-neutral-800 mb-1">Avg Time-to-Board</h3>
                     <p className="metric-large text-blue-600" data-testid="metric-ttb">
                       {dashboardMetrics?.loan_metrics?.ttb || 0}h
                     </p>
@@ -177,7 +177,7 @@ export default function Analytics() {
                 <CardContent className="p-6">
                   <div className="text-center">
                     <CheckCircle className="w-8 h-8 text-green-500 mx-auto mb-2" />
-                    <h3 className="font-medium text-neutral-800 mb-1">First-Pass Yield</h3>
+                    <h3 className="section-header text-neutral-800 mb-1">First-Pass Yield</h3>
                     <p className="metric-large text-green-600" data-testid="metric-fpy">
                       {dashboardMetrics?.loan_metrics?.fpy || 0}%
                     </p>
@@ -190,7 +190,7 @@ export default function Analytics() {
                 <CardContent className="p-6">
                   <div className="text-center">
                     <BarChart3 className="w-8 h-8 text-cyan-500 mx-auto mb-2" />
-                    <h3 className="font-medium text-neutral-800 mb-1">Auto-Clear Rate</h3>
+                    <h3 className="section-header text-neutral-800 mb-1">Auto-Clear Rate</h3>
                     <p className="metric-large text-cyan-600" data-testid="metric-autoclear">
                       {dashboardMetrics?.loan_metrics?.auto_clear_rate || 0}%
                     </p>
@@ -203,7 +203,7 @@ export default function Analytics() {
                 <CardContent className="p-6">
                   <div className="text-center">
                     <AlertTriangle className="w-8 h-8 text-orange-500 mx-auto mb-2" />
-                    <h3 className="font-medium text-neutral-800 mb-1">Open Exceptions</h3>
+                    <h3 className="section-header text-neutral-800 mb-1">Open Exceptions</h3>
                     <p className="metric-large text-orange-600" data-testid="metric-exceptions">
                       {dashboardMetrics?.loan_metrics?.open_exceptions || 0}
                     </p>
@@ -216,7 +216,7 @@ export default function Analytics() {
             {/* Volume Summary */}
             <Card>
               <CardHeader>
-                <CardTitle>Volume Summary</CardTitle>
+                <CardTitle className="section-header">Volume Summary</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
@@ -246,13 +246,13 @@ export default function Analytics() {
           <TabsContent value="trends" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Performance Trends</CardTitle>
+                <CardTitle className="section-header">Performance Trends</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="h-64 bg-neutral-50 rounded-lg flex items-center justify-center">
                   <div className="text-center">
                     <BarChart3 className="w-12 h-12 text-neutral-400 mx-auto mb-2" />
-                    <p className="text-neutral-500">Trend charts coming soon</p>
+                    <p className="body-text text-neutral-500">Trend charts coming soon</p>
                     <p className="detail-text text-neutral-400 mt-1">
                       {fpyTrend?.data_points?.length || 0} data points available for {timeRange} days
                     </p>
@@ -265,10 +265,10 @@ export default function Analytics() {
           <TabsContent value="detailed" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Detailed Analytics</CardTitle>
+                <CardTitle className="section-header">Detailed Analytics</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-8 text-neutral-500">
+                <div className="text-center py-8 body-text text-neutral-500">
                   Detailed analytics dashboard coming soon
                 </div>
               </CardContent>
