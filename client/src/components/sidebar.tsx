@@ -7,7 +7,8 @@ import {
   Shield, 
   Settings, 
   BarChart3,
-  User
+  User,
+  Database
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +20,7 @@ const navigation = [
   { name: "Compliance", href: "/compliance", icon: Shield },
   { name: "Agents", href: "/agents", icon: Settings },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
+  { name: "Sample Data", href: "/sample-data", icon: Database },
 ];
 
 export default function Sidebar() {

@@ -11,6 +11,7 @@ import Documents from "@/pages/documents";
 import Compliance from "@/pages/compliance";
 import Agents from "@/pages/agents";
 import Analytics from "@/pages/analytics";
+import SampleData from "@/pages/sample-data";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -25,6 +26,7 @@ function Router() {
         <Route path="/compliance" component={Compliance} />
         <Route path="/agents" component={Agents} />
         <Route path="/analytics" component={Analytics} />
+        <Route path="/sample-data" component={SampleData} />
         <Route component={NotFound} />
       </Switch>
     </div>
