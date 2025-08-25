@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Menu, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import xpanseLogo from "@assets/image_1756159422113.png";
+import xpanseLogo from "@assets/image_1756159502281.png";
 
 interface TopHeaderProps {
   onToggleSidebar: () => void;
@@ -29,7 +29,7 @@ export default function TopHeader({ onToggleSidebar }: TopHeaderProps) {
             className="w-8 h-8"
           />
           <span className="text-sm font-medium text-gray-900 hidden sm:inline">
-            Correspondent Loan Boarding
+            Xpanse Loan Xchange
           </span>
         </div>
       </div>
