@@ -1,0 +1,58 @@
+{
+  "commitmentData": {
+    "commitmentId": "FNMA2025001234",
+    "investorLoanNumber": "LN001234",
+    "sellerNumber": "012345",
+    "servicerNumber": "067890",
+    "commitmentDate": "2025-01-15T09:00:00Z",
+    "expirationDate": "2025-04-15T23:59:59Z",
+    "currentCommitmentAmount": 500000.00,
+    "purchasedAmount": 0.00,
+    "remainingBalance": 500000.00,
+    "product": {
+      "productType": "30Y Fixed",
+      "programCode": "CLP",
+      "loanPurpose": "Purchase",
+      "occupancyType": "Primary Residence",
+      "propertyType": "Single Family Detached"
+    },
+    "pricing": {
+      "minPTR": 0.035,
+      "maxPTR": 0.065,
+      "servicing": {
+        "servicingFeeRate": 0.0025,
+        "servicingType": "Standard"
+      }
+    },
+    "eligibility": {
+      "maxLoanAmount": 766550,
+      "maxLTV": 0.97,
+      "minCreditScore": 620,
+      "maxDTI": 0.45
+    },
+    "deliveryTerms": {
+      "deliveryMethod": "Electronic",
+      "requiredDocuments": [
+        "1003 Application",
+        "1008 Transmittal Summary", 
+        "Appraisal",
+        "Credit Report",
+        "Income Documentation",
+        "Asset Verification"
+      ],
+      "deliveryDeadline": "2025-04-30T23:59:59Z"
+    },
+    "complianceRequirements": {
+      "respaRequired": true,
+      "tilaRequired": true,
+      "qmStatus": "Qualified Mortgage",
+      "atrCompliance": true
+    }
+  },
+  "metadata": {
+    "version": "1.0",
+    "createdBy": "Fannie Mae Commitment System",
+    "createdAt": "2025-01-15T09:00:00Z",
+    "lastModified": "2025-01-15T09:00:00Z"
+  }
+}

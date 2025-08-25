@@ -1,0 +1,92 @@
+{
+  "ulddData": {
+    "loanIdentifier": {
+      "fannieMaeLoanNumber": "LN001234",
+      "originalLoanNumber": "XP12345678",
+      "universalLoanIdentifier": "12345678901234567890123456"
+    },
+    "loanDetails": {
+      "noteAmount": 425000.00,
+      "noteDate": "2025-01-20",
+      "loanMaturityDate": "2055-01-20",
+      "interestRate": 0.0675,
+      "interestRateType": "Fixed",
+      "paymentFrequency": "Monthly",
+      "firstPaymentDate": "2025-03-01",
+      "amortizationType": "Full",
+      "loanPurpose": "Purchase",
+      "occupancyStatus": "Primary Residence"
+    },
+    "borrower": {
+      "borrowerType": "Primary",
+      "firstName": "John",
+      "lastName": "Smith", 
+      "ssn": "XXX-XX-1234",
+      "dateOfBirth": "1985-05-15",
+      "creditScore": 750,
+      "monthlyIncome": 8500.00,
+      "employment": {
+        "employerName": "Tech Solutions Inc",
+        "positionTitle": "Software Engineer", 
+        "yearsEmployed": 3.5,
+        "employmentType": "Salary"
+      }
+    },
+    "property": {
+      "propertyAddress": {
+        "streetAddress": "123 Main Street",
+        "city": "Springfield",
+        "state": "IL",
+        "zipCode": "62701"
+      },
+      "propertyType": "Single Family Detached",
+      "numberOfUnits": 1,
+      "yearBuilt": 2015,
+      "appraisedValue": 475000.00,
+      "ltvRatio": 0.8947,
+      "combinedLtvRatio": 0.8947
+    },
+    "mortgage": {
+      "mortgageType": "Conventional",
+      "lienPosition": "First",
+      "mortgageInsurance": {
+        "miRequired": false,
+        "miType": null,
+        "miCoveragePercent": null
+      },
+      "escrow": {
+        "escrowRequired": true,
+        "escrowItems": ["Taxes", "Insurance"],
+        "monthlyEscrowAmount": 650.00
+      }
+    },
+    "underwriting": {
+      "dtiRatio": 0.28,
+      "backEndRatio": 0.36,
+      "compensatingFactors": ["Strong Credit History", "Stable Employment"],
+      "underwritingMethod": "Automated",
+      "duRecommendation": "Approve/Eligible",
+      "duFindingsCode": "A01"
+    },
+    "compliance": {
+      "qmStatus": "Qualified Mortgage",
+      "qmType": "General QM",
+      "atrCompliance": true,
+      "hoepaStatus": "Not HOEPA",
+      "highCostMortgage": false
+    }
+  },
+  "validationResults": {
+    "dataQualityScore": 0.95,
+    "missingFields": [],
+    "warningFields": ["borrower.middleName"],
+    "errorFields": []
+  },
+  "metadata": {
+    "version": "ULDD 5.2",
+    "createdBy": "Loan Origination System",
+    "createdAt": "2025-01-20T14:30:00Z",
+    "lastModified": "2025-01-20T14:30:00Z",
+    "submissionType": "Initial"
+  }
+}
