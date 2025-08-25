@@ -68,6 +68,51 @@
   }
 }
 
+/* Global Typography System */
+.page-title {
+  @apply text-xl font-medium text-gray-900;
+}
+
+.section-header {
+  @apply text-lg font-medium text-gray-900;
+}
+
+.metric-large {
+  @apply text-3xl font-bold;
+}
+
+.metric-medium {
+  @apply text-2xl font-bold;
+}
+
+.body-text {
+  @apply text-sm;
+}
+
+.detail-text {
+  @apply text-xs;
+}
+
+.nav-text {
+  @apply text-sm;
+}
+
+.button-text {
+  @apply text-sm font-medium;
+}
+
+.label-text {
+  @apply text-sm font-medium;
+}
+
+.caption-text {
+  @apply text-xs text-gray-500;
+}
+
+.code-text {
+  @apply text-sm font-mono;
+}
+
 /* Custom utility classes for the design system */
 .text-neutral-50 {
   color: hsl(var(--neutral-50));

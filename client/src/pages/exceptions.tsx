@@ -124,7 +124,7 @@ export default function Exceptions() {
         </div>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-medium text-gray-900" data-testid="page-title">
+            <h1 className="page-title" data-testid="page-title">
               Exceptions
             </h1>
             <p className="text-gray-500 mt-1">

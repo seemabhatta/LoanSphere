@@ -28,7 +28,7 @@ export default function TopHeader({ onToggleSidebar }: TopHeaderProps) {
             alt="Xpanse" 
             className="w-8 h-8"
           />
-          <span className="text-sm font-semibold text-gray-900 hidden sm:inline">
+          <span className="label-text text-gray-900 hidden sm:inline font-semibold">
             Xpanse Loan Xchange
           </span>
         </div>
@@ -42,14 +42,14 @@ export default function TopHeader({ onToggleSidebar }: TopHeaderProps) {
             placeholder="Search loans, documents, exceptions, and more..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 w-full bg-white border-gray-200 text-sm"
+            className="pl-10 w-full bg-white border-gray-200 body-text"
             data-testid="global-search"
           />
         </div>
       </div>
 
       {/* Right side - Shortcuts */}
-      <div className="flex items-center justify-end space-x-2 text-sm text-gray-500 w-64">
+      <div className="flex items-center justify-end space-x-2 body-text text-gray-500 w-64">
         <span className="hidden md:inline">⌘ + P</span>
       </div>
     </header>

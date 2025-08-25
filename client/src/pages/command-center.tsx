@@ -127,7 +127,7 @@ export default function CommandCenter() {
               <span className="mx-2">›</span>
               <span className="text-gray-900">Command Center</span>
             </div>
-            <h1 className="text-xl font-medium text-gray-900" data-testid="page-title">
+            <h1 className="page-title" data-testid="page-title">
               Co-Issue Boarding Pipeline
             </h1>
           </div>

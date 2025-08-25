@@ -124,7 +124,7 @@ export default function SimpleStaging() {
           <span className="mx-2">›</span>
           <span className="text-gray-900">Simple Staging</span>
         </div>
-        <h1 className="text-xl font-medium text-gray-900">Simple Staging</h1>
+        <h1 className="page-title">Simple Staging</h1>
         <p className="text-gray-500 mt-1">Stage, list, and download files</p>
       </header>
 
@@ -133,7 +133,7 @@ export default function SimpleStaging() {
         
         {/* 1. Stage Files */}
         <div className="bg-gray-50 rounded-lg p-6">
-          <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2 mb-4">
+          <h3 className="section-header flex items-center gap-2 mb-4">
             <Upload className="w-5 h-5" />
             Stage File
           </h3>
@@ -186,7 +186,7 @@ export default function SimpleStaging() {
 
         {/* 2. List Files */}
         <div className="bg-gray-50 rounded-lg p-6">
-          <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2 mb-4">
+          <h3 className="section-header flex items-center gap-2 mb-4">
             <List className="w-5 h-5" />
             Staged Files ({stagedFiles?.total || 0})
           </h3>
