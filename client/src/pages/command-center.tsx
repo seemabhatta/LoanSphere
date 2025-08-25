@@ -116,112 +116,117 @@ export default function CommandCenter() {
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
-      {/* Header */}
-      <header className="bg-white border-b border-neutral-200 px-6 py-5 shrink-0">
+    <div className="flex-1 flex flex-col overflow-hidden bg-white">
+      {/* Header with Search */}
+      <header className="bg-white border-b border-gray-200 px-6 py-4 shrink-0">
         <div className="flex items-center justify-between">
+          {/* Breadcrumb and Title */}
           <div>
-            <h2 className="text-2xl font-medium text-neutral-800" data-testid="page-title">
-              Command Center
-            </h2>
-            <p className="text-neutral-500 mt-1">
-              Real-time loan boarding pipeline monitoring
-            </p>
+            <div className="flex items-center text-sm text-gray-500 mb-1">
+              <span>Loan Boarding</span>
+              <span className="mx-2">›</span>
+              <span className="text-gray-900">Command Center</span>
+            </div>
+            <h1 className="text-xl font-medium text-gray-900" data-testid="page-title">
+              Co-Issue Boarding Pipeline
+            </h1>
           </div>
+          
+          {/* Search and Actions */}
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2" data-testid="system-status">
-              <div className={`w-2 h-2 rounded-full animate-pulse ${
-                systemStatus === 'operational' ? 'bg-green-500' : 'bg-red-500'
-              }`}></div>
-              <span className={`text-sm font-medium ${
-                systemStatus === 'operational' ? 'text-green-600' : 'text-red-600'
-              }`}>
-                System {systemStatus === 'operational' ? 'Operational' : 'Down'}
-              </span>
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search loans, documents, and more..."
+                className="w-80 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
             </div>
             <Button 
               variant="outline" 
               size="sm"
               onClick={handleRefresh}
               data-testid="button-refresh"
+              className="border-gray-300 text-gray-700 hover:bg-gray-50"
             >
               <RefreshCw className="w-4 h-4 mr-2" />
               Refresh
             </Button>
             <Button 
               onClick={handleBoardPackage}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
               data-testid="button-board-package"
             >
-              <Play className="w-4 h-4 mr-2" />
               Board Package
             </Button>
           </div>
         </div>
+        
+        {/* Tab Navigation */}
+        <div className="flex items-center space-x-8 mt-4">
+          <a className="text-blue-600 border-b-2 border-blue-600 pb-2 text-sm font-medium">Overview</a>
+          <a className="text-gray-500 hover:text-gray-700 pb-2 text-sm">Staging</a>
+          <a className="text-gray-500 hover:text-gray-700 pb-2 text-sm">Processing</a>
+          <a className="text-gray-500 hover:text-gray-700 pb-2 text-sm">Compliance</a>
+          <a className="text-gray-500 hover:text-gray-700 pb-2 text-sm">Reports</a>
+        </div>
       </header>
 
       {/* Content Area */}
-      <main className="flex-1 overflow-y-auto p-6 bg-neutral-50">
+      <main className="flex-1 overflow-y-auto p-6 bg-white">
         {/* Key Metrics Row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <MetricCard
-            title="First-Pass Yield"
-            value={`${metrics.fpy || 0}%`}
-            trend="+2.1% vs last week"
-            trendType="positive"
-            icon="check-circle"
-            testId="metric-fpy"
-          />
-          <MetricCard
-            title="Time-to-Board"
-            value={`${metrics.ttb || 0}h`}
-            trend="-0.3h vs target"
-            trendType="positive"
-            icon="clock"
-            testId="metric-ttb"
-          />
-          <MetricCard
-            title="Auto-Clear Rate"
-            value={`${metrics.auto_clear_rate || 0}%`}
-            trend="+5.2% vs last month"
-            trendType="positive"
-            icon="zap"
-            testId="metric-autoclear"
-          />
-          <MetricCard
-            title="Open Exceptions"
-            value={`${metrics.open_exceptions || 0}`}
-            trend="3 high priority"
-            trendType="warning"
-            icon="alert-triangle"
-            testId="metric-exceptions"
-          />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <div className="text-sm text-gray-500">First-Pass Yield</div>
+            <div className="text-2xl font-semibold text-gray-900">{metrics.fpy || 0}%</div>
+            <div className="text-xs text-green-600">+2.1% vs last week</div>
+          </div>
+          <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <div className="text-sm text-gray-500">Time-to-Board</div>
+            <div className="text-2xl font-semibold text-gray-900">{metrics.ttb || 0}h</div>
+            <div className="text-xs text-green-600">-0.3h vs target</div>
+          </div>
+          <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <div className="text-sm text-gray-500">Auto-Clear Rate</div>
+            <div className="text-2xl font-semibold text-gray-900">{metrics.auto_clear_rate || 0}%</div>
+            <div className="text-xs text-green-600">+5.2% vs last month</div>
+          </div>
+          <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <div className="text-sm text-gray-500">Open Exceptions</div>
+            <div className="text-2xl font-semibold text-gray-900">{metrics.open_exceptions || 0}</div>
+            <div className="text-xs text-orange-600">3 high priority</div>
+          </div>
         </div>
 
         {/* Main Dashboard Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           {/* Agent Status Panel */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 bg-white border border-gray-200 rounded-lg">
             <AgentStatus agents={agents} />
           </div>
 
           {/* Pipeline Activity */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 bg-white border border-gray-200 rounded-lg">
             <PipelineActivity activity={recentActivity} />
           </div>
         </div>
 
         {/* Detailed Panels Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Current Exceptions */}
-          <ExceptionsList exceptions={exceptions} />
+          <div className="bg-white border border-gray-200 rounded-lg">
+            <ExceptionsList exceptions={exceptions} />
+          </div>
 
           {/* Compliance Status */}
-          <ComplianceStatus status={complianceStatus} />
+          <div className="bg-white border border-gray-200 rounded-lg">
+            <ComplianceStatus status={complianceStatus} />
+          </div>
         </div>
 
         {/* Document Processing Status */}
-        <DocumentProcessing status={documentProcessing} />
+        <div className="bg-white border border-gray-200 rounded-lg">
+          <DocumentProcessing status={documentProcessing} />
+        </div>
       </main>
 
       {/* Exception Detail Modal */}
