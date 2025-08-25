@@ -55,7 +55,7 @@ export default function Sidebar({ isOpen, onClose, collapsed = false }: SidebarP
 
   return (
     <div className={cn(
-      "bg-gray-50 flex flex-col transition-all duration-300",
+      "bg-gray-100 flex flex-col transition-all duration-300",
       collapsed ? "w-16" : "w-60"
     )}>
       {/* Navigation */}
