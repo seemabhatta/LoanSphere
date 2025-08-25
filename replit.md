@@ -10,6 +10,10 @@ The application demonstrates an end-to-end loan boarding workflow that processes
 
 Preferred communication style: Simple, everyday language.
 
+**UI/UX Preferences:**
+- Side panel should be visible by default when the application loads or refreshes
+- Typography consistency is critical - all numbers and metrics must display identically across all pages
+
 ## System Architecture
 
 ### Frontend Architecture
