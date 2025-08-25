@@ -1,13 +1,15 @@
 import { useState } from "react";
-import { Menu, Search } from "lucide-react";
+import { Menu, Search, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import xpanseLogo from "@assets/image_1756159502281.png";
 
 interface TopHeaderProps {
   onToggleSidebar: () => void;
+  onToggleCollapse?: () => void;
+  sidebarCollapsed?: boolean;
 }
 
-export default function TopHeader({ onToggleSidebar }: TopHeaderProps) {
+export default function TopHeader({ onToggleSidebar, onToggleCollapse, sidebarCollapsed = false }: TopHeaderProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
   return (
@@ -21,6 +23,21 @@ export default function TopHeader({ onToggleSidebar }: TopHeaderProps) {
         >
           <Menu className="w-5 h-5 text-gray-600" />
         </button>
+        
+        {onToggleCollapse && (
+          <button
+            onClick={onToggleCollapse}
+            className="p-1 hover:bg-gray-100 rounded"
+            data-testid="collapse-toggle"
+            title={sidebarCollapsed ? "Expand sidebar" : "Collapse to icons"}
+          >
+            {sidebarCollapsed ? (
+              <PanelLeftOpen className="w-5 h-5 text-gray-600" />
+            ) : (
+              <PanelLeftClose className="w-5 h-5 text-gray-600" />
+            )}
+          </button>
+        )}
         
         <div className="flex items-center space-x-2">
           <img 

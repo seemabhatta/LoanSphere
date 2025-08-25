@@ -21,29 +21,19 @@ function Router() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // Auto-collapse sidebar on smaller screens
-  useEffect(() => {
-    const handleResize = () => {
-      const width = window.innerWidth;
-      if (width < 1024) { // lg breakpoint
-        setSidebarCollapsed(true);
-      } else {
-        setSidebarCollapsed(false);
-      }
-    };
-
-    // Check initial size
-    handleResize();
-    
-    // Add event listener
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  // Toggle sidebar collapsed state
+  const toggleSidebarCollapsed = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
+  };
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
       {/* Top Header */}
-      <TopHeader onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+      <TopHeader 
+        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+        onToggleCollapse={toggleSidebarCollapsed}
+        sidebarCollapsed={sidebarCollapsed}
+      />
       
       {/* Main Layout */}
       <div className="flex-1 flex overflow-hidden">
