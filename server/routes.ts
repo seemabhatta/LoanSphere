@@ -42,7 +42,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     changeOrigin: true,
     timeout: 30000,
     pathRewrite: {
-      '^/api/(.*)': '/api/$1'  // Preserve /api prefix explicitly
+      '^/': '/api/'  // Add /api prefix since Express strips it
     },
     onError: (err, req, res) => {
       console.error('❌ Proxy error:', err.message);
