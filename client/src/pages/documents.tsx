@@ -90,14 +90,14 @@ export default function Documents() {
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Header */}
       <header className="px-6 py-4 border-b border-gray-200">
-        <div className="flex items-center text-sm text-gray-500 mb-1">
+        <div className="flex items-center caption-text mb-1">
           <span>Loan Boarding</span>
           <span className="mx-2">›</span>
           <span className="text-gray-900">Documents</span>
         </div>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-medium text-gray-900" data-testid="page-title">
+            <h1 className="page-title text-gray-900" data-testid="page-title">
               Documents
             </h1>
             <p className="text-gray-500 mt-1">
@@ -171,17 +171,17 @@ export default function Documents() {
                       <Eye className="text-blue-600 text-2xl w-8 h-8" />
                     </div>
                     <h4 className="font-medium text-neutral-800 mb-2">OCR Processing</h4>
-                    <div className="text-2xl font-bold text-blue-600 mb-1" data-testid="ocr-queue">
+                    <div className="metric-large text-blue-600 mb-1" data-testid="ocr-queue">
                       {pipelineData?.ocr_processing?.queue || 0}
                     </div>
-                    <p className="text-xs text-neutral-500">Documents in queue</p>
+                    <p className="detail-text text-neutral-500">Documents in queue</p>
                     <div className="w-full bg-neutral-200 rounded-full h-1 mt-2">
                       <div 
                         className="bg-blue-600 h-1 rounded-full transition-all duration-500" 
                         style={{ width: `${pipelineData?.ocr_processing?.progress || 0}%` }}
                       ></div>
                     </div>
-                    <p className="text-xs text-neutral-500 mt-1">
+                    <p className="detail-text text-neutral-500 mt-1">
                       {pipelineData?.ocr_processing?.progress || 0}% complete
                     </p>
                   </div>
@@ -192,17 +192,17 @@ export default function Documents() {
                       <Tags className="text-cyan-600 text-2xl w-8 h-8" />
                     </div>
                     <h4 className="font-medium text-neutral-800 mb-2">Classification</h4>
-                    <div className="text-2xl font-bold text-cyan-600 mb-1" data-testid="classification-completed">
+                    <div className="metric-large text-cyan-600 mb-1" data-testid="classification-completed">
                       {pipelineData?.classification?.completed || 0}
                     </div>
-                    <p className="text-xs text-neutral-500">Documents classified</p>
+                    <p className="detail-text text-neutral-500">Documents classified</p>
                     <div className="w-full bg-neutral-200 rounded-full h-1 mt-2">
                       <div 
                         className="bg-cyan-600 h-1 rounded-full transition-all duration-500" 
                         style={{ width: `${pipelineData?.classification?.progress || 0}%` }}
                       ></div>
                     </div>
-                    <p className="text-xs text-neutral-500 mt-1">
+                    <p className="detail-text text-neutral-500 mt-1">
                       {pipelineData?.classification?.progress || 0}% complete
                     </p>
                   </div>
@@ -223,7 +223,7 @@ export default function Documents() {
                         style={{ width: `${pipelineData?.extraction?.progress || 0}%` }}
                       ></div>
                     </div>
-                    <p className="text-xs text-neutral-500 mt-1">
+                    <p className="detail-text text-neutral-500 mt-1">
                       {pipelineData?.extraction?.progress || 0}% complete
                     </p>
                   </div>
@@ -244,7 +244,7 @@ export default function Documents() {
                         style={{ width: `${pipelineData?.validation?.progress || 0}%` }}
                       ></div>
                     </div>
-                    <p className="text-xs text-neutral-500 mt-1">
+                    <p className="detail-text text-neutral-500 mt-1">
                       {pipelineData?.validation?.progress || 0}% complete
                     </p>
                   </div>

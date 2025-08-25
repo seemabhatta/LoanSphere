@@ -58,14 +58,14 @@ export default function PipelineMonitor() {
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Header */}
       <header className="px-6 py-4 border-b border-gray-200">
-        <div className="flex items-center text-sm text-gray-500 mb-1">
+        <div className="flex items-center caption-text mb-1">
           <span>Loan Boarding</span>
           <span className="mx-2">›</span>
           <span className="text-gray-900">Pipeline Monitor</span>
         </div>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-medium text-gray-900" data-testid="page-title">
+            <h1 className="page-title text-gray-900" data-testid="page-title">
               Pipeline Monitor
             </h1>
             <p className="text-gray-500 mt-1">
@@ -118,7 +118,7 @@ export default function PipelineMonitor() {
                           <h3 className="font-medium text-neutral-800">
                             {loan.xp_loan_number}
                           </h3>
-                          <p className="text-sm text-neutral-500">
+                          <p className="body-text text-neutral-500">
                             {loan.seller_name}
                           </p>
                         </div>
@@ -130,7 +130,7 @@ export default function PipelineMonitor() {
                         </Badge>
                       </div>
                       
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 body-text">
                         <div>
                           <span className="text-neutral-500">Amount:</span>
                           <span className="ml-2 font-mono">
@@ -186,16 +186,16 @@ export default function PipelineMonitor() {
                         <div className={`w-3 h-3 rounded-full ${getAgentStatusColor(agent.status)}`}></div>
                         <div>
                           <h3 className="font-medium text-neutral-800">{agent.name}</h3>
-                          <p className="text-xs text-neutral-500 capitalize">{agent.type}</p>
+                          <p className="detail-text text-neutral-500 capitalize">{agent.type}</p>
                         </div>
                       </div>
                       
-                      <div className="space-y-2 text-sm">
+                      <div className="space-y-2 body-text">
                         <div className="flex justify-between">
                           <span className="text-neutral-500">Status:</span>
                           <Badge 
                             variant="outline" 
-                            className={`text-xs ${
+                            className={`detail-text ${
                               agent.status === 'running' ? 'border-blue-500 text-blue-600' :
                               agent.status === 'active' ? 'border-green-500 text-green-600' :
                               agent.status === 'error' ? 'border-red-500 text-red-600' :
@@ -209,7 +209,7 @@ export default function PipelineMonitor() {
                         {agent.current_task && (
                           <div>
                             <span className="text-neutral-500">Task:</span>
-                            <p className="text-xs mt-1 text-neutral-700">
+                            <p className="detail-text mt-1 text-neutral-700">
                               {agent.current_task}
                             </p>
                           </div>
@@ -218,7 +218,7 @@ export default function PipelineMonitor() {
                         {agent.last_activity && (
                           <div className="flex justify-between">
                             <span className="text-neutral-500">Last Activity:</span>
-                            <span className="text-xs text-neutral-600">
+                            <span className="detail-text text-neutral-600">
                               {new Date(agent.last_activity).toLocaleTimeString()}
                             </span>
                           </div>
@@ -244,7 +244,7 @@ export default function PipelineMonitor() {
                       className="flex items-center space-x-4 p-3 border rounded-lg"
                       data-testid={`activity-${index}`}
                     >
-                      <span className="text-xs text-neutral-400 font-mono min-w-[80px]">
+                      <span className="detail-text text-neutral-400 font-mono min-w-[80px]">
                         {new Date(activity.timestamp).toLocaleTimeString()}
                       </span>
                       

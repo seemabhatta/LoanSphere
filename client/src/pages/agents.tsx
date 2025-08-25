@@ -79,14 +79,14 @@ export default function Agents() {
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Header */}
       <header className="px-6 py-4 border-b border-gray-200">
-        <div className="flex items-center text-sm text-gray-500 mb-1">
+        <div className="flex items-center caption-text mb-1">
           <span>Loan Boarding</span>
           <span className="mx-2">›</span>
           <span className="text-gray-900">AI Agents</span>
         </div>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-medium text-gray-900" data-testid="page-title">
+            <h1 className="page-title text-gray-900" data-testid="page-title">
               AI Agents
             </h1>
             <p className="text-gray-500 mt-1">
@@ -118,8 +118,8 @@ export default function Agents() {
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-neutral-500 text-sm font-medium capitalize">{status} Agents</p>
-                        <p className="text-3xl font-bold text-neutral-800 mt-2" data-testid={`status-count-${status}`}>
+                        <p className="label-text text-neutral-500 capitalize">{status} Agents</p>
+                        <p className="metric-large text-neutral-800 mt-2" data-testid={`status-count-${status}`}>
                           {count}
                         </p>
                       </div>
@@ -141,7 +141,7 @@ export default function Agents() {
                         <h3 className="font-medium text-neutral-800" data-testid={`agent-name-${agent.name.toLowerCase()}`}>
                           {agent.name}
                         </h3>
-                        <p className="text-xs text-neutral-500 capitalize">{agent.type}</p>
+                        <p className="detail-text text-neutral-500 capitalize">{agent.type}</p>
                       </div>
                       <div className="text-neutral-400">
                         {getAgentIcon(agent.type)}
@@ -150,9 +150,9 @@ export default function Agents() {
                     
                     <div className="space-y-3">
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-neutral-500">Status:</span>
+                        <span className="body-text text-neutral-500">Status:</span>
                         <Badge 
-                          className={`text-xs ${getStatusBadgeColor(agent.status)}`}
+                          className={`detail-text ${getStatusBadgeColor(agent.status)}`}
                           data-testid={`agent-status-${agent.name.toLowerCase()}`}
                         >
                           {agent.status.toUpperCase()}
@@ -161,14 +161,14 @@ export default function Agents() {
                       
                       {agent.current_task && (
                         <div className="space-y-1">
-                          <span className="text-sm text-neutral-500">Current Task:</span>
-                          <p className="text-xs text-neutral-700 break-words">
+                          <span className="body-text text-neutral-500">Current Task:</span>
+                          <p className="detail-text text-neutral-700 break-words">
                             {agent.current_task}
                           </p>
                         </div>
                       )}
                       
-                      <div className="flex justify-between text-xs text-neutral-500">
+                      <div className="flex justify-between detail-text text-neutral-500">
                         <span>Tasks: {agent.tasks_completed || 0}</span>
                         <span>Errors: {agent.tasks_errored || 0}</span>
                       </div>

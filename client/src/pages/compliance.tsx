@@ -59,14 +59,14 @@ export default function Compliance() {
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Header */}
       <header className="px-6 py-4 border-b border-gray-200">
-        <div className="flex items-center text-sm text-gray-500 mb-1">
+        <div className="flex items-center caption-text mb-1">
           <span>Loan Boarding</span>
           <span className="mx-2">›</span>
           <span className="text-gray-900">Compliance</span>
         </div>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-medium text-gray-900" data-testid="page-title">
+            <h1 className="page-title text-gray-900" data-testid="page-title">
               Compliance
             </h1>
             <p className="text-gray-500 mt-1">
@@ -100,14 +100,14 @@ export default function Compliance() {
               <Card className={`border-l-4 ${getStatusColor(complianceStatus?.respa_welcome?.status)}`}>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-medium text-neutral-800">RESPA Welcome Letters</h3>
+                    <h3 className="section-header text-neutral-800">RESPA Welcome Letters</h3>
                     {getStatusIcon(complianceStatus?.respa_welcome?.status)}
                   </div>
                   
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-neutral-600">Compliance Rate</span>
-                      <span className="text-2xl font-bold text-neutral-800" data-testid="respa-percentage">
+                      <span className="body-text text-neutral-600">Compliance Rate</span>
+                      <span className="metric-large text-neutral-800" data-testid="respa-percentage">
                         {complianceStatus?.respa_welcome?.percentage || 0}%
                       </span>
                     </div>
@@ -117,7 +117,7 @@ export default function Compliance() {
                       className="h-2"
                     />
                     
-                    <div className="flex justify-between text-sm text-neutral-500">
+                    <div className="flex justify-between body-text text-neutral-500">
                       <span>{complianceStatus?.respa_welcome?.on_time || 0} on time</span>
                       <span>{complianceStatus?.respa_welcome?.total || 0} total</span>
                     </div>
@@ -129,14 +129,14 @@ export default function Compliance() {
               <Card className={`border-l-4 ${getStatusColor(complianceStatus?.escrow_setup?.status)}`}>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-medium text-neutral-800">Escrow Setup</h3>
+                    <h3 className="section-header text-neutral-800">Escrow Setup</h3>
                     {getStatusIcon(complianceStatus?.escrow_setup?.status)}
                   </div>
                   
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-neutral-600">Compliance Rate</span>
-                      <span className="text-2xl font-bold text-neutral-800" data-testid="escrow-percentage">
+                      <span className="body-text text-neutral-600">Compliance Rate</span>
+                      <span className="metric-large text-neutral-800" data-testid="escrow-percentage">
                         {complianceStatus?.escrow_setup?.percentage || 0}%
                       </span>
                     </div>
@@ -146,7 +146,7 @@ export default function Compliance() {
                       className="h-2"
                     />
                     
-                    <div className="flex justify-between text-sm text-neutral-500">
+                    <div className="flex justify-between body-text text-neutral-500">
                       <span>{complianceStatus?.escrow_setup?.on_time || 0} on time</span>
                       <span>{complianceStatus?.escrow_setup?.total || 0} total</span>
                     </div>
@@ -158,14 +158,14 @@ export default function Compliance() {
               <Card className={`border-l-4 ${getStatusColor(complianceStatus?.tila_disclosure?.status)}`}>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-medium text-neutral-800">TILA Disclosures</h3>
+                    <h3 className="section-header text-neutral-800">TILA Disclosures</h3>
                     {getStatusIcon(complianceStatus?.tila_disclosure?.status)}
                   </div>
                   
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-neutral-600">Compliance Rate</span>
-                      <span className="text-2xl font-bold text-neutral-800" data-testid="tila-percentage">
+                      <span className="body-text text-neutral-600">Compliance Rate</span>
+                      <span className="metric-large text-neutral-800" data-testid="tila-percentage">
                         {complianceStatus?.tila_disclosure?.percentage || 0}%
                       </span>
                     </div>
@@ -175,7 +175,7 @@ export default function Compliance() {
                       className="h-2"
                     />
                     
-                    <div className="flex justify-between text-sm text-neutral-500">
+                    <div className="flex justify-between body-text text-neutral-500">
                       <span>{complianceStatus?.tila_disclosure?.on_time || 0} on time</span>
                       <span>{complianceStatus?.tila_disclosure?.total || 0} total</span>
                     </div>
