@@ -9,7 +9,7 @@ import uvicorn
 import os
 from loguru import logger
 
-from database import init_db, get_db
+# from database import init_db, get_db  # Using TinyDB instead
 from routers import loans, exceptions, agents, compliance, documents, metrics, staging
 from services.loan_service import LoanService
 from agents.planner_agent import PlannerAgent
@@ -51,20 +51,20 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting Co-Issue Loan Boarding System")
     
-    # Initialize database
-    await init_db()
+    # Initialize database - SKIPPED: Using TinyDB instead
+    # await init_db()
     
-    # Initialize agents
-    db = next(get_db())
-    loan_service = LoanService(db)
-    
-    agents_registry["planner"] = PlannerAgent(loan_service, manager)
-    agents_registry["tool"] = ToolAgent(loan_service, manager)
-    agents_registry["verifier"] = VerifierAgent(loan_service, manager)
-    agents_registry["document"] = DocumentAgent(loan_service, manager)
-    
-    # Start agent monitoring
-    asyncio.create_task(monitor_agents())
+    # Skip agent initialization - Using TinyDB staging directly
+    # db = None  # Using TinyDB instead
+    # loan_service = LoanService(db)
+    # 
+    # agents_registry["planner"] = PlannerAgent(loan_service, manager)
+    # agents_registry["tool"] = ToolAgent(loan_service, manager)
+    # agents_registry["verifier"] = VerifierAgent(loan_service, manager)
+    # agents_registry["document"] = DocumentAgent(loan_service, manager)
+    # 
+    # # Start agent monitoring
+    # asyncio.create_task(monitor_agents())
     
     logger.info("System initialized successfully")
     yield
