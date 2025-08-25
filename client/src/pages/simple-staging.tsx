@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Upload, Download, List, Trash2, File, Calendar, FileText, CheckCircle, Folder } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -117,27 +116,28 @@ export default function SimpleStaging() {
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex-1 flex flex-col overflow-hidden bg-white">
       {/* Header */}
-      <header className="bg-white border-b border-neutral-200 px-6 py-4">
-        <div>
-          <h2 className="text-2xl font-medium text-neutral-800">Simple Staging</h2>
-          <p className="text-neutral-500 mt-1">Stage, list, and download files</p>
+      <header className="bg-white px-6 py-4">
+        <div className="flex items-center text-sm text-gray-500 mb-1">
+          <span>Loan Boarding</span>
+          <span className="mx-2">›</span>
+          <span className="text-gray-900">Simple Staging</span>
         </div>
+        <h1 className="text-xl font-medium text-gray-900">Simple Staging</h1>
+        <p className="text-gray-500 mt-1">Stage, list, and download files</p>
       </header>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
         
         {/* 1. Stage Files */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Upload className="w-5 h-5" />
-              Stage File
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <div className="bg-white rounded-lg p-6">
+          <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2 mb-4">
+            <Upload className="w-5 h-5" />
+            Stage File
+          </h3>
+          <div className="space-y-4">
             <div>
               <Label htmlFor="filename">Filename (optional)</Label>
               <Input
@@ -176,25 +176,23 @@ export default function SimpleStaging() {
             <Button 
               onClick={handleFileUpload}
               disabled={!selectedFile || stageMutation.isPending}
-              className="w-full"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
             >
               <Upload className="w-4 h-4 mr-2" />
               {stageMutation.isPending ? "Staging..." : "Stage File"}
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* 2. List Files */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <List className="w-5 h-5" />
-              Staged Files ({stagedFiles?.total || 0})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+        <div className="bg-white rounded-lg p-6">
+          <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2 mb-4">
+            <List className="w-5 h-5" />
+            Staged Files ({stagedFiles?.total || 0})
+          </h3>
+          <div>
             {isLoading ? (
-              <div className="text-center py-8 text-neutral-500">Loading...</div>
+              <div className="text-center py-8 text-gray-500">Loading...</div>
             ) : stagedFiles?.files?.length > 0 ? (
               <div className="space-y-3">
                 {stagedFiles.files.map((file: any) => {
@@ -202,7 +200,7 @@ export default function SimpleStaging() {
                   const IconComponent = fileTypeInfo.icon;
                   
                   return (
-                    <div key={file.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div key={file.id} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg">
                       <div className="flex items-center gap-3">
                         <IconComponent className="w-5 h-5 text-blue-500" />
                         <div className="flex-1">
@@ -212,7 +210,7 @@ export default function SimpleStaging() {
                               {fileTypeInfo.type}
                             </Badge>
                           </div>
-                          <p className="text-sm text-neutral-500">
+                          <p className="text-sm text-gray-500">
                             {file.type} • {Math.round(file.size / 1024)}KB • {new Date(file.uploadedAt).toLocaleString()}
                           </p>
                         </div>
@@ -241,12 +239,12 @@ export default function SimpleStaging() {
                 })}
               </div>
             ) : (
-              <div className="text-center py-8 text-neutral-500">
+              <div className="text-center py-8 text-gray-500">
                 No staged files. Upload a file to get started.
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );
