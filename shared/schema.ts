@@ -1,11 +1,11 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, timestamp, boolean, decimal, jsonb } from "drizzle-orm/pg-core";
+import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // Loans table
-export const loans = pgTable("loans", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+export const loans = sqliteTable("loans", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   xpLoanNumber: text("xp_loan_number").notNull().unique(),
   tenantId: text("tenant_id").notNull(),
   sellerName: text("seller_name"),
@@ -14,52 +14,52 @@ export const loans = pgTable("loans", {
   status: text("status").notNull().default("pending"),
   product: text("product"),
   commitmentId: text("commitment_id"),
-  commitmentDate: timestamp("commitment_date"),
-  expirationDate: timestamp("expiration_date"),
-  currentCommitmentAmount: decimal("current_commitment_amount"),
-  purchasedAmount: decimal("purchased_amount"),
-  remainingBalance: decimal("remaining_balance"),
-  minPTR: decimal("min_ptr"),
-  interestRate: decimal("interest_rate"),
-  passThruRate: decimal("pass_thru_rate"),
-  noteAmount: decimal("note_amount"),
-  upbAmount: decimal("upb_amount"),
-  propertyValue: decimal("property_value"),
-  ltvRatio: decimal("ltv_ratio"),
+  commitmentDate: integer("commitment_date"), // Unix timestamp
+  expirationDate: integer("expiration_date"), // Unix timestamp
+  currentCommitmentAmount: real("current_commitment_amount"),
+  purchasedAmount: real("purchased_amount"),
+  remainingBalance: real("remaining_balance"),
+  minPTR: real("min_ptr"),
+  interestRate: real("interest_rate"),
+  passThruRate: real("pass_thru_rate"),
+  noteAmount: real("note_amount"),
+  upbAmount: real("upb_amount"),
+  propertyValue: real("property_value"),
+  ltvRatio: real("ltv_ratio"),
   creditScore: integer("credit_score"),
   boardingReadiness: text("boarding_readiness").default("pending"),
   boardingStatus: text("boarding_status").default("not_started"),
-  firstPassYield: boolean("first_pass_yield").default(false),
+  firstPassYield: integer("first_pass_yield").default(0), // 0 = false, 1 = true
   timeToBoard: integer("time_to_board"), // in hours
-  autoClearRate: decimal("auto_clear_rate"),
-  metadata: jsonb("metadata"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow()
+  autoClearRate: real("auto_clear_rate"),
+  metadata: text("metadata"), // JSON string
+  createdAt: integer("created_at").default(sql`(strftime('%s', 'now'))`),
+  updatedAt: integer("updated_at").default(sql`(strftime('%s', 'now'))`)
 });
 
 // Exceptions table
-export const exceptions = pgTable("exceptions", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  loanId: varchar("loan_id").references(() => loans.id),
+export const exceptions = sqliteTable("exceptions", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  loanId: text("loan_id").references(() => loans.id),
   xpLoanNumber: text("xp_loan_number").notNull(),
   ruleId: text("rule_id").notNull(),
   ruleName: text("rule_name").notNull(),
   severity: text("severity").notNull(), // HIGH, MEDIUM, LOW
   status: text("status").notNull().default("open"), // open, resolved, dismissed
-  confidence: decimal("confidence"),
+  confidence: real("confidence"),
   description: text("description").notNull(),
-  evidence: jsonb("evidence"),
-  autoFixSuggestion: jsonb("auto_fix_suggestion"),
-  detectedAt: timestamp("detected_at").defaultNow(),
-  resolvedAt: timestamp("resolved_at"),
+  evidence: text("evidence"), // JSON string
+  autoFixSuggestion: text("auto_fix_suggestion"), // JSON string
+  detectedAt: integer("detected_at").default(sql`(strftime('%s', 'now'))`),
+  resolvedAt: integer("resolved_at"),
   resolvedBy: text("resolved_by"),
-  slaDue: timestamp("sla_due"),
+  slaDue: integer("sla_due"),
   notes: text("notes")
 });
 
 // Agents table
-export const agents = pgTable("agents", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+export const agents = sqliteTable("agents", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   name: text("name").notNull(),
   type: text("type").notNull(), // planner, tool, verifier, document
   status: text("status").notNull().default("idle"), // active, running, idle, error, wait
@@ -67,28 +67,28 @@ export const agents = pgTable("agents", {
   currentTask: text("current_task"),
   tasksCompleted: integer("tasks_completed").default(0),
   tasksErrored: integer("tasks_errored").default(0),
-  lastActivity: timestamp("last_activity"),
-  metadata: jsonb("metadata")
+  lastActivity: integer("last_activity"),
+  metadata: text("metadata") // JSON string
 });
 
 // Compliance events table
-export const complianceEvents = pgTable("compliance_events", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  loanId: varchar("loan_id").references(() => loans.id),
+export const complianceEvents = sqliteTable("compliance_events", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  loanId: text("loan_id").references(() => loans.id),
   xpLoanNumber: text("xp_loan_number").notNull(),
   eventType: text("event_type").notNull(), // respa_welcome, escrow_setup, tila_disclosure
   status: text("status").notNull(), // pending, completed, overdue
-  dueDate: timestamp("due_date"),
-  completedAt: timestamp("completed_at"),
+  dueDate: integer("due_date"),
+  completedAt: integer("completed_at"),
   description: text("description"),
-  metadata: jsonb("metadata"),
-  createdAt: timestamp("created_at").defaultNow()
+  metadata: text("metadata"), // JSON string
+  createdAt: integer("created_at").default(sql`(strftime('%s', 'now'))`)
 });
 
 // Documents table
-export const documents = pgTable("documents", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  loanId: varchar("loan_id").references(() => loans.id),
+export const documents = sqliteTable("documents", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  loanId: text("loan_id").references(() => loans.id),
   xpLoanNumber: text("xp_loan_number").notNull(),
   xpDocGUID: text("xp_doc_guid").notNull(),
   xpDocId: text("xp_doc_id").notNull(),
@@ -99,33 +99,33 @@ export const documents = pgTable("documents", {
   extractionStatus: text("extraction_status").default("pending"),
   validationStatus: text("validation_status").default("pending"),
   s3Location: text("s3_location"),
-  extractedData: jsonb("extracted_data"),
-  metadata: jsonb("metadata"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow()
+  extractedData: text("extracted_data"), // JSON string
+  metadata: text("metadata"), // JSON string
+  createdAt: integer("created_at").default(sql`(strftime('%s', 'now'))`),
+  updatedAt: integer("updated_at").default(sql`(strftime('%s', 'now'))`)
 });
 
 // Metrics table for tracking system performance
-export const metrics = pgTable("metrics", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+export const metrics = sqliteTable("metrics", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   metricType: text("metric_type").notNull(),
-  value: decimal("value").notNull(),
+  value: real("value").notNull(),
   period: text("period").notNull(), // hourly, daily, weekly
-  timestamp: timestamp("timestamp").defaultNow(),
-  metadata: jsonb("metadata")
+  timestamp: integer("timestamp").default(sql`(strftime('%s', 'now'))`),
+  metadata: text("metadata") // JSON string
 });
 
 // Pipeline activity for real-time monitoring
-export const pipelineActivity = pgTable("pipeline_activity", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  loanId: varchar("loan_id").references(() => loans.id),
+export const pipelineActivity = sqliteTable("pipeline_activity", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  loanId: text("loan_id").references(() => loans.id),
   xpLoanNumber: text("xp_loan_number"),
   activityType: text("activity_type").notNull(),
   status: text("status").notNull(),
   message: text("message").notNull(),
   agentName: text("agent_name"),
-  timestamp: timestamp("timestamp").defaultNow(),
-  metadata: jsonb("metadata")
+  timestamp: integer("timestamp").default(sql`(strftime('%s', 'now'))`),
+  metadata: text("metadata") // JSON string
 });
 
 // Schema exports for validation
