@@ -119,7 +119,7 @@ export default function Documents() {
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Status</SelectItem>
+                  <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="processing">Processing</SelectItem>
                   <SelectItem value="completed">Completed</SelectItem>
@@ -132,7 +132,7 @@ export default function Documents() {
                   <SelectValue placeholder="Document Type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Types</SelectItem>
+                  <SelectItem value="all">All Types</SelectItem>
                   <SelectItem value="Appraisal">Appraisal</SelectItem>
                   <SelectItem value="Income_Documentation">Income Docs</SelectItem>
                   <SelectItem value="Credit_Report">Credit Report</SelectItem>
