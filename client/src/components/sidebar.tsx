@@ -22,8 +22,8 @@ const navigationSections = [
     title: "OPERATIONS",
     items: [
       { name: "Command Center", href: "/", icon: Activity, description: "Real-time dashboard", badge: "live" },
-      { name: "Simple Staging", href: "/simple-staging", icon: Upload, description: "Upload & stage files" },
-      { name: "Scheduler", href: "/scheduler", icon: Calendar, description: "Loan processing schedule" },
+      { name: "Stage", href: "/simple-staging", icon: Upload, description: "Upload & stage files" },
+      { name: "Process", href: "/scheduler", icon: Calendar, description: "Loan processing schedule" },
     ]
   },
   {
