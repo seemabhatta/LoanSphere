@@ -115,7 +115,7 @@ export default function PipelineMonitor() {
                     >
                       <div className="flex items-center justify-between mb-3">
                         <div>
-                          <h3 className="font-medium text-neutral-800">
+                          <h3 className="section-header text-neutral-800">
                             {loan.xp_loan_number}
                           </h3>
                           <p className="body-text text-neutral-500">
@@ -185,7 +185,7 @@ export default function PipelineMonitor() {
                       <div className="flex items-center space-x-3 mb-3">
                         <div className={`w-3 h-3 rounded-full ${getAgentStatusColor(agent.status)}`}></div>
                         <div>
-                          <h3 className="font-medium text-neutral-800">{agent.name}</h3>
+                          <h3 className="section-header text-neutral-800">{agent.name}</h3>
                           <p className="detail-text text-neutral-500 capitalize">{agent.type}</p>
                         </div>
                       </div>
@@ -255,19 +255,19 @@ export default function PipelineMonitor() {
                         'bg-gray-400'
                       }`}></span>
                       
-                      <span className="flex-1 text-sm text-neutral-700">
+                      <span className="flex-1 body-text text-neutral-700">
                         {activity.message}
                       </span>
                       
                       {activity.xp_loan_number && (
-                        <span className="text-xs font-mono text-neutral-500">
+                        <span className="code-text text-neutral-500">
                           {activity.xp_loan_number}
                         </span>
                       )}
                       
                       <Badge 
                         variant="outline"
-                        className={`text-xs ${
+                        className={`detail-text ${
                           activity.status === 'SUCCESS' ? 'border-green-500 text-green-600' :
                           activity.status === 'ERROR' ? 'border-red-500 text-red-600' :
                           activity.status === 'RUNNING' ? 'border-blue-500 text-blue-600' :
