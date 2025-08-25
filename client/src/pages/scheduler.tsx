@@ -129,7 +129,7 @@ export default function Scheduler() {
                 <FileText className="w-5 h-5 text-blue-500" />
                 <div>
                   <p className="font-medium">{file.filename}</p>
-                  <p className="text-sm text-gray-500">
+                  <p className="caption-text text-gray-500">
                     {Math.round(file.size / 1024)}KB • {new Date(file.uploadedAt).toLocaleString()}
                   </p>
                 </div>
@@ -170,7 +170,7 @@ export default function Scheduler() {
         <div className="text-center py-8 text-gray-500">
           <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
           <p>No {type.toLowerCase()} files staged</p>
-          <p className="text-sm text-gray-400 mt-1">
+          <p className="caption-text text-gray-400 mt-1">
             Upload files to Simple Staging first
           </p>
         </div>
@@ -182,14 +182,14 @@ export default function Scheduler() {
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Header */}
       <header className="px-6 py-4 border-b border-gray-200">
-        <div className="flex items-center text-sm text-gray-500 mb-1">
+        <div className="flex items-center caption-text mb-1">
           <span>Loan Boarding</span>
           <span className="mx-2">›</span>
-          <span className="text-gray-900">Staging Scheduler</span>
+          <span className="body-text text-gray-900">Staging Scheduler</span>
         </div>
         <div>
-          <h1 className="text-xl font-medium text-gray-900">Staging Scheduler</h1>
-          <p className="text-gray-500 mt-1">Process staged files by type</p>
+          <h1 className="page-title text-gray-900">Staging Scheduler</h1>
+          <p className="body-text text-gray-500 mt-1">Process staged files by type</p>
         </div>
       </header>
 
@@ -199,7 +199,7 @@ export default function Scheduler() {
         {/* Processing Summary */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="section-header flex items-center gap-2">
               <TrendingUp className="w-5 h-5" />
               Processing Status
             </CardTitle>
@@ -207,16 +207,16 @@ export default function Scheduler() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="text-center">
-                <p className="text-2xl font-bold text-blue-600">{(stagedFiles as any)?.total || 0}</p>
-                <p className="text-sm text-gray-500">Files Staged</p>
+                <p className="metric-large text-blue-600">{(stagedFiles as any)?.total || 0}</p>
+                <p className="caption-text text-gray-500">Files Staged</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-green-600">{processedFiles.size}</p>
-                <p className="text-sm text-gray-500">Files Processed</p>
+                <p className="metric-large text-green-600">{processedFiles.size}</p>
+                <p className="caption-text text-gray-500">Files Processed</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-purple-600">{(pipelineData as any)?.loans?.length || 0}</p>
-                <p className="text-sm text-gray-500">Active Loans</p>
+                <p className="metric-large text-purple-600">{(pipelineData as any)?.loans?.length || 0}</p>
+                <p className="caption-text text-gray-500">Active Loans</p>
               </div>
               <div className="text-center">
                 <Button size="sm" variant="outline" asChild>
@@ -254,7 +254,7 @@ export default function Scheduler() {
           <TabsContent value="commitment">
             <Card>
               <CardHeader>
-                <CardTitle>Commitment Files</CardTitle>
+                <CardTitle className="section-header">Commitment Files</CardTitle>
               </CardHeader>
               <CardContent>
                 {isLoading ? (
@@ -270,7 +270,7 @@ export default function Scheduler() {
           <TabsContent value="purchase">
             <Card>
               <CardHeader>
-                <CardTitle>Purchase Advice Files</CardTitle>
+                <CardTitle className="section-header">Purchase Advice Files</CardTitle>
               </CardHeader>
               <CardContent>
                 {isLoading ? (
@@ -286,7 +286,7 @@ export default function Scheduler() {
           <TabsContent value="loan-data">
             <Card>
               <CardHeader>
-                <CardTitle>Loan Data Files</CardTitle>
+                <CardTitle className="section-header">Loan Data Files</CardTitle>
               </CardHeader>
               <CardContent>
                 {isLoading ? (
@@ -302,7 +302,7 @@ export default function Scheduler() {
           <TabsContent value="documents">
             <Card>
               <CardHeader>
-                <CardTitle>Document Files</CardTitle>
+                <CardTitle className="section-header">Document Files</CardTitle>
               </CardHeader>
               <CardContent>
                 {isLoading ? (
