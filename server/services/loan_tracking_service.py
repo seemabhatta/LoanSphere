@@ -124,25 +124,24 @@ class LoanTrackingService:
             # Commitment is 1:1
             metadata[file_type] = {
                 "links": {
-                    "raw": f"staged_files/{source_file_id}",
+                    "raw": f"stage/{source_file_id}",
                     "transformed": f"processed/{file_type}/{xp_loan_number}.json",
                     "documentDb": {
-                        "collection": self._get_collection_name(file_type),
+                        "collection": file_type,
                         "documentId": xp_loan_number
                     }
                 }
             }
         else:
             # Purchase advice and loan data are 1:n - use arrays
-            collection_name = self._get_collection_name(file_type)
             document_id = f"{xp_loan_number}_{int(datetime.now().timestamp())}"
             
             metadata[file_type] = [{
                 "links": {
-                    "raw": f"staged_files/{source_file_id}",
+                    "raw": f"stage/{source_file_id}",
                     "transformed": f"processed/{file_type}/{document_id}.json",
                     "documentDb": {
-                        "collection": collection_name,
+                        "collection": file_type,
                         "documentId": document_id
                     }
                 }
@@ -211,25 +210,24 @@ class LoanTrackingService:
             # Commitment is 1:1 - replace
             existing_metadata[file_type] = {
                 "links": {
-                    "raw": f"staged_files/{source_file_id}",
+                    "raw": f"stage/{source_file_id}",
                     "transformed": f"processed/{file_type}/{xp_loan_number}.json",
                     "documentDb": {
-                        "collection": self._get_collection_name(file_type),
+                        "collection": file_type,
                         "documentId": xp_loan_number
                     }
                 }
             }
         else:
             # Purchase advice and loan data are 1:n - append to array
-            collection_name = self._get_collection_name(file_type)
             document_id = f"{xp_loan_number}_{int(datetime.now().timestamp())}"
             
             new_document = {
                 "links": {
-                    "raw": f"staged_files/{source_file_id}",
+                    "raw": f"stage/{source_file_id}",
                     "transformed": f"processed/{file_type}/{document_id}.json",
                     "documentDb": {
-                        "collection": collection_name,
+                        "collection": file_type,
                         "documentId": document_id
                     }
                 }
@@ -265,24 +263,27 @@ class LoanTrackingService:
     
     def _store_document_in_nosql(self, file_data: Dict[str, Any], file_type: str, 
                                xp_loan_number: str, source_file_id: str) -> str:
-        """Store document in TinyDB collection"""
+        """Store document in appropriate TinyDB collection"""
         
         # For 1:n relationships, create unique document IDs
         if file_type == 'commitment':
             document_id = xp_loan_number
-        else:
+            document_record_id = self.tinydb.store_commitment(document_id, file_data, source_file_id)
+        elif file_type == 'purchase_advice':
             document_id = f"{xp_loan_number}_{int(datetime.now().timestamp())}"
+            document_record_id = self.tinydb.store_purchase_advice(document_id, file_data, source_file_id)
+        elif file_type == 'loan_data':
+            document_id = f"{xp_loan_number}_{int(datetime.now().timestamp())}"
+            document_record_id = self.tinydb.store_loan_data(document_id, file_data, source_file_id)
+        elif file_type == 'documents':
+            document_id = f"{xp_loan_number}_{int(datetime.now().timestamp())}"
+            document_record_id = self.tinydb.store_document_metadata(document_id, file_data)
+        else:
+            # Default case - store as loan data
+            document_id = f"{xp_loan_number}_{int(datetime.now().timestamp())}"
+            document_record_id = self.tinydb.store_loan_data(document_id, file_data, source_file_id)
         
-        collection = self._get_collection_name(file_type)
-        
-        document_record_id = self.tinydb.store_processed_document(
-            document_id=document_id,
-            collection=collection,
-            document_data=file_data,
-            source_file_id=source_file_id
-        )
-        
-        logger.info(f"Stored document in {collection} collection: {document_id}")
+        logger.info(f"Stored document in {file_type} collection: {document_id}")
         return document_record_id
     
     def _get_collection_name(self, file_type: str) -> str:

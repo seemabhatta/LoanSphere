@@ -261,6 +261,28 @@ async def stage_loan_data(loan_data: dict):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to stage loan data: {str(e)}")
 
+@router.post("/stage/documents")
+async def stage_documents(documents_data: dict):
+    """Stage documents metadata (no matching, just store in TinyDB)"""
+    try:
+        from services.tinydb_service import get_tinydb_service
+        
+        tinydb = get_tinydb_service()
+        
+        file_id = tinydb.store_staged_file(
+            filename=f"documents-{int(datetime.now().timestamp())}.json",
+            file_type="documents",
+            data=documents_data
+        )
+        
+        return {
+            "success": True,
+            "id": file_id,
+            "message": "Documents staged successfully"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to stage documents: {str(e)}")
+
 @router.post("/process")
 async def process_file_with_tracking(request_data: dict):
     """Process file data: move to TinyDB and create/update loan tracking record"""

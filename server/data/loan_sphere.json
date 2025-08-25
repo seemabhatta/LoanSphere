@@ -1,0 +1,75 @@
+{
+  "stage": {
+    "1": {
+      "id": "staged_1756152036464",
+      "filename": "041. commitment_1756101402935.json",
+      "type": "application/json",
+      "data": {
+        "commitmentId": "925998",
+        "sellerName": "NFM, Inc",
+        "sellerNumber": "268590005",
+        "servicerNumber": "237740092",
+        "status": "Open",
+        "product": "30-Year Fixed Rate",
+        "commitmentDate": "2025-05-27",
+        "expirationDate": "2025-06-16",
+        "currentCommitmentAmount": 1496000,
+        "purchasedAmount": 0,
+        "remainingBalance": 1496000,
+        "minPTR": 6.375,
+        "srpGridId": "tdeMT3ds"
+      },
+      "uploaded_at": "2025-08-25T16:00:36.464354"
+    }
+  },
+  "loan_tracking": {
+    "1": {
+      "xpLoanNumber": "XP1756152041",
+      "tenantId": "default_tenant",
+      "externalIds": {
+        "commitmentId": "925998",
+        "investorName": "NFM, Inc"
+      },
+      "status": {
+        "boardingReadiness": "DataReceived",
+        "lastEvaluated": "2025-08-25T16:00:41.883982"
+      },
+      "metaData": {
+        "commitment": {
+          "links": {
+            "raw": "stage/staged_1756152036464",
+            "transformed": "processed/commitment/XP1756152041.json",
+            "documentDb": {
+              "collection": "commitment",
+              "documentId": "XP1756152041"
+            }
+          }
+        }
+      },
+      "createdAt": "2025-08-25T16:00:41.883995",
+      "updatedAt": "2025-08-25T16:00:41.883997"
+    }
+  },
+  "commitments": {
+    "1": {
+      "id": "XP1756152041",
+      "commitment_data": {
+        "commitmentId": "925998",
+        "sellerName": "NFM, Inc",
+        "sellerNumber": "268590005",
+        "servicerNumber": "237740092",
+        "status": "Open",
+        "product": "30-Year Fixed Rate",
+        "commitmentDate": "2025-05-27",
+        "expirationDate": "2025-06-16",
+        "currentCommitmentAmount": 1496000,
+        "purchasedAmount": 0,
+        "remainingBalance": 1496000,
+        "minPTR": 6.375,
+        "srpGridId": "tdeMT3ds"
+      },
+      "source_file_id": "staged_1756152036464",
+      "processed_at": "2025-08-25T16:00:41.888180"
+    }
+  }
+}
