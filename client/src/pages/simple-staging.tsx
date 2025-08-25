@@ -16,6 +16,13 @@ export default function SimpleStaging() {
   // Get staged files
   const { data: stagedFiles, isLoading } = useQuery({
     queryKey: ["/api/simple/list"],
+    queryFn: async () => {
+      const response = await fetch("/api/simple/list");
+      if (!response.ok) {
+        throw new Error("Failed to fetch staged files");
+      }
+      return response.json();
+    },
     refetchInterval: 5000
   });
 

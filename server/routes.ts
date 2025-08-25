@@ -44,13 +44,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     pathRewrite: {
       '^/': '/api/'  // Add /api prefix since Express strips it
     },
+    onProxyReq: (proxyReq, req, res) => {
+      console.log(`🔄 Proxying ${req.method} ${req.originalUrl} to Python`);
+    },
     onError: (err, req, res) => {
       console.error('❌ Proxy error:', err.message);
-      res.status(500).json({ 
-        error: 'Python FastAPI server not available',
-        message: 'Ensure Python server is running on port 8000',
-        details: err.message
-      });
+      if (!res.headersSent) {
+        res.status(500).json({ 
+          error: 'Python FastAPI server not available',
+          message: 'Ensure Python server is running on port 8000',
+          details: err.message
+        });
+      }
     },
     onProxyRes: (proxyRes, req, res) => {
       console.log(`✅ Proxied ${req.method} ${req.originalUrl} → ${proxyRes.statusCode}`);

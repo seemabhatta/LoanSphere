@@ -24,7 +24,7 @@ async def init_db():
         # Initialize default agents if they don't exist
         db = SessionLocal()
         try:
-            await initialize_default_agents(db)
+            initialize_default_agents(db)
             db.commit()
         except Exception as e:
             db.rollback()
@@ -37,7 +37,7 @@ async def init_db():
         logger.error(f"Error initializing database: {e}")
         raise
 
-async def initialize_default_agents(db):
+def initialize_default_agents(db):
     """Initialize default agents in the database"""
     from models import AgentModel
     

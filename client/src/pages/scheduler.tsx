@@ -14,12 +14,26 @@ export default function Scheduler() {
   // Get staged files
   const { data: stagedFiles, isLoading } = useQuery({
     queryKey: ["/api/simple/list"],
+    queryFn: async () => {
+      const response = await fetch("/api/simple/list");
+      if (!response.ok) {
+        throw new Error("Failed to fetch staged files");
+      }
+      return response.json();
+    },
     refetchInterval: 5000
   });
 
   // Get loan pipeline data to show processing results
   const { data: pipelineData } = useQuery({
     queryKey: ["/api/loans"],
+    queryFn: async () => {
+      const response = await fetch("/api/loans");
+      if (!response.ok) {
+        throw new Error("Failed to fetch loans");
+      }
+      return response.json();
+    },
     refetchInterval: 10000
   });
 
