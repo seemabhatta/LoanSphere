@@ -68,8 +68,9 @@
   }
 }
 
-/* Global Typography System */
-.page-title {
+/* Global Typography System - Maximum Priority */
+.page-title,
+[class*="page-title"] {
   font-family: 'Inter', sans-serif !important;
   font-size: 20px !important;
   font-weight: 500 !important;
@@ -78,7 +79,12 @@
   color: rgb(17 24 39) !important; /* text-gray-900 */
 }
 
-.section-header {
+.section-header,
+[class*="section-header"],
+h1.section-header,
+h2.section-header,
+h3.section-header,
+h4.section-header {
   font-family: 'Inter', sans-serif !important;
   font-size: 18px !important;
   font-weight: 500 !important;
@@ -87,7 +93,11 @@
   color: rgb(17 24 39) !important; /* text-gray-900 */
 }
 
-.metric-large {
+.metric-large,
+[class*="metric-large"],
+.metric-large[class*="text-"],
+p.metric-large,
+div.metric-large {
   font-family: 'Inter', sans-serif !important;
   font-size: 30px !important;
   font-weight: 600 !important;
