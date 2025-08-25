@@ -1,0 +1,138 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(250 6.6667% 97.0588%);
+  --foreground: hsl(210 25% 7.8431%);
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(210 25% 7.8431%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(210 25% 7.8431%);
+  --primary: hsl(212 88.2% 53.1%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(210 25% 7.8431%);
+  --secondary-foreground: hsl(0 0% 100%);
+  --muted: hsl(245 5.9% 90%);
+  --muted-foreground: hsl(210 25% 7.8431%);
+  --accent: hsl(211.5789 51.3514% 92.7451%);
+  --accent-foreground: hsl(212 88.2% 53.1%);
+  --destructive: hsl(0 100% 50%);
+  --destructive-foreground: hsl(0 0% 100%);
+  --border: hsl(220 13% 91%);
+  --input: hsl(220 13% 91%);
+  --ring: hsl(212 88.2% 53.1%);
+  --success: hsl(142 76% 36%);
+  --warning: hsl(38 92% 50%);
+  --error: hsl(0 84% 60%);
+  --neutral-50: hsl(0 0% 98%);
+  --neutral-100: hsl(240 4.8% 95.9%);
+  --neutral-200: hsl(240 5.9% 90%);
+  --neutral-500: hsl(240 3.8% 46.1%);
+  --neutral-800: hsl(240 10% 3.9%);
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: hsl(240 10% 3.9%);
+  --foreground: hsl(0 0% 98%);
+  --card: hsl(240 10% 3.9%);
+  --card-foreground: hsl(0 0% 98%);
+  --popover: hsl(240 10% 3.9%);
+  --popover-foreground: hsl(0 0% 98%);
+  --primary: hsl(212 88.2% 53.1%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(240 3.7% 15.9%);
+  --secondary-foreground: hsl(0 0% 98%);
+  --muted: hsl(240 3.7% 15.9%);
+  --muted-foreground: hsl(240 5% 64.9%);
+  --accent: hsl(240 3.7% 15.9%);
+  --accent-foreground: hsl(0 0% 98%);
+  --destructive: hsl(0 62.8% 30.6%);
+  --destructive-foreground: hsl(0 0% 98%);
+  --border: hsl(240 3.7% 15.9%);
+  --input: hsl(240 3.7% 15.9%);
+  --ring: hsl(212 88.2% 53.1%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+}
+
+/* Custom utility classes for the design system */
+.text-neutral-50 {
+  color: hsl(var(--neutral-50));
+}
+
+.text-neutral-100 {
+  color: hsl(var(--neutral-100));
+}
+
+.text-neutral-200 {
+  color: hsl(var(--neutral-200));
+}
+
+.text-neutral-500 {
+  color: hsl(var(--neutral-500));
+}
+
+.text-neutral-800 {
+  color: hsl(var(--neutral-800));
+}
+
+.bg-neutral-50 {
+  background-color: hsl(var(--neutral-50));
+}
+
+.bg-neutral-100 {
+  background-color: hsl(var(--neutral-100));
+}
+
+.bg-neutral-200 {
+  background-color: hsl(var(--neutral-200));
+}
+
+.border-neutral-200 {
+  border-color: hsl(var(--neutral-200));
+}
+
+.text-success {
+  color: hsl(var(--success));
+}
+
+.text-warning {
+  color: hsl(var(--warning));
+}
+
+.text-error {
+  color: hsl(var(--error));
+}
+
+.bg-success {
+  background-color: hsl(var(--success));
+}
+
+.bg-warning {
+  background-color: hsl(var(--warning));
+}
+
+.bg-error {
+  background-color: hsl(var(--error));
+}
+
+.bg-success\/10 {
+  background-color: hsl(var(--success) / 0.1);
+}
+
+.bg-warning\/10 {
+  background-color: hsl(var(--warning) / 0.1);
+}
+
+.bg-error\/10 {
+  background-color: hsl(var(--error) / 0.1);
+}
