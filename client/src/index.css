@@ -11,13 +11,13 @@
   --popover: hsl(0 0% 100%);
   --popover-foreground: hsl(224 71.4% 4.1%);
   
-  /* Primary Brand Colors - Professional Blue Gradient */
-  --primary: hsl(221.2 83.2% 53.3%);
-  --primary-foreground: hsl(210 40% 98%);
-  --primary-dark: hsl(221.2 83.2% 43.3%);
-  --primary-light: hsl(221.2 83.2% 63.3%);
+  /* Vibrant Tech Color Palette - Workato/Databricks Style */
+  --primary: hsl(259 94% 51%);              /* Rich Purple */
+  --primary-foreground: hsl(0 0% 100%);
+  --primary-dark: hsl(259 94% 41%);
+  --primary-light: hsl(259 94% 61%);
   
-  /* Secondary Colors */
+  /* Secondary Vibrant Colors */
   --secondary: hsl(210 40% 96%);
   --secondary-foreground: hsl(222.2 84% 4.9%);
   --muted: hsl(210 40% 96%);
@@ -25,19 +25,33 @@
   --accent: hsl(210 40% 96%);
   --accent-foreground: hsl(222.2 84% 4.9%);
   
-  /* Status Colors - Professional Palette */
-  --success: hsl(142.1 76.2% 36.3%);
+  /* Rich Status & Accent Colors */
+  --success: hsl(142.1 76.2% 36.3%);       /* Green */
   --success-light: hsl(142.1 70.6% 45.3%);
-  --warning: hsl(38.1 92.1% 50.2%);
-  --warning-light: hsl(38.1 82.1% 60.2%);
-  --destructive: hsl(0 72.2% 50.6%);
+  --warning: hsl(25 95% 53%);              /* Vibrant Orange */
+  --warning-light: hsl(25 85% 63%);
+  --destructive: hsl(0 72.2% 50.6%);       /* Red */
   --destructive-light: hsl(0 62.2% 60.6%);
-  --destructive-foreground: hsl(210 40% 98%);
+  --destructive-foreground: hsl(0 0% 100%);
+  
+  /* Additional Vibrant Colors */
+  --blue: hsl(217 91% 60%);                /* Bright Blue */
+  --blue-light: hsl(217 81% 70%);
+  --cyan: hsl(184 77% 34%);                /* Teal */
+  --cyan-light: hsl(184 67% 44%);
+  --pink: hsl(316 73% 52%);                /* Hot Pink */
+  --pink-light: hsl(316 63% 62%);
+  --indigo: hsl(243 75% 59%);              /* Indigo */
+  --indigo-light: hsl(243 65% 69%);
+  --orange: hsl(25 95% 53%);               /* Vibrant Orange */
+  --orange-light: hsl(25 85% 63%);
+  --violet: hsl(259 94% 51%);              /* Purple/Violet */
+  --violet-light: hsl(259 84% 61%);
   
   /* Border and Input */
   --border: hsl(214.3 31.8% 91.4%);
   --input: hsl(214.3 31.8% 91.4%);
-  --ring: hsl(221.2 83.2% 53.3%);
+  --ring: hsl(259 94% 51%);
   
   /* Neutral Scale - Enhanced */
   --neutral-25: hsl(220 14.3% 99.4%);
@@ -53,12 +67,18 @@
   --neutral-900: hsl(220 39.3% 11%);
   --neutral-950: hsl(224 71.4% 4.1%);
   
-  /* Professional Gradients */
-  --gradient-primary: linear-gradient(135deg, hsl(221.2 83.2% 53.3%) 0%, hsl(221.2 83.2% 43.3%) 100%);
-  --gradient-success: linear-gradient(135deg, hsl(142.1 76.2% 36.3%) 0%, hsl(142.1 70.6% 45.3%) 100%);
-  --gradient-warning: linear-gradient(135deg, hsl(38.1 92.1% 50.2%) 0%, hsl(38.1 82.1% 60.2%) 100%);
-  --gradient-bg: linear-gradient(135deg, hsl(240 10% 98%) 0%, hsl(220 14.3% 99.4%) 100%);
-  --gradient-card: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(220 14.3% 99.4%) 100%);
+  /* Vibrant Tech Gradients */
+  --gradient-primary: linear-gradient(135deg, hsl(259 94% 51%) 0%, hsl(243 75% 59%) 100%);     /* Purple to Indigo */
+  --gradient-success: linear-gradient(135deg, hsl(142.1 76.2% 36.3%) 0%, hsl(184 77% 34%) 100%); /* Green to Teal */
+  --gradient-warning: linear-gradient(135deg, hsl(25 95% 53%) 0%, hsl(38.1 92.1% 50.2%) 100%);   /* Orange to Yellow */
+  --gradient-blue: linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(184 77% 34%) 100%);          /* Blue to Teal */
+  --gradient-pink: linear-gradient(135deg, hsl(316 73% 52%) 0%, hsl(259 94% 51%) 100%);          /* Pink to Purple */
+  --gradient-orange: linear-gradient(135deg, hsl(25 95% 53%) 0%, hsl(316 73% 52%) 100%);         /* Orange to Pink */
+  --gradient-cyber: linear-gradient(135deg, hsl(184 77% 34%) 0%, hsl(217 91% 60%) 100%);         /* Teal to Blue */
+  --gradient-sunset: linear-gradient(135deg, hsl(25 95% 53%) 0%, hsl(259 94% 51%) 100%);         /* Orange to Purple */
+  
+  --gradient-bg: linear-gradient(135deg, hsl(240 10% 98%) 0%, hsl(259 5% 98%) 100%);
+  --gradient-card: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(259 5% 99%) 100%);
   
   /* Shadows - Professional Depth */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
@@ -165,11 +185,57 @@
 .bg-error\/10 { background-color: hsl(var(--destructive) / 0.1); }
 .bg-error\/20 { background-color: hsl(var(--destructive) / 0.2); }
 
-/* Gradient Utilities */
+/* Vibrant Gradient Utilities */
 .bg-gradient-primary { background: var(--gradient-primary); }
 .bg-gradient-success { background: var(--gradient-success); }
 .bg-gradient-warning { background: var(--gradient-warning); }
+.bg-gradient-blue { background: var(--gradient-blue); }
+.bg-gradient-pink { background: var(--gradient-pink); }
+.bg-gradient-orange { background: var(--gradient-orange); }
+.bg-gradient-cyber { background: var(--gradient-cyber); }
+.bg-gradient-sunset { background: var(--gradient-sunset); }
 .bg-gradient-card { background: var(--gradient-card); }
+
+/* Vibrant Color Utilities */
+.text-blue { color: hsl(var(--blue)); }
+.text-blue-light { color: hsl(var(--blue-light)); }
+.text-cyan { color: hsl(var(--cyan)); }
+.text-cyan-light { color: hsl(var(--cyan-light)); }
+.text-pink { color: hsl(var(--pink)); }
+.text-pink-light { color: hsl(var(--pink-light)); }
+.text-indigo { color: hsl(var(--indigo)); }
+.text-indigo-light { color: hsl(var(--indigo-light)); }
+.text-orange { color: hsl(var(--orange)); }
+.text-orange-light { color: hsl(var(--orange-light)); }
+.text-violet { color: hsl(var(--violet)); }
+.text-violet-light { color: hsl(var(--violet-light)); }
+
+.bg-blue { background-color: hsl(var(--blue)); }
+.bg-blue-light { background-color: hsl(var(--blue-light)); }
+.bg-cyan { background-color: hsl(var(--cyan)); }
+.bg-cyan-light { background-color: hsl(var(--cyan-light)); }
+.bg-pink { background-color: hsl(var(--pink)); }
+.bg-pink-light { background-color: hsl(var(--pink-light)); }
+.bg-indigo { background-color: hsl(var(--indigo)); }
+.bg-indigo-light { background-color: hsl(var(--indigo-light)); }
+.bg-orange { background-color: hsl(var(--orange)); }
+.bg-orange-light { background-color: hsl(var(--orange-light)); }
+.bg-violet { background-color: hsl(var(--violet)); }
+.bg-violet-light { background-color: hsl(var(--violet-light)); }
+
+/* Vibrant Background Utilities with Opacity */
+.bg-blue\/10 { background-color: hsl(var(--blue) / 0.1); }
+.bg-blue\/20 { background-color: hsl(var(--blue) / 0.2); }
+.bg-cyan\/10 { background-color: hsl(var(--cyan) / 0.1); }
+.bg-cyan\/20 { background-color: hsl(var(--cyan) / 0.2); }
+.bg-pink\/10 { background-color: hsl(var(--pink) / 0.1); }
+.bg-pink\/20 { background-color: hsl(var(--pink) / 0.2); }
+.bg-indigo\/10 { background-color: hsl(var(--indigo) / 0.1); }
+.bg-indigo\/20 { background-color: hsl(var(--indigo) / 0.2); }
+.bg-orange\/10 { background-color: hsl(var(--orange) / 0.1); }
+.bg-orange\/20 { background-color: hsl(var(--orange) / 0.2); }
+.bg-violet\/10 { background-color: hsl(var(--violet) / 0.1); }
+.bg-violet\/20 { background-color: hsl(var(--violet) / 0.2); }
 
 /* Professional Shadow Utilities */
 .shadow-professional { box-shadow: var(--shadow-lg); }

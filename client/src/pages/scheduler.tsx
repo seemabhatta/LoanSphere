@@ -123,11 +123,28 @@ export default function Scheduler() {
           const isProcessed = processedFiles.has(file.id);
           const isProcessing = processMutation.isPending;
           
+          // Define vibrant gradients based on file type
+          const getFileGradient = (type: string) => {
+            if (type.includes("Commitment")) return "bg-gradient-primary";
+            if (type.includes("Purchase")) return "bg-gradient-cyber";
+            if (type.includes("Loan")) return "bg-gradient-pink";
+            return "bg-gradient-sunset";
+          };
+
+          const getStatusColor = (type: string) => {
+            if (type.includes("Commitment")) return { bg: "bg-violet/10", text: "text-violet", border: "border-violet/20", emoji: "💜" };
+            if (type.includes("Purchase")) return { bg: "bg-cyan/10", text: "text-cyan", border: "border-cyan/20", emoji: "🧊" };
+            if (type.includes("Loan")) return { bg: "bg-pink/10", text: "text-pink", border: "border-pink/20", emoji: "💖" };
+            return { bg: "bg-orange/10", text: "text-orange", border: "border-orange/20", emoji: "🔥" };
+          };
+
+          const statusColor = getStatusColor(type);
+          
           return (
-            <div key={file.id} className="interactive-card bg-gradient-card border border-neutral-200 rounded-xl p-6">
+            <div key={file.id} className="interactive-card bg-gradient-card border border-neutral-200 rounded-xl p-6 hover:border-violet/30">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center shadow-soft">
+                  <div className={`w-12 h-12 ${getFileGradient(type)} rounded-xl flex items-center justify-center shadow-soft`}>
                     <FileText className="w-6 h-6 text-white" />
                   </div>
                   <div className="flex-1">
@@ -149,11 +166,11 @@ export default function Scheduler() {
                 <div className="flex items-center gap-3">
                   {isProcessed ? (
                     <>
-                      <div className="status-indicator bg-success/10 text-success border border-success/20">
+                      <div className={`status-indicator ${statusColor.bg} ${statusColor.text} border ${statusColor.border}`}>
                         <CheckCircle className="w-4 h-4" />
-                        <span className="font-medium">Processed</span>
+                        <span className="font-medium">✅ Processed</span>
                       </div>
-                      <Button size="sm" variant="outline" className="button-professional" asChild>
+                      <Button size="sm" variant="outline" className={`button-professional border-blue ${statusColor.text} hover:${statusColor.bg}`} asChild>
                         <a href="/" className="flex items-center gap-2">
                           <ExternalLink className="w-4 h-4" />
                           View Pipeline
@@ -162,18 +179,18 @@ export default function Scheduler() {
                     </>
                   ) : (
                     <>
-                      <div className="status-indicator bg-warning/10 text-warning border border-warning/20">
-                        <div className="w-2 h-2 bg-warning rounded-full animate-pulse"></div>
-                        <span className="font-medium">Staged</span>
+                      <div className={`status-indicator ${statusColor.bg} ${statusColor.text} border ${statusColor.border}`}>
+                        <div className={`w-2 h-2 rounded-full animate-pulse ${statusColor.text.replace('text-', 'bg-')}`}></div>
+                        <span className="font-medium">{statusColor.emoji} Staged</span>
                       </div>
                       <Button
                         size="sm"
-                        className="button-professional bg-gradient-primary text-white shadow-soft"
+                        className={`button-professional ${getFileGradient(type)} text-white shadow-soft border-0`}
                         onClick={() => processMutation.mutate({ id: file.id, type })}
                         disabled={isProcessing}
                       >
                         <Play className="w-4 h-4 mr-2" />
-                        {isProcessing ? "Processing..." : "Process File"}
+                        {isProcessing ? "⚡ Processing..." : "🚀 Process File"}
                       </Button>
                     </>
                   )}
@@ -204,26 +221,34 @@ export default function Scheduler() {
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
-      {/* Professional Header */}
-      <header className="bg-gradient-card border-b border-neutral-100 px-8 py-6 shadow-soft">
+      {/* Vibrant Tech Header */}
+      <header className="bg-gradient-to-r from-violet/5 via-pink/5 to-orange/5 border-b border-violet/20 px-8 py-6 shadow-soft backdrop-blur-sm">
         <div className="flex items-center justify-between">
           <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center shadow-soft">
-                <Calendar className="w-5 h-5 text-white" />
+            <div className="flex items-center gap-4 mb-3">
+              <div className="w-12 h-12 bg-gradient-sunset rounded-xl flex items-center justify-center shadow-soft">
+                <Calendar className="w-6 h-6 text-white" />
               </div>
-              <h2 className="text-3xl font-bold text-neutral-900">Loan Processing Scheduler</h2>
+              <div>
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-violet to-pink bg-clip-text text-transparent">
+                  🚀 Loan Processing Scheduler
+                </h2>
+                <p className="text-neutral-600 font-medium">Automated multi-agent pipeline for mortgage loan boarding ⚡</p>
+              </div>
             </div>
-            <p className="text-neutral-600 font-medium">Automated multi-agent pipeline for mortgage loan boarding</p>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="status-indicator bg-success/10 text-success border border-success/20">
-              <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
-              System Active
+          <div className="flex items-center gap-4">
+            <div className="status-indicator bg-cyan/10 text-cyan border border-cyan/20">
+              <div className="w-2 h-2 bg-cyan rounded-full animate-pulse"></div>
+              🟢 System Active
             </div>
-            <Button variant="outline" size="sm" className="button-professional">
+            <div className="status-indicator bg-violet/10 text-violet border border-violet/20">
+              <div className="w-2 h-2 bg-violet rounded-full animate-pulse"></div>
+              💜 AI Enabled
+            </div>
+            <Button variant="outline" size="sm" className="button-professional bg-gradient-blue text-white border-0 shadow-soft">
               <ExternalLink className="w-4 h-4 mr-2" />
-              View Pipeline
+              🔗 View Pipeline
             </Button>
           </div>
         </div>
@@ -232,18 +257,18 @@ export default function Scheduler() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-8 space-y-8">
         
-        {/* Processing Metrics Dashboard */}
+        {/* Vibrant Processing Metrics Dashboard */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="metric-card">
             <div className="flex items-center justify-between mb-4">
               <div className="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center shadow-soft">
                 <FileText className="w-6 h-6 text-white" />
               </div>
-              <div className="status-indicator bg-primary/10 text-primary border border-primary/20">
-                Live
+              <div className="status-indicator bg-violet/10 text-violet border border-violet/20">
+                🟣 Live
               </div>
             </div>
-            <h3 className="text-3xl font-bold text-neutral-900 mb-1">{(stagedFiles as any)?.total || 0}</h3>
+            <h3 className="text-3xl font-bold text-violet mb-1">{(stagedFiles as any)?.total || 0}</h3>
             <p className="text-neutral-600 font-medium">Files Staged</p>
             <div className="mt-4 w-full bg-neutral-200 rounded-full h-2">
               <div 
@@ -255,18 +280,18 @@ export default function Scheduler() {
           
           <div className="metric-card">
             <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-gradient-success rounded-xl flex items-center justify-center shadow-soft">
+              <div className="w-12 h-12 bg-gradient-cyber rounded-xl flex items-center justify-center shadow-soft">
                 <CheckCircle className="w-6 h-6 text-white" />
               </div>
-              <div className="status-indicator bg-success/10 text-success border border-success/20">
-                +{processedFiles.size > 0 ? processedFiles.size : 0}
+              <div className="status-indicator bg-cyan/10 text-cyan border border-cyan/20">
+                🟢 +{processedFiles.size > 0 ? processedFiles.size : 0}
               </div>
             </div>
-            <h3 className="text-3xl font-bold text-neutral-900 mb-1">{processedFiles.size}</h3>
+            <h3 className="text-3xl font-bold text-cyan mb-1">{processedFiles.size}</h3>
             <p className="text-neutral-600 font-medium">Files Processed</p>
             <div className="mt-4 w-full bg-neutral-200 rounded-full h-2">
               <div 
-                className="bg-gradient-success h-2 rounded-full transition-all duration-500" 
+                className="bg-gradient-cyber h-2 rounded-full transition-all duration-500" 
                 style={{ width: `${Math.min((processedFiles.size / 10) * 100, 100)}%` }}
               ></div>
             </div>
@@ -274,18 +299,18 @@ export default function Scheduler() {
           
           <div className="metric-card">
             <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-gradient-warning rounded-xl flex items-center justify-center shadow-soft">
+              <div className="w-12 h-12 bg-gradient-sunset rounded-xl flex items-center justify-center shadow-soft">
                 <TrendingUp className="w-6 h-6 text-white" />
               </div>
-              <div className="status-indicator bg-warning/10 text-warning border border-warning/20">
-                Active
+              <div className="status-indicator bg-orange/10 text-orange border border-orange/20">
+                🟠 Active
               </div>
             </div>
-            <h3 className="text-3xl font-bold text-neutral-900 mb-1">{(pipelineData as any)?.loans?.length || 0}</h3>
+            <h3 className="text-3xl font-bold text-orange mb-1">{(pipelineData as any)?.loans?.length || 0}</h3>
             <p className="text-neutral-600 font-medium">Active Loans</p>
             <div className="mt-4 w-full bg-neutral-200 rounded-full h-2">
               <div 
-                className="bg-gradient-warning h-2 rounded-full transition-all duration-500" 
+                className="bg-gradient-sunset h-2 rounded-full transition-all duration-500" 
                 style={{ width: `${Math.min((((pipelineData as any)?.loans?.length || 0) / 20) * 100, 100)}%` }}
               ></div>
             </div>
@@ -293,17 +318,17 @@ export default function Scheduler() {
           
           <div className="metric-card">
             <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-neutral-500 rounded-xl flex items-center justify-center shadow-soft">
+              <div className="w-12 h-12 bg-gradient-blue rounded-xl flex items-center justify-center shadow-soft">
                 <ExternalLink className="w-6 h-6 text-white" />
               </div>
-              <Button size="sm" variant="outline" className="button-professional" asChild>
-                <a href="/">Dashboard</a>
+              <Button size="sm" variant="outline" className="button-professional border-blue text-blue hover:bg-blue/10" asChild>
+                <a href="/">🔗 Dashboard</a>
               </Button>
             </div>
-            <h3 className="text-lg font-semibold text-neutral-900 mb-1">Command Center</h3>
+            <h3 className="text-lg font-semibold text-blue mb-1">Command Center</h3>
             <p className="text-neutral-600 font-medium">View Full Pipeline</p>
             <div className="mt-4">
-              <Button variant="outline" size="sm" className="w-full button-professional" asChild>
+              <Button variant="outline" size="sm" className="w-full button-professional bg-gradient-blue text-white border-0" asChild>
                 <a href="/" className="flex items-center justify-center gap-2">
                   <ExternalLink className="w-4 h-4" />
                   Open Dashboard
@@ -323,53 +348,53 @@ export default function Scheduler() {
           </div>
           
           <Tabs defaultValue="commitment" className="space-y-8">
-            <TabsList className="grid w-full max-w-4xl grid-cols-4 h-auto p-2 bg-neutral-50 rounded-xl">
+            <TabsList className="grid w-full max-w-4xl grid-cols-4 h-auto p-3 bg-gradient-to-r from-violet/5 to-blue/5 rounded-xl border border-violet/10">
               <TabsTrigger 
                 value="commitment" 
-                className="flex flex-col items-center gap-2 py-4 px-6 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-soft data-[state=active]:border data-[state=active]:border-primary/20 transition-all duration-200"
+                className="flex flex-col items-center gap-2 py-4 px-6 rounded-lg data-[state=active]:bg-gradient-primary data-[state=active]:text-white data-[state=active]:shadow-soft transition-all duration-200"
               >
-                <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center shadow-soft">
                   <Calendar className="w-4 h-4 text-white" />
                 </div>
                 <div className="text-center">
-                  <p className="font-semibold text-sm">Commitment</p>
-                  <p className="text-xs text-neutral-500">({commitmentFiles.length} files)</p>
+                  <p className="font-semibold text-sm">💜 Commitment</p>
+                  <p className="text-xs opacity-75">({commitmentFiles.length} files)</p>
                 </div>
               </TabsTrigger>
               <TabsTrigger 
                 value="purchase" 
-                className="flex flex-col items-center gap-2 py-4 px-6 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-soft data-[state=active]:border data-[state=active]:border-primary/20 transition-all duration-200"
+                className="flex flex-col items-center gap-2 py-4 px-6 rounded-lg data-[state=active]:bg-gradient-cyber data-[state=active]:text-white data-[state=active]:shadow-soft transition-all duration-200"
               >
-                <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-gradient-cyber rounded-lg flex items-center justify-center shadow-soft">
                   <FileText className="w-4 h-4 text-white" />
                 </div>
                 <div className="text-center">
-                  <p className="font-semibold text-sm">Purchase Advice</p>
-                  <p className="text-xs text-neutral-500">({purchaseFiles.length} files)</p>
+                  <p className="font-semibold text-sm">🧊 Purchase Advice</p>
+                  <p className="text-xs opacity-75">({purchaseFiles.length} files)</p>
                 </div>
               </TabsTrigger>
               <TabsTrigger 
                 value="loan-data" 
-                className="flex flex-col items-center gap-2 py-4 px-6 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-soft data-[state=active]:border data-[state=active]:border-primary/20 transition-all duration-200"
+                className="flex flex-col items-center gap-2 py-4 px-6 rounded-lg data-[state=active]:bg-gradient-pink data-[state=active]:text-white data-[state=active]:shadow-soft transition-all duration-200"
               >
-                <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-gradient-pink rounded-lg flex items-center justify-center shadow-soft">
                   <CheckCircle className="w-4 h-4 text-white" />
                 </div>
                 <div className="text-center">
-                  <p className="font-semibold text-sm">Loan Data</p>
-                  <p className="text-xs text-neutral-500">({loanDataFiles.length} files)</p>
+                  <p className="font-semibold text-sm">💖 Loan Data</p>
+                  <p className="text-xs opacity-75">({loanDataFiles.length} files)</p>
                 </div>
               </TabsTrigger>
               <TabsTrigger 
                 value="documents" 
-                className="flex flex-col items-center gap-2 py-4 px-6 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-soft data-[state=active]:border data-[state=active]:border-primary/20 transition-all duration-200"
+                className="flex flex-col items-center gap-2 py-4 px-6 rounded-lg data-[state=active]:bg-gradient-sunset data-[state=active]:text-white data-[state=active]:shadow-soft transition-all duration-200"
               >
-                <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-gradient-sunset rounded-lg flex items-center justify-center shadow-soft">
                   <FileText className="w-4 h-4 text-white" />
                 </div>
                 <div className="text-center">
-                  <p className="font-semibold text-sm">Documents</p>
-                  <p className="text-xs text-neutral-500">({documentFiles.length} files)</p>
+                  <p className="font-semibold text-sm">🔥 Documents</p>
+                  <p className="text-xs opacity-75">({documentFiles.length} files)</p>
                 </div>
               </TabsTrigger>
             </TabsList>
