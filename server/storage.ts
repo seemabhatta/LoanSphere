@@ -5,7 +5,8 @@ import {
   type ComplianceEvent, type InsertComplianceEvent,
   type Document, type InsertDocument,
   type Metric, type InsertMetric,
-  type PipelineActivity, type InsertPipelineActivity
+  type PipelineActivity, type InsertPipelineActivity,
+  type StagedFile, type InsertStagedFile
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -67,6 +68,12 @@ export interface IStorage {
   createPipelineActivity(activity: InsertPipelineActivity): Promise<PipelineActivity>;
   updatePipelineActivity(id: string, updates: Partial<PipelineActivity>): Promise<PipelineActivity | undefined>;
   deletePipelineActivity(id: string): Promise<boolean>;
+
+  // Staged Files
+  getStagedFiles(): Promise<StagedFile[]>;
+  getStagedFile(id: string): Promise<StagedFile | undefined>;
+  createStagedFile(file: InsertStagedFile): Promise<StagedFile>;
+  deleteStagedFile(id: string): Promise<boolean>;
 }
 
 // SQLite-based storage implementation
@@ -78,6 +85,7 @@ export class SQLiteStorage implements IStorage {
   private documents: Map<string, Document> = new Map();
   private metrics: Map<string, Metric> = new Map();
   private pipelineActivities: Map<string, PipelineActivity> = new Map();
+  private stagedFiles: Map<string, StagedFile> = new Map();
 
   constructor() {
     this.initializeSampleData();
@@ -337,6 +345,20 @@ export class SQLiteStorage implements IStorage {
     return updated;
   }
   async deletePipelineActivity(id: string): Promise<boolean> { return this.pipelineActivities.delete(id); }
+
+  // Staged Files methods
+  async getStagedFiles(): Promise<StagedFile[]> { return Array.from(this.stagedFiles.values()); }
+  async getStagedFile(id: string): Promise<StagedFile | undefined> { return this.stagedFiles.get(id); }
+  async createStagedFile(fileData: InsertStagedFile): Promise<StagedFile> {
+    const file: StagedFile = {
+      id: randomUUID(),
+      uploadedAt: Date.now(),
+      ...fileData
+    };
+    this.stagedFiles.set(file.id, file);
+    return file;
+  }
+  async deleteStagedFile(id: string): Promise<boolean> { return this.stagedFiles.delete(id); }
 }
 
 export const storage = new SQLiteStorage();

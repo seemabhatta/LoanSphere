@@ -71,6 +71,15 @@ export const agents = sqliteTable("agents", {
   metadata: text("metadata") // JSON string
 });
 
+// Staged Files table
+export const stagedFiles = sqliteTable("staged_files", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  filename: text("filename").notNull(),
+  type: text("type").notNull(),
+  data: text("data").notNull(), // JSON string
+  uploadedAt: integer("uploaded_at").default(sql`(strftime('%s', 'now'))`)
+});
+
 // Compliance events table
 export const complianceEvents = sqliteTable("compliance_events", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -165,6 +174,11 @@ export const insertPipelineActivitySchema = createInsertSchema(pipelineActivity)
   timestamp: true
 });
 
+export const insertStagedFileSchema = createInsertSchema(stagedFiles).omit({
+  id: true,
+  uploadedAt: true
+});
+
 // Types
 export type Loan = typeof loans.$inferSelect;
 export type InsertLoan = z.infer<typeof insertLoanSchema>;
@@ -186,3 +200,6 @@ export type InsertMetric = z.infer<typeof insertMetricSchema>;
 
 export type PipelineActivity = typeof pipelineActivity.$inferSelect;
 export type InsertPipelineActivity = z.infer<typeof insertPipelineActivitySchema>;
+
+export type StagedFile = typeof stagedFiles.$inferSelect;
+export type InsertStagedFile = z.infer<typeof insertStagedFileSchema>;

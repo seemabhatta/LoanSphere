@@ -1,31 +1,18 @@
 import express from "express";
-import { randomUUID } from "crypto";
+import { storage } from "./storage";
 
 const router = express.Router();
-
-// Simple in-memory storage for staged files
-const stagedFiles = new Map<string, {
-  id: string;
-  filename: string;
-  type: string;
-  data: any;
-  uploadedAt: string;
-}>();
 
 // 1. STAGE - Upload and store data
 router.post("/stage", async (req, res) => {
   try {
     const { filename, type, data } = req.body;
     
-    const stagedFile = {
-      id: randomUUID(),
+    const stagedFile = await storage.createStagedFile({
       filename: filename || `staged-${Date.now()}.json`,
       type: type || "unknown",
-      data: data,
-      uploadedAt: new Date().toISOString()
-    };
-    
-    stagedFiles.set(stagedFile.id, stagedFile);
+      data: JSON.stringify(data)
+    });
     
     res.json({ 
       success: true, 
@@ -40,12 +27,13 @@ router.post("/stage", async (req, res) => {
 // 2. LIST - Get all staged files
 router.get("/list", async (req, res) => {
   try {
-    const files = Array.from(stagedFiles.values()).map(file => ({
+    const allFiles = await storage.getStagedFiles();
+    const files = allFiles.map(file => ({
       id: file.id,
       filename: file.filename,
       type: file.type,
-      uploadedAt: file.uploadedAt,
-      size: JSON.stringify(file.data).length
+      uploadedAt: new Date(file.uploadedAt).toISOString(),
+      size: file.data.length
     }));
     
     res.json({ 
@@ -62,7 +50,7 @@ router.get("/list", async (req, res) => {
 router.get("/download/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const file = stagedFiles.get(id);
+    const file = await storage.getStagedFile(id);
     
     if (!file) {
       return res.status(404).json({ error: "File not found" });
@@ -74,8 +62,8 @@ router.get("/download/:id", async (req, res) => {
         id: file.id,
         filename: file.filename,
         type: file.type,
-        data: file.data,
-        uploadedAt: file.uploadedAt
+        data: JSON.parse(file.data),
+        uploadedAt: new Date(file.uploadedAt).toISOString()
       }
     });
   } catch (error) {
@@ -87,7 +75,7 @@ router.get("/download/:id", async (req, res) => {
 router.delete("/delete/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const deleted = stagedFiles.delete(id);
+    const deleted = await storage.deleteStagedFile(id);
     
     if (!deleted) {
       return res.status(404).json({ error: "File not found" });
