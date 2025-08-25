@@ -8,7 +8,6 @@ import {
   Settings, 
   BarChart3,
   User,
-  Database,
   Upload,
   Calendar
 } from "lucide-react";

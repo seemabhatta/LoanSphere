@@ -1,109 +1,10 @@
 import express from "express";
-import { SampleDataGenerator, FixtureLoader } from "./sample-data-generator";
 import { storage } from "../storage";
 import { documentSearch } from "../database-config";
 import { commitmentStorage } from "../commitment-storage";
 
 const router = express.Router();
 
-// Generate synthetic data endpoints
-router.post("/generate/loans/:count", async (req, res) => {
-  try {
-    const count = parseInt(req.params.count) || 5;
-    await SampleDataGenerator.generateLoanPipeline(count);
-    res.json({ 
-      success: true, 
-      message: `Generated ${count} synthetic loans with complete pipeline data`,
-      count 
-    });
-  } catch (error) {
-    res.status(500).json({ error: (error as Error).message });
-  }
-});
-
-router.post("/generate/scenarios", async (req, res) => {
-  try {
-    await SampleDataGenerator.generateTestScenarios();
-    res.json({ 
-      success: true, 
-      message: "Generated realistic test scenarios"
-    });
-  } catch (error) {
-    res.status(500).json({ error: (error as Error).message });
-  }
-});
-
-router.post("/load/fixtures", async (req, res) => {
-  try {
-    await FixtureLoader.loadBusinessRules();
-    await FixtureLoader.loadAgencyConfigs();
-    res.json({ 
-      success: true, 
-      message: "Loaded business rules and agency configurations"
-    });
-  } catch (error) {
-    res.status(500).json({ error: (error as Error).message });
-  }
-});
-
-// Individual data generators
-router.post("/generate/loan", async (req, res) => {
-  try {
-    const overrides = req.body;
-    const loanData = SampleDataGenerator.generateLoan(overrides);
-    const loan = await storage.createLoan(loanData);
-    res.json({ success: true, loan });
-  } catch (error) {
-    res.status(500).json({ error: (error as Error).message });
-  }
-});
-
-router.post("/generate/exception/:loanId", async (req, res) => {
-  try {
-    const { loanId } = req.params;
-    const overrides = req.body;
-    
-    const loan = await storage.getLoan(loanId);
-    if (!loan) {
-      return res.status(404).json({ error: "Loan not found" });
-    }
-    
-    const exceptionData = SampleDataGenerator.generateException(loanId, loan.xpLoanNumber, overrides);
-    const exception = await storage.createException(exceptionData);
-    res.json({ success: true, exception });
-  } catch (error) {
-    res.status(500).json({ error: (error as Error).message });
-  }
-});
-
-router.post("/generate/document/:loanId", async (req, res) => {
-  try {
-    const { loanId } = req.params;
-    const overrides = req.body;
-    
-    const loan = await storage.getLoan(loanId);
-    if (!loan) {
-      return res.status(404).json({ error: "Loan not found" });
-    }
-    
-    const docData = SampleDataGenerator.generateDocument(loanId, loan.xpLoanNumber, overrides);
-    const document = await storage.createDocument(docData);
-    
-    // Index in OpenSearch
-    await documentSearch.indexDocument(document.id, {
-      loanId: loan.id,
-      xpLoanNumber: loan.xpLoanNumber,
-      documentType: document.documentType,
-      content: `Sample content for ${document.documentType} document`,
-      extractedData: JSON.parse(document.extractedData || "{}"),
-      ocrConfidence: 0.85 + Math.random() * 0.15
-    });
-    
-    res.json({ success: true, document });
-  } catch (error) {
-    res.status(500).json({ error: (error as Error).message });
-  }
-});
 
 // Data staging endpoints
 router.post("/stage/commitment", async (req, res) => {
