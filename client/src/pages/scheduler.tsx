@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Calendar, FileText, Play, CheckCircle } from "lucide-react";
+import { Calendar, FileText, Play, CheckCircle, ExternalLink, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,6 +9,7 @@ import { toast } from "@/hooks/use-toast";
 
 export default function Scheduler() {
   const queryClient = useQueryClient();
+  const [processedFiles, setProcessedFiles] = useState<Set<string>>(new Set());
 
   // Get staged files
   const { data: stagedFiles, isLoading } = useQuery({
@@ -16,29 +17,72 @@ export default function Scheduler() {
     refetchInterval: 5000
   });
 
-  // Process file mutation
+  // Get loan pipeline data to show processing results
+  const { data: pipelineData } = useQuery({
+    queryKey: ["/api/loans"],
+    refetchInterval: 10000
+  });
+
+  // Process file mutation - actually integrate into loan boarding pipeline
   const processMutation = useMutation({
     mutationFn: async ({ id, type }: { id: string; type: string }) => {
+      // Download the file data
       const response = await fetch(`/api/simple/download/${id}`);
       const result = await response.json();
       
       if (result.success) {
-        // Simulate processing
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        return { ...result, processedType: type };
+        const fileData = result.file.data;
+        
+        // Route to appropriate staging endpoint based on type
+        let stagingEndpoint = "";
+        if (type.includes("Commitment")) {
+          stagingEndpoint = "/api/staging/stage/commitment";
+        } else if (type.includes("Loan")) {
+          stagingEndpoint = "/api/staging/stage/uldd";
+        } else {
+          // For other types, create a synthetic loan
+          stagingEndpoint = "/api/staging/stage/commitment";
+        }
+        
+        // Send to staging pipeline
+        const stagingResponse = await fetch(stagingEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(fileData)
+        });
+        
+        const stagingResult = await stagingResponse.json();
+        
+        if (stagingResult.success) {
+          return { 
+            ...result, 
+            processedType: type,
+            loanId: stagingResult.loan?.id,
+            xpLoanNumber: stagingResult.loan?.xpLoanNumber,
+            boardingReadiness: stagingResult.loan?.boardingReadiness
+          };
+        }
+        throw new Error(stagingResult.error || "Staging failed");
       }
       throw new Error("Failed to process");
     },
     onSuccess: (data, variables) => {
+      // Mark file as processed
+      setProcessedFiles(prev => new Set([...prev, variables.id]));
+      
       toast({ 
-        title: "Success", 
-        description: `${variables.type} processed successfully` 
+        title: "Processing Complete", 
+        description: `${variables.type} added to loan pipeline (${data.xpLoanNumber})` 
       });
+      
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ["/api/simple/list"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/loans"] });
     },
-    onError: () => {
+    onError: (error) => {
       toast({ 
-        title: "Error", 
-        description: "Failed to process file", 
+        title: "Processing Failed", 
+        description: `Failed to process ${variables.type}: ${error.message}`, 
         variant: "destructive" 
       });
     }
@@ -61,31 +105,53 @@ export default function Scheduler() {
   const renderFileList = (files: any[], type: string) => (
     <div className="space-y-3">
       {files.length > 0 ? (
-        files.map((file: any) => (
-          <div key={file.id} className="flex items-center justify-between p-4 border rounded-lg">
-            <div className="flex items-center gap-3">
-              <FileText className="w-5 h-5 text-blue-500" />
-              <div>
-                <p className="font-medium">{file.filename}</p>
-                <p className="text-sm text-neutral-500">
-                  {Math.round(file.size / 1024)}KB • {new Date(file.uploadedAt).toLocaleString()}
-                </p>
+        files.map((file: any) => {
+          const isProcessed = processedFiles.has(file.id);
+          const isProcessing = processMutation.isPending;
+          
+          return (
+            <div key={file.id} className="flex items-center justify-between p-4 border rounded-lg">
+              <div className="flex items-center gap-3">
+                <FileText className="w-5 h-5 text-blue-500" />
+                <div>
+                  <p className="font-medium">{file.filename}</p>
+                  <p className="text-sm text-neutral-500">
+                    {Math.round(file.size / 1024)}KB • {new Date(file.uploadedAt).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                {isProcessed ? (
+                  <>
+                    <Badge variant="default" className="bg-green-100 text-green-800">
+                      <CheckCircle className="w-3 h-3 mr-1" />
+                      Processed
+                    </Badge>
+                    <Button size="sm" variant="outline" asChild>
+                      <a href="/" className="flex items-center gap-1">
+                        <ExternalLink className="w-3 h-3" />
+                        View Pipeline
+                      </a>
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Badge variant="secondary">Staged</Badge>
+                    <Button
+                      size="sm"
+                      onClick={() => processMutation.mutate({ id: file.id, type })}
+                      disabled={isProcessing}
+                    >
+                      <Play className="w-4 h-4 mr-1" />
+                      {isProcessing ? "Processing..." : "Process"}
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
-            
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary">Staged</Badge>
-              <Button
-                size="sm"
-                onClick={() => processMutation.mutate({ id: file.id, type })}
-                disabled={processMutation.isPending}
-              >
-                <Play className="w-4 h-4 mr-1" />
-                Process
-              </Button>
-            </div>
-          </div>
-        ))
+          );
+        })
       ) : (
         <div className="text-center py-8 text-neutral-500">
           <FileText className="w-12 h-12 text-neutral-300 mx-auto mb-4" />
@@ -110,6 +176,41 @@ export default function Scheduler() {
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6">
+        
+        {/* Processing Summary */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5" />
+              Processing Status
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-blue-600">{stagedFiles?.total || 0}</p>
+                <p className="text-sm text-neutral-500">Files Staged</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-green-600">{processedFiles.size}</p>
+                <p className="text-sm text-neutral-500">Files Processed</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-purple-600">{pipelineData?.length || 0}</p>
+                <p className="text-sm text-neutral-500">Active Loans</p>
+              </div>
+              <div className="text-center">
+                <Button size="sm" variant="outline" asChild>
+                  <a href="/" className="flex items-center gap-2">
+                    <ExternalLink className="w-4 h-4" />
+                    View Command Center
+                  </a>
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
         <Tabs defaultValue="commitment" className="space-y-6">
           <TabsList className="grid w-full max-w-2xl grid-cols-4">
             <TabsTrigger value="commitment" className="flex items-center gap-2">
