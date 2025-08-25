@@ -36,11 +36,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     process.exit(0);
   });
 
-  // Proxy all API requests to Python FastAPI
-  app.use('/api', createProxyMiddleware({
-    target: 'http://127.0.0.1:8000',
-    changeOrigin: true,
-    onError: (err, req, res) => {
+  // Proxy all API requests to Python FastAPI - manual path handling  
+  app.use('/api', (req, res, next) => {
+    // Manual proxy with preserved path
+    const proxy = createProxyMiddleware({
+      target: 'http://127.0.0.1:8000',
+      changeOrigin: true,
+      pathRewrite: (path, req) => {
+        // The path here is already stripped of /api by the middleware
+        // We need to add it back
+        const fullPath = `/api${path}`;
+        console.log(`🔄 Proxying: ${req.originalUrl} -> ${fullPath}`);
+        return fullPath;
+      },
+      onError: (err, req, res) => {
       console.error('❌ Proxy error:', err.message);
       res.status(500).json({ 
         error: 'Python FastAPI server not available',
@@ -54,7 +63,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`🔄 Proxied ${req.method} ${req.path} → Python FastAPI`);
       }
     }
-  }));
+    });
+    proxy(req, res, next);
+  });
 
   // Health check endpoint (not proxied)
   app.get('/health', (req, res) => {
