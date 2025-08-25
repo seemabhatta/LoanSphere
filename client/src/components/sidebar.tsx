@@ -53,7 +53,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const [location] = useLocation();
 
   return (
-    <div className={`w-60 bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+    <div className="w-60 bg-white border-r border-gray-200 flex flex-col">
       {/* Logo/Brand */}
       <div className="px-4 py-4 border-b border-gray-200">
         <div className="flex items-center space-x-2">
