@@ -10,7 +10,7 @@ import os
 from loguru import logger
 
 from database import init_db, get_db
-from routers import loans, exceptions, agents, compliance, documents, metrics
+from routers import loans, exceptions, agents, compliance, documents, metrics, staging
 from services.loan_service import LoanService
 from agents.planner_agent import PlannerAgent
 from agents.tool_agent import ToolAgent
@@ -95,6 +95,8 @@ app.include_router(agents.router, prefix="/api/agents", tags=["agents"])
 app.include_router(compliance.router, prefix="/api/compliance", tags=["compliance"])
 app.include_router(documents.router, prefix="/api/documents", tags=["documents"])
 app.include_router(metrics.router, prefix="/api/metrics", tags=["metrics"])
+app.include_router(staging.router, prefix="/api/simple", tags=["staging"])
+app.include_router(staging.router, prefix="/api/staging", tags=["staging"])
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):

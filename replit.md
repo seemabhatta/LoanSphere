@@ -21,8 +21,8 @@ Preferred communication style: Simple, everyday language.
 - **Real-time Updates**: WebSocket integration for live data updates
 
 ### Backend Architecture
-- **Runtime**: Node.js with Express server (TypeScript)
-- **Python Services**: FastAPI-based microservices for agent orchestration
+- **Primary Backend**: Python FastAPI with all business logic and data processing
+- **Proxy Layer**: Minimal Node.js Express server that forwards API calls to Python
 - **Multi-Agent System**: 
   - PlannerAgent: Task orchestration and workflow planning
   - ToolAgent: Executes specific boarding tools and operations

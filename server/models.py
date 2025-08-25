@@ -144,3 +144,12 @@ class PipelineActivityModel(Base):
     agent_name = Column(String)
     timestamp = Column(DateTime, server_default=func.now())
     metadata = Column(JSON)
+
+class StagedFileModel(Base):
+    __tablename__ = "staged_files"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    filename = Column(String, nullable=False)
+    type = Column(String, nullable=False)
+    data = Column(Text, nullable=False)  # JSON string
+    uploaded_at = Column(DateTime, server_default=func.now())

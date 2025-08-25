@@ -16,7 +16,7 @@ async def init_db():
     """Initialize database with tables"""
     try:
         # Import all models to ensure they're registered
-        from models import *
+        from models import Base, LoanModel, ExceptionModel, AgentModel, ComplianceEventModel, DocumentModel, MetricModel, PipelineActivityModel, StagedFileModel
         
         # Create all tables
         Base.metadata.create_all(bind=engine)
