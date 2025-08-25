@@ -208,7 +208,7 @@ export default function PipelineMonitor() {
                         
                         {agent.current_task && (
                           <div>
-                            <span className="text-neutral-500">Task:</span>
+                            <span className="label-text text-neutral-500">Task:</span>
                             <p className="detail-text mt-1 text-neutral-700">
                               {agent.current_task}
                             </p>
@@ -217,7 +217,7 @@ export default function PipelineMonitor() {
                         
                         {agent.last_activity && (
                           <div className="flex justify-between">
-                            <span className="text-neutral-500">Last Activity:</span>
+                            <span className="label-text text-neutral-500">Last Activity:</span>
                             <span className="detail-text text-neutral-600">
                               {new Date(agent.last_activity).toLocaleTimeString()}
                             </span>
@@ -244,7 +244,7 @@ export default function PipelineMonitor() {
                       className="flex items-center space-x-4 p-3 border rounded-lg"
                       data-testid={`activity-${index}`}
                     >
-                      <span className="detail-text text-neutral-400 font-mono min-w-[80px]">
+                      <span className="code-text text-neutral-400 min-w-[80px]">
                         {new Date(activity.timestamp).toLocaleTimeString()}
                       </span>
                       
@@ -280,7 +280,7 @@ export default function PipelineMonitor() {
                   ))}
                   
                   {!activityData?.activity?.length && (
-                    <div className="text-center py-8 text-neutral-500" data-testid="no-activity">
+                    <div className="text-center py-8 body-text text-neutral-500" data-testid="no-activity">
                       No recent pipeline activity
                     </div>
                   )}
