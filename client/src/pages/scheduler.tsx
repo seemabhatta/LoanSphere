@@ -129,7 +129,7 @@ export default function Scheduler() {
                 <FileText className="w-5 h-5 text-blue-500" />
                 <div>
                   <p className="font-medium">{file.filename}</p>
-                  <p className="text-sm text-neutral-500">
+                  <p className="text-sm text-gray-500">
                     {Math.round(file.size / 1024)}KB • {new Date(file.uploadedAt).toLocaleString()}
                   </p>
                 </div>
@@ -167,10 +167,10 @@ export default function Scheduler() {
           );
         })
       ) : (
-        <div className="text-center py-8 text-neutral-500">
-          <FileText className="w-12 h-12 text-neutral-300 mx-auto mb-4" />
+        <div className="text-center py-8 text-gray-500">
+          <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
           <p>No {type.toLowerCase()} files staged</p>
-          <p className="text-sm text-neutral-400 mt-1">
+          <p className="text-sm text-gray-400 mt-1">
             Upload files to Simple Staging first
           </p>
         </div>
@@ -179,12 +179,17 @@ export default function Scheduler() {
   );
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex-1 flex flex-col overflow-hidden bg-white">
       {/* Header */}
-      <header className="bg-white border-b border-neutral-200 px-6 py-4">
+      <header className="bg-white px-6 py-4">
+        <div className="flex items-center text-sm text-gray-500 mb-1">
+          <span>Loan Boarding</span>
+          <span className="mx-2">›</span>
+          <span className="text-gray-900">Staging Scheduler</span>
+        </div>
         <div>
-          <h2 className="text-2xl font-medium text-neutral-800">Scheduler</h2>
-          <p className="text-neutral-500 mt-1">Process staged files by type</p>
+          <h1 className="text-xl font-medium text-gray-900">Staging Scheduler</h1>
+          <p className="text-gray-500 mt-1">Process staged files by type</p>
         </div>
       </header>
 
@@ -203,15 +208,15 @@ export default function Scheduler() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="text-center">
                 <p className="text-2xl font-bold text-blue-600">{(stagedFiles as any)?.total || 0}</p>
-                <p className="text-sm text-neutral-500">Files Staged</p>
+                <p className="text-sm text-gray-500">Files Staged</p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold text-green-600">{processedFiles.size}</p>
-                <p className="text-sm text-neutral-500">Files Processed</p>
+                <p className="text-sm text-gray-500">Files Processed</p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold text-purple-600">{(pipelineData as any)?.loans?.length || 0}</p>
-                <p className="text-sm text-neutral-500">Active Loans</p>
+                <p className="text-sm text-gray-500">Active Loans</p>
               </div>
               <div className="text-center">
                 <Button size="sm" variant="outline" asChild>

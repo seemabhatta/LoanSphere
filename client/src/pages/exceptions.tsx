@@ -114,15 +114,20 @@ export default function Exceptions() {
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex-1 flex flex-col overflow-hidden bg-white">
       {/* Header */}
-      <header className="bg-white border-b border-neutral-200 px-6 py-4">
+      <header className="bg-white px-6 py-4">
+        <div className="flex items-center text-sm text-gray-500 mb-1">
+          <span>Loan Boarding</span>
+          <span className="mx-2">›</span>
+          <span className="text-gray-900">Exceptions</span>
+        </div>
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-medium text-neutral-800" data-testid="page-title">
+            <h1 className="text-xl font-medium text-gray-900" data-testid="page-title">
               Exceptions
-            </h2>
-            <p className="text-neutral-500 mt-1">
+            </h1>
+            <p className="text-gray-500 mt-1">
               Manage and resolve loan boarding exceptions
             </p>
           </div>
