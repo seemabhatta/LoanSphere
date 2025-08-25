@@ -28,7 +28,7 @@ export default function TopHeader({ onToggleSidebar }: TopHeaderProps) {
             alt="Xpanse" 
             className="w-8 h-8"
           />
-          <span className="text-sm font-bold text-gray-900 hidden sm:inline font-sans tracking-tight">
+          <span className="text-sm font-semibold text-gray-900 hidden sm:inline" style={{ fontFamily: 'Inter, system-ui, -apple-system, sans-serif', letterSpacing: '-0.02em' }}>
             Xpanse Loan Xchange
           </span>
         </div>
