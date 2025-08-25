@@ -161,7 +161,7 @@ export default function Documents() {
             {/* Processing Pipeline Status */}
             <Card>
               <CardHeader>
-                <CardTitle>Document Processing Pipeline</CardTitle>
+                <CardTitle className="section-header">Document Processing Pipeline</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

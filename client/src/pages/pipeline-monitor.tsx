@@ -100,7 +100,7 @@ export default function PipelineMonitor() {
           <TabsContent value="loans" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Loans in Pipeline</CardTitle>
+                <CardTitle className="section-header">Loans in Pipeline</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">

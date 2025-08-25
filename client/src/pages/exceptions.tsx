@@ -233,7 +233,7 @@ export default function Exceptions() {
         {/* Exceptions List */}
         <Card>
           <CardHeader>
-            <CardTitle>Exception Details</CardTitle>
+            <CardTitle className="section-header">Exception Details</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">

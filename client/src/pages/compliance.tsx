@@ -191,7 +191,7 @@ export default function Compliance() {
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
                     <Calendar className="w-5 h-5" />
-                    <span>Recent Compliance Events</span>
+                    <span className="section-header">Recent Compliance Events</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -244,7 +244,7 @@ export default function Compliance() {
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
                     <AlertTriangle className="w-5 h-5 text-error" />
-                    <span>Overdue Events</span>
+                    <span className="section-header">Overdue Events</span>
                     {overdueEvents?.total_overdue > 0 && (
                       <Badge className="bg-error text-white">
                         {overdueEvents.total_overdue}
