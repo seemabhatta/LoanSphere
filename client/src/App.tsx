@@ -43,8 +43,8 @@ function Router() {
         />
         
         {/* Main Content Panel */}
-        <div className="flex-1 p-4 transition-all duration-300">
-          <div className="bg-white rounded-lg shadow-sm h-full overflow-hidden">
+        <div className="flex-1 p-4 transition-all duration-300 overflow-hidden">
+          <div className="bg-white rounded-lg shadow-sm h-full overflow-y-auto">
             <Switch>
               <Route path="/" component={CommandCenter} />
               <Route path="/pipeline" component={PipelineMonitor} />
