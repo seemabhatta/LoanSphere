@@ -36,11 +36,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     process.exit(0);
   });
 
-  // Proxy all API requests to Python FastAPI - preserve full path
-  app.use('/api/*', createProxyMiddleware({
+  // Proxy all API requests to Python FastAPI
+  app.use('/api', createProxyMiddleware({
     target: 'http://127.0.0.1:8000',
     changeOrigin: true,
-    // No path rewriting - keep full path including /api
     onError: (err, req, res) => {
       console.error('❌ Proxy error:', err.message);
       res.status(500).json({ 
