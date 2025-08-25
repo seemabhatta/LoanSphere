@@ -68,7 +68,7 @@ export default function Scheduler() {
     },
     onSuccess: (data, variables) => {
       // Mark file as processed
-      setProcessedFiles(prev => new Set([...prev, variables.id]));
+      setProcessedFiles(prev => new Set([...Array.from(prev), variables.id]));
       
       toast({ 
         title: "Processing Complete", 
@@ -79,7 +79,7 @@ export default function Scheduler() {
       queryClient.invalidateQueries({ queryKey: ["/api/simple/list"] });
       queryClient.invalidateQueries({ queryKey: ["/api/loans"] });
     },
-    onError: (error) => {
+    onError: (error: any, variables) => {
       toast({ 
         title: "Processing Failed", 
         description: `Failed to process ${variables.type}: ${error.message}`, 
@@ -97,10 +97,10 @@ export default function Scheduler() {
     );
   };
 
-  const commitmentFiles = filterFilesByType(stagedFiles?.files || [], "commitment");
-  const purchaseFiles = filterFilesByType(stagedFiles?.files || [], "purchase");
-  const loanDataFiles = filterFilesByType(stagedFiles?.files || [], "loan");
-  const documentFiles = filterFilesByType(stagedFiles?.files || [], "document");
+  const commitmentFiles = filterFilesByType((stagedFiles as any)?.files || [], "commitment");
+  const purchaseFiles = filterFilesByType((stagedFiles as any)?.files || [], "purchase");
+  const loanDataFiles = filterFilesByType((stagedFiles as any)?.files || [], "loan");
+  const documentFiles = filterFilesByType((stagedFiles as any)?.files || [], "document");
 
   const renderFileList = (files: any[], type: string) => (
     <div className="space-y-3">
@@ -188,7 +188,7 @@ export default function Scheduler() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="text-center">
-                <p className="text-2xl font-bold text-blue-600">{stagedFiles?.total || 0}</p>
+                <p className="text-2xl font-bold text-blue-600">{(stagedFiles as any)?.total || 0}</p>
                 <p className="text-sm text-neutral-500">Files Staged</p>
               </div>
               <div className="text-center">
@@ -196,7 +196,7 @@ export default function Scheduler() {
                 <p className="text-sm text-neutral-500">Files Processed</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-purple-600">{pipelineData?.length || 0}</p>
+                <p className="text-2xl font-bold text-purple-600">{(pipelineData as any)?.loans?.length || 0}</p>
                 <p className="text-sm text-neutral-500">Active Loans</p>
               </div>
               <div className="text-center">
