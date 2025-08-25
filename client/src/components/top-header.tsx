@@ -26,7 +26,7 @@ export default function TopHeader({ onToggleSidebar }: TopHeaderProps) {
             <span className="text-white text-xs font-bold">LB</span>
           </div>
           <span className="text-sm font-medium text-gray-900 hidden sm:inline">
-            Loan Boarding
+            Correspondent Loan Boarding
           </span>
         </div>
       </div>
