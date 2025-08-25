@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "repl-nix-workspace"
 version = "0.1.0"
@@ -6,9 +10,13 @@ requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.116.1",
     "loguru>=0.7.3",
-    "psycopg2-binary>=2.9.10",
     "pydantic>=2.11.7",
     "python-multipart>=0.0.20",
     "sqlalchemy>=2.0.43",
     "uvicorn>=0.35.0",
 ]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["server*", "shared*"]
+exclude = ["client*", "node_modules*", "attached_assets*"]
