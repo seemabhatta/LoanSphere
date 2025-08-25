@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Menu, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import xpanseLogo from "@assets/image_1756159422113.png";
 
 interface TopHeaderProps {
   onToggleSidebar: () => void;
@@ -22,9 +23,11 @@ export default function TopHeader({ onToggleSidebar }: TopHeaderProps) {
         </button>
         
         <div className="flex items-center space-x-2">
-          <div className="w-6 h-6 bg-orange-500 rounded flex items-center justify-center">
-            <span className="text-white text-xs font-bold">LB</span>
-          </div>
+          <img 
+            src={xpanseLogo} 
+            alt="Xpanse" 
+            className="w-6 h-6"
+          />
           <span className="text-sm font-medium text-gray-900 hidden sm:inline">
             Correspondent Loan Boarding
           </span>
