@@ -18,7 +18,7 @@ import Scheduler from "@/pages/scheduler";
 import NotFound from "@/pages/not-found";
 
 function Router() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
