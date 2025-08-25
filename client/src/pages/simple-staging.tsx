@@ -11,6 +11,7 @@ import { toast } from "@/hooks/use-toast";
 export default function SimpleStaging() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filename, setFilename] = useState<string>("");
+  const [documentType, setDocumentType] = useState<string>("commitment");
   const queryClient = useQueryClient();
 
   // Get staged files
@@ -41,6 +42,7 @@ export default function SimpleStaging() {
       queryClient.invalidateQueries({ queryKey: ["/api/simple/list"] });
       setSelectedFile(null);
       setFilename("");
+      setDocumentType("commitment");
     },
     onError: () => {
       toast({ title: "Error", description: "Failed to stage file", variant: "destructive" });
@@ -70,7 +72,7 @@ export default function SimpleStaging() {
       
       stageMutation.mutate({
         filename: filename || selectedFile.name,
-        type: selectedFile.type || "application/json",
+        type: documentType,
         data: data
       });
     } catch (error) {
@@ -78,21 +80,19 @@ export default function SimpleStaging() {
     }
   };
 
-  const getFileTypeInfo = (filename: string) => {
-    const name = filename.toLowerCase();
-    if (name.includes("commitment")) {
-      return { type: "Commitment", color: "bg-blue-100 text-blue-800", icon: Calendar };
+  const getFileTypeInfo = (documentType: string) => {
+    switch (documentType) {
+      case "commitment":
+        return { type: "Commitment", color: "bg-blue-100 text-blue-800", icon: Calendar };
+      case "purchase_advice":
+        return { type: "Purchase Advice", color: "bg-green-100 text-green-800", icon: FileText };
+      case "loan_data":
+        return { type: "Loan Data", color: "bg-purple-100 text-purple-800", icon: CheckCircle };
+      case "documents":
+        return { type: "Documents", color: "bg-orange-100 text-orange-800", icon: Folder };
+      default:
+        return { type: "Other", color: "bg-neutral-100 text-neutral-800", icon: File };
     }
-    if (name.includes("purchase")) {
-      return { type: "Purchase Advice", color: "bg-green-100 text-green-800", icon: FileText };
-    }
-    if (name.includes("loan") || name.includes("uldd")) {
-      return { type: "Loan Data", color: "bg-purple-100 text-purple-800", icon: CheckCircle };
-    }
-    if (name.includes("document")) {
-      return { type: "Document", color: "bg-orange-100 text-orange-800", icon: Folder };
-    }
-    return { type: "Other", color: "bg-neutral-100 text-neutral-800", icon: File };
   };
 
   const handleDownload = async (id: string, filename: string) => {
@@ -149,6 +149,21 @@ export default function SimpleStaging() {
             </div>
             
             <div>
+              <Label htmlFor="document-type">Document Type</Label>
+              <select 
+                id="document-type"
+                value={documentType} 
+                onChange={(e) => setDocumentType(e.target.value)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="commitment">Commitment</option>
+                <option value="purchase_advice">Purchase Advice</option>
+                <option value="loan_data">Loan Data</option>
+                <option value="documents">Documents</option>
+              </select>
+            </div>
+
+            <div>
               <Label htmlFor="file">JSON File</Label>
               <Input
                 id="file"
@@ -183,7 +198,7 @@ export default function SimpleStaging() {
             ) : stagedFiles?.files?.length > 0 ? (
               <div className="space-y-3">
                 {stagedFiles.files.map((file: any) => {
-                  const fileTypeInfo = getFileTypeInfo(file.filename);
+                  const fileTypeInfo = getFileTypeInfo(file.type);
                   const IconComponent = fileTypeInfo.icon;
                   
                   return (
