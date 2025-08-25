@@ -175,38 +175,48 @@ export default function SimpleStaging() {
               <div className="text-center py-8 text-neutral-500">Loading...</div>
             ) : stagedFiles?.files?.length > 0 ? (
               <div className="space-y-3">
-                {stagedFiles.files.map((file: any) => (
-                  <div key={file.id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <File className="w-5 h-5 text-blue-500" />
-                      <div>
-                        <p className="font-medium">{file.filename}</p>
-                        <p className="text-sm text-neutral-500">
-                          {file.type} • {Math.round(file.size / 1024)}KB • {new Date(file.uploadedAt).toLocaleString()}
-                        </p>
+                {stagedFiles.files.map((file: any) => {
+                  const fileTypeInfo = getFileTypeInfo(file.filename);
+                  const IconComponent = fileTypeInfo.icon;
+                  
+                  return (
+                    <div key={file.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <IconComponent className="w-5 h-5 text-blue-500" />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-medium">{file.filename}</p>
+                            <Badge className={`text-xs ${fileTypeInfo.color}`}>
+                              {fileTypeInfo.type}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-neutral-500">
+                            {file.type} • {Math.round(file.size / 1024)}KB • {new Date(file.uploadedAt).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDownload(file.id, file.filename)}
+                        >
+                          <Download className="w-4 h-4" />
+                        </Button>
+                        
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => deleteMutation.mutate(file.id)}
+                          disabled={deleteMutation.isPending}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
                     </div>
-                    
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleDownload(file.id, file.filename)}
-                      >
-                        <Download className="w-4 h-4" />
-                      </Button>
-                      
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => deleteMutation.mutate(file.id)}
-                        disabled={deleteMutation.isPending}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center py-8 text-neutral-500">
