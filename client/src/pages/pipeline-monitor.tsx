@@ -172,7 +172,7 @@ export default function PipelineMonitor() {
           <TabsContent value="agents" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Agent Status</CardTitle>
+                <CardTitle className="section-header">Agent Status</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -234,7 +234,7 @@ export default function PipelineMonitor() {
           <TabsContent value="activity" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Recent Pipeline Activity</CardTitle>
+                <CardTitle className="section-header">Recent Pipeline Activity</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">

@@ -193,7 +193,7 @@ export default function Agents() {
             {/* Performance Metrics */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
+                <CardTitle className="section-header flex items-center space-x-2">
                   <TrendingUp className="w-5 h-5" />
                   <span className="section-header">Agent Performance Metrics</span>
                 </CardTitle>
@@ -250,7 +250,7 @@ export default function Agents() {
           <TabsContent value="logs" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Agent Activity Logs</CardTitle>
+                <CardTitle className="section-header">Agent Activity Logs</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-center py-8 text-neutral-500">

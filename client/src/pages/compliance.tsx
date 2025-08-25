@@ -189,7 +189,7 @@ export default function Compliance() {
               {/* Recent Events */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
+                  <CardTitle className="section-header flex items-center space-x-2">
                     <Calendar className="w-5 h-5" />
                     <span className="section-header">Recent Compliance Events</span>
                   </CardTitle>
@@ -242,7 +242,7 @@ export default function Compliance() {
               {/* Overdue Events */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
+                  <CardTitle className="section-header flex items-center space-x-2">
                     <AlertTriangle className="w-5 h-5 text-error" />
                     <span className="section-header">Overdue Events</span>
                     {overdueEvents?.total_overdue > 0 && (
@@ -296,7 +296,7 @@ export default function Compliance() {
           <TabsContent value="events" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>All Compliance Events</CardTitle>
+                <CardTitle className="section-header">All Compliance Events</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-center py-8 text-neutral-500">
@@ -309,7 +309,7 @@ export default function Compliance() {
           <TabsContent value="reports" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Compliance Reports</CardTitle>
+                <CardTitle className="section-header">Compliance Reports</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-center py-8 text-neutral-500">

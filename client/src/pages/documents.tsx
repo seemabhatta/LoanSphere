@@ -257,7 +257,7 @@ export default function Documents() {
             {/* Documents List */}
             <Card>
               <CardHeader>
-                <CardTitle>Document List</CardTitle>
+                <CardTitle className="section-header">Document List</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -443,7 +443,7 @@ export default function Documents() {
             {/* Document Type Breakdown */}
             <Card>
               <CardHeader>
-                <CardTitle>Document Type Breakdown</CardTitle>
+                <CardTitle className="section-header">Document Type Breakdown</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
