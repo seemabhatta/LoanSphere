@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Upload, Download, List, Trash2, File } from "lucide-react";
+import { Upload, Download, List, Trash2, File, Calendar, FileText, CheckCircle, Folder } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 
 export default function SimpleStaging() {
@@ -68,6 +69,23 @@ export default function SimpleStaging() {
     } catch (error) {
       toast({ title: "Error", description: "Invalid JSON file", variant: "destructive" });
     }
+  };
+
+  const getFileTypeInfo = (filename: string) => {
+    const name = filename.toLowerCase();
+    if (name.includes("commitment")) {
+      return { type: "Commitment", color: "bg-blue-100 text-blue-800", icon: Calendar };
+    }
+    if (name.includes("purchase")) {
+      return { type: "Purchase Advice", color: "bg-green-100 text-green-800", icon: FileText };
+    }
+    if (name.includes("loan") || name.includes("uldd")) {
+      return { type: "Loan Data", color: "bg-purple-100 text-purple-800", icon: CheckCircle };
+    }
+    if (name.includes("document")) {
+      return { type: "Document", color: "bg-orange-100 text-orange-800", icon: Folder };
+    }
+    return { type: "Other", color: "bg-neutral-100 text-neutral-800", icon: File };
   };
 
   const handleDownload = async (id: string, filename: string) => {
