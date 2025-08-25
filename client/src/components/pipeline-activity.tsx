@@ -54,7 +54,7 @@ export default function PipelineActivity({ activity }: PipelineActivityProps) {
   };
 
   return (
-    <Card className="bg-white shadow-sm border border-neutral-200">
+    <Card className="bg-white border border-gray-200 rounded-lg">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="section-header text-neutral-800">

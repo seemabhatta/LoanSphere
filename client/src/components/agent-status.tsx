@@ -60,7 +60,7 @@ export default function AgentStatus({ agents }: AgentStatusProps) {
   };
 
   return (
-    <Card className="bg-white shadow-sm border border-neutral-200">
+    <Card className="bg-white border border-gray-200 rounded-lg">
       <CardHeader>
         <CardTitle className="section-header text-neutral-800">
           Agent Status
