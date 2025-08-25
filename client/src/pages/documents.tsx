@@ -168,7 +168,7 @@ export default function Documents() {
                   {/* OCR Processing */}
                   <div className="text-center">
                     <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                      <Eye className="text-blue-600 text-2xl w-8 h-8" />
+                      <Eye className="text-blue-600 w-8 h-8" />
                     </div>
                     <h4 className="section-header text-neutral-800 mb-2">OCR Processing</h4>
                     <div className="metric-large text-blue-600 mb-1" data-testid="ocr-queue">
@@ -189,7 +189,7 @@ export default function Documents() {
                   {/* Classification */}
                   <div className="text-center">
                     <div className="w-16 h-16 bg-cyan-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                      <Tags className="text-cyan-600 text-2xl w-8 h-8" />
+                      <Tags className="text-cyan-600 w-8 h-8" />
                     </div>
                     <h4 className="section-header text-neutral-800 mb-2">Classification</h4>
                     <div className="metric-large text-cyan-600 mb-1" data-testid="classification-completed">
@@ -210,7 +210,7 @@ export default function Documents() {
                   {/* Data Extraction */}
                   <div className="text-center">
                     <div className="w-16 h-16 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                      <Database className="text-green-600 text-2xl w-8 h-8" />
+                      <Database className="text-green-600 w-8 h-8" />
                     </div>
                     <h4 className="section-header text-neutral-800 mb-2">Data Extraction</h4>
                     <div className="metric-large text-green-600 mb-1" data-testid="extraction-completed">
@@ -231,7 +231,7 @@ export default function Documents() {
                   {/* Validation */}
                   <div className="text-center">
                     <div className="w-16 h-16 bg-yellow-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                      <CheckCircle className="text-yellow-600 text-2xl w-8 h-8" />
+                      <CheckCircle className="text-yellow-600 w-8 h-8" />
                     </div>
                     <h4 className="section-header text-neutral-800 mb-2">Validation</h4>
                     <div className="metric-large text-yellow-600 mb-1" data-testid="validation-pending">
@@ -315,7 +315,7 @@ export default function Documents() {
                             {getStageIcon(document.ocr_status)}
                           </div>
                           <span className="body-text text-neutral-600">OCR</span>
-                          <span className={`text-xs ${getStageStatusColor(document.ocr_status)}`}>
+                          <span className={`detail-text ${getStageStatusColor(document.ocr_status)}`}>
                             {document.ocr_status}
                           </span>
                         </div>
@@ -324,8 +324,8 @@ export default function Documents() {
                           <div className={getStageStatusColor(document.classification_status)}>
                             {getStageIcon(document.classification_status)}
                           </div>
-                          <span className="text-sm text-neutral-600">Classification</span>
-                          <span className={`text-xs ${getStageStatusColor(document.classification_status)}`}>
+                          <span className="body-text text-neutral-600">Classification</span>
+                          <span className={`detail-text ${getStageStatusColor(document.classification_status)}`}>
                             {document.classification_status}
                           </span>
                         </div>
@@ -334,8 +334,8 @@ export default function Documents() {
                           <div className={getStageStatusColor(document.extraction_status)}>
                             {getStageIcon(document.extraction_status)}
                           </div>
-                          <span className="text-sm text-neutral-600">Extraction</span>
-                          <span className={`text-xs ${getStageStatusColor(document.extraction_status)}`}>
+                          <span className="body-text text-neutral-600">Extraction</span>
+                          <span className={`detail-text ${getStageStatusColor(document.extraction_status)}`}>
                             {document.extraction_status}
                           </span>
                         </div>
@@ -344,8 +344,8 @@ export default function Documents() {
                           <div className={getStageStatusColor(document.validation_status)}>
                             {getStageIcon(document.validation_status)}
                           </div>
-                          <span className="text-sm text-neutral-600">Validation</span>
-                          <span className={`text-xs ${getStageStatusColor(document.validation_status)}`}>
+                          <span className="body-text text-neutral-600">Validation</span>
+                          <span className={`detail-text ${getStageStatusColor(document.validation_status)}`}>
                             {document.validation_status}
                           </span>
                         </div>
@@ -354,8 +354,8 @@ export default function Documents() {
                       {/* Extracted Data Preview */}
                       {document.extracted_data && (
                         <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                          <h4 className="text-sm font-medium text-neutral-800 mb-2">Extracted Data</h4>
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
+                          <h4 className="section-header text-neutral-800 mb-2">Extracted Data</h4>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 detail-text">
                             {Object.entries(document.extracted_data).map(([key, value]: [string, any]) => (
                               <div key={key}>
                                 <span className="text-neutral-500">{key}:</span>
@@ -387,8 +387,8 @@ export default function Documents() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-neutral-500 text-sm font-medium">Total Documents</p>
-                      <p className="text-3xl font-bold text-neutral-800 mt-2" data-testid="stat-total">
+                      <p className="label-text text-neutral-500">Total Documents</p>
+                      <p className="metric-large text-neutral-800 mt-2" data-testid="stat-total">
                         {statsData?.total_documents || 0}
                       </p>
                     </div>
@@ -401,8 +401,8 @@ export default function Documents() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-neutral-500 text-sm font-medium">Processing Rate</p>
-                      <p className="text-3xl font-bold text-neutral-800 mt-2" data-testid="stat-processing-rate">
+                      <p className="label-text text-neutral-500">Processing Rate</p>
+                      <p className="metric-large text-neutral-800 mt-2" data-testid="stat-processing-rate">
                         {statsData?.processing_rate || 0}%
                       </p>
                     </div>
@@ -415,8 +415,8 @@ export default function Documents() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-neutral-500 text-sm font-medium">Pending</p>
-                      <p className="text-3xl font-bold text-neutral-800 mt-2" data-testid="stat-pending">
+                      <p className="label-text text-neutral-500">Pending</p>
+                      <p className="metric-large text-neutral-800 mt-2" data-testid="stat-pending">
                         {statsData?.by_status?.pending || 0}
                       </p>
                     </div>
@@ -429,8 +429,8 @@ export default function Documents() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-neutral-500 text-sm font-medium">Errors</p>
-                      <p className="text-3xl font-bold text-neutral-800 mt-2" data-testid="stat-errors">
+                      <p className="label-text text-neutral-500">Errors</p>
+                      <p className="metric-large text-neutral-800 mt-2" data-testid="stat-errors">
                         {statsData?.by_status?.error || 0}
                       </p>
                     </div>
@@ -459,7 +459,7 @@ export default function Documents() {
                             }}
                           ></div>
                         </div>
-                        <span className="text-neutral-600 font-mono text-sm w-8 text-right">
+                        <span className="text-neutral-600 code-text w-8 text-right">
                           {count}
                         </span>
                       </div>

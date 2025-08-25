@@ -138,7 +138,7 @@ export default function Agents() {
                     <div className="flex items-center space-x-3 mb-4">
                       <div className={`w-4 h-4 rounded-full ${getStatusColor(agent.status)}`}></div>
                       <div className="flex-1">
-                        <h3 className="font-medium text-neutral-800" data-testid={`agent-name-${agent.name.toLowerCase()}`}>
+                        <h3 className="section-header text-neutral-800" data-testid={`agent-name-${agent.name.toLowerCase()}`}>
                           {agent.name}
                         </h3>
                         <p className="detail-text text-neutral-500 capitalize">{agent.type}</p>
@@ -174,13 +174,13 @@ export default function Agents() {
                       </div>
                       
                       {agent.last_activity && (
-                        <div className="text-xs text-neutral-500">
+                        <div className="detail-text text-neutral-500">
                           Last Activity: {new Date(agent.last_activity).toLocaleTimeString()}
                         </div>
                       )}
                     </div>
                     
-                    <p className="text-xs text-neutral-600 mt-3 pt-3 border-t border-neutral-100">
+                    <p className="detail-text text-neutral-600 mt-3 pt-3 border-t border-neutral-100">
                       {agent.description}
                     </p>
                   </CardContent>
@@ -205,31 +205,31 @@ export default function Agents() {
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center space-x-3">
                           <div className={`w-3 h-3 rounded-full ${getStatusColor(agent.current_status)}`}></div>
-                          <h3 className="font-medium text-neutral-800">{agent.name}</h3>
-                          <Badge variant="outline" className="text-xs capitalize">
+                          <h3 className="section-header text-neutral-800">{agent.name}</h3>
+                          <Badge variant="outline" className="detail-text capitalize">
                             {agent.type}
                           </Badge>
                         </div>
                         <div className="text-right">
-                          <div className="text-lg font-bold text-neutral-800" data-testid={`success-rate-${agent.name.toLowerCase()}`}>
+                          <div className="metric-medium text-neutral-800" data-testid={`success-rate-${agent.name.toLowerCase()}`}>
                             {agent.success_rate}%
                           </div>
-                          <div className="text-xs text-neutral-500">Success Rate</div>
+                          <div className="detail-text text-neutral-500">Success Rate</div>
                         </div>
                       </div>
                       
                       <div className="grid grid-cols-3 gap-4 mb-4">
                         <div className="text-center">
-                          <div className="text-xl font-bold text-green-600">{agent.tasks_completed}</div>
-                          <div className="text-xs text-neutral-500">Completed</div>
+                          <div className="metric-medium text-green-600">{agent.tasks_completed}</div>
+                          <div className="detail-text text-neutral-500">Completed</div>
                         </div>
                         <div className="text-center">
-                          <div className="text-xl font-bold text-red-600">{agent.tasks_errored}</div>
-                          <div className="text-xs text-neutral-500">Errors</div>
+                          <div className="metric-medium text-red-600">{agent.tasks_errored}</div>
+                          <div className="detail-text text-neutral-500">Errors</div>
                         </div>
                         <div className="text-center">
-                          <div className="text-xl font-bold text-neutral-600">{agent.total_tasks}</div>
-                          <div className="text-xs text-neutral-500">Total</div>
+                          <div className="metric-medium text-neutral-600">{agent.total_tasks}</div>
+                          <div className="detail-text text-neutral-500">Total</div>
                         </div>
                       </div>
                       

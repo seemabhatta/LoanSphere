@@ -128,7 +128,7 @@ export default function Scheduler() {
               <div className="flex items-center gap-3">
                 <FileText className="w-5 h-5 text-blue-500" />
                 <div>
-                  <p className="font-medium">{file.filename}</p>
+                  <p className="label-text">{file.filename}</p>
                   <p className="caption-text text-gray-500">
                     {Math.round(file.size / 1024)}KB • {new Date(file.uploadedAt).toLocaleString()}
                   </p>

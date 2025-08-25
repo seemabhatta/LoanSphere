@@ -309,7 +309,7 @@ export default function Exceptions() {
                   
                   {exception.auto_fix_suggestion && (
                     <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                      <p className="detail-text text-blue-600 font-medium mb-1">
+                      <p className="detail-text text-blue-600 mb-1">
                         Auto-Fix Available
                       </p>
                       <p className="detail-text text-blue-800">

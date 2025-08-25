@@ -154,7 +154,7 @@ export default function SimpleStaging() {
                 id="document-type"
                 value={documentType} 
                 onChange={(e) => setDocumentType(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 body-text ring-offset-background file:border-0 file:bg-transparent file:body-text placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <option value="commitment">Commitment</option>
                 <option value="purchase_advice">Purchase Advice</option>
@@ -205,8 +205,8 @@ export default function SimpleStaging() {
                         <IconComponent className="w-5 h-5 text-blue-500" />
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <p className="font-medium">{file.filename}</p>
-                            <Badge className={`text-xs ${fileTypeInfo.color}`}>
+                            <p className="label-text">{file.filename}</p>
+                            <Badge className={`detail-text ${fileTypeInfo.color}`}>
                               {fileTypeInfo.type}
                             </Badge>
                           </div>
