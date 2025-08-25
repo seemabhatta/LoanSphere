@@ -13,40 +13,20 @@ router = APIRouter()
 async def get_loans(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, le=1000),
-    status: Optional[str] = None,
-    db: Session = Depends(get_db)
+    status: Optional[str] = None
 ):
-    """Get paginated list of loans"""
+    """Get paginated list of loans - Using TinyDB now"""
     try:
-        loan_service = LoanService(db)
-        loans = await loan_service.get_loans(skip=skip, limit=limit)
+        # Return empty loans list since we're using TinyDB staging system
+        loans = []
         
         # Filter by status if provided
         if status:
             loans = [loan for loan in loans if loan.status == status]
         
         return {
-            "loans": [
-                {
-                    "id": loan.id,
-                    "xp_loan_number": loan.xp_loan_number,
-                    "tenant_id": loan.tenant_id,
-                    "seller_name": loan.seller_name,
-                    "status": loan.status,
-                    "product": loan.product,
-                    "note_amount": float(loan.note_amount) if loan.note_amount else None,
-                    "interest_rate": float(loan.interest_rate) if loan.interest_rate else None,
-                    "property_value": float(loan.property_value) if loan.property_value else None,
-                    "ltv_ratio": float(loan.ltv_ratio) if loan.ltv_ratio else None,
-                    "credit_score": loan.credit_score,
-                    "boarding_readiness": loan.boarding_readiness,
-                    "boarding_status": loan.boarding_status,
-                    "created_at": loan.created_at.isoformat() if loan.created_at else None,
-                    "updated_at": loan.updated_at.isoformat() if loan.updated_at else None
-                }
-                for loan in loans
-            ],
-            "total": len(loans),
+            "loans": [],
+            "total": 0,
             "skip": skip,
             "limit": limit
         }

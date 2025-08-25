@@ -28,7 +28,7 @@ export default function Scheduler() {
   const { data: pipelineData } = useQuery({
     queryKey: ["/api/loans"],
     queryFn: async () => {
-      const response = await fetch("/api/loans");
+      const response = await fetch("/api/loans/");
       if (!response.ok) {
         throw new Error("Failed to fetch loans");
       }
