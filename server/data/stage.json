@@ -1,7 +1,7 @@
 {
   "_default": {
-    "1": {
-      "id": "staged_1756154392230",
+    "3": {
+      "id": "staged_1756155970019",
       "filename": "041. commitment_1756101402935.json",
       "type": "commitment",
       "data": {
@@ -19,16 +19,7 @@
         "minPTR": 6.375,
         "srpGridId": "tdeMT3ds"
       },
-      "uploaded_at": "2025-08-25T16:39:52.230167"
-    },
-    "2": {
-      "id": "staged_1756155936833",
-      "filename": "tinydb-test.json",
-      "type": "commitment",
-      "data": {
-        "message": "TinyDB staging is working!"
-      },
-      "uploaded_at": "2025-08-25T21:05:36.833853"
+      "uploaded_at": "2025-08-25T21:06:10.019985"
     }
   }
 }
