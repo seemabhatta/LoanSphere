@@ -248,3 +248,180 @@ async def stage_uldd(uldd_data: dict, db: Session = Depends(get_db)):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to stage ULDD: {str(e)}")
+
+@router.post("/stage/purchase")
+async def stage_purchase_advice(purchase_data: dict, db: Session = Depends(get_db)):
+    """Stage purchase advice data"""
+    try:
+        from services.loan_service import LoanService
+        
+        # Extract purchase advice data with flexible field handling
+        loan_number = (
+            purchase_data.get("loanNumber") or 
+            purchase_data.get("investorLoanNumber") or 
+            purchase_data.get("loan_number") or
+            f"PA_{int(datetime.now().timestamp())}"
+        )
+        
+        seller_name = (
+            purchase_data.get("sellerName") or
+            purchase_data.get("seller_name") or
+            purchase_data.get("originatorName") or
+            "Unknown Seller"
+        )
+        
+        # Create loan from purchase advice
+        loan_service = LoanService(db)
+        loan_data = {
+            "xp_loan_number": loan_number,
+            "tenant_id": "staged_purchase_advice",
+            "seller_name": seller_name,
+            "status": "staged",
+            "product": purchase_data.get("product", "Unknown"),
+            "boarding_readiness": "data_received",
+            "purchased_amount": purchase_data.get("purchaseAmount"),
+            "note_amount": purchase_data.get("noteAmount"),
+            "upb_amount": purchase_data.get("upbAmount"),
+            "metadata": json.dumps({
+                "source": "purchase_advice_staging",
+                "staged_at": datetime.now().isoformat(),
+                "original_data": purchase_data
+            })
+        }
+        
+        loan = await loan_service.create_loan(loan_data)
+        
+        return {
+            "success": True,
+            "loan": {
+                "xp_loan_number": loan.xp_loan_number,
+                "id": loan.id,
+                "status": loan.status
+            },
+            "message": "Purchase advice data staged successfully"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to stage purchase advice: {str(e)}")
+
+@router.post("/stage/loan")
+async def stage_loan_data(loan_data: dict, db: Session = Depends(get_db)):
+    """Stage generic loan data"""
+    try:
+        from services.loan_service import LoanService
+        
+        # Extract loan identifier with flexible field handling
+        loan_identifier = (
+            loan_data.get("loanNumber") or
+            loan_data.get("loan_number") or
+            loan_data.get("loanId") or
+            loan_data.get("originalLoanNumber") or
+            loan_data.get("investorLoanNumber") or
+            # Check nested structures
+            loan_data.get("loanIdentifier", {}).get("originalLoanNumber") or
+            loan_data.get("loan_identifier", {}).get("original_loan_number") or
+            f"LD_{int(datetime.now().timestamp())}"
+        )
+        
+        # Extract loan details with flexible field handling
+        loan_details = loan_data.get("loanDetails", loan_data)
+        property_data = loan_data.get("property", loan_data)
+        borrower_data = loan_data.get("borrower", loan_data)
+        
+        loan_service = LoanService(db)
+        
+        # Try to find existing loan or create new one
+        existing_loan = await loan_service.get_loan_by_xp_number(loan_identifier)
+        
+        if existing_loan:
+            # Update existing loan with new data
+            update_data = {
+                "note_amount": (
+                    loan_details.get("noteAmount") or
+                    loan_details.get("note_amount") or
+                    loan_data.get("noteAmount")
+                ),
+                "interest_rate": (
+                    loan_details.get("interestRate") or
+                    loan_details.get("interest_rate") or
+                    loan_data.get("interestRate")
+                ),
+                "property_value": (
+                    property_data.get("appraisedValue") or
+                    property_data.get("appraised_value") or
+                    loan_data.get("propertyValue")
+                ),
+                "ltv_ratio": (
+                    property_data.get("ltvRatio") or
+                    property_data.get("ltv_ratio") or
+                    loan_data.get("ltvRatio")
+                ),
+                "credit_score": (
+                    borrower_data.get("creditScore") or
+                    borrower_data.get("credit_score") or
+                    loan_data.get("creditScore")
+                ),
+                "boarding_readiness": "data_received",
+                "metadata": json.dumps({
+                    **json.loads(existing_loan.metadata or "{}"),
+                    "loan_data_update": {
+                        "staged_at": datetime.now().isoformat(),
+                        "original_data": loan_data
+                    }
+                })
+            }
+            
+            loan = await loan_service.update_loan(existing_loan.id, update_data)
+        else:
+            # Create new loan from loan data
+            new_loan_data = {
+                "xp_loan_number": loan_identifier,
+                "tenant_id": "staged_loan_data",
+                "status": "staged",
+                "boarding_readiness": "data_received",
+                "note_amount": (
+                    loan_details.get("noteAmount") or
+                    loan_details.get("note_amount") or
+                    loan_data.get("noteAmount")
+                ),
+                "interest_rate": (
+                    loan_details.get("interestRate") or
+                    loan_details.get("interest_rate") or
+                    loan_data.get("interestRate")
+                ),
+                "property_value": (
+                    property_data.get("appraisedValue") or
+                    property_data.get("appraised_value") or
+                    loan_data.get("propertyValue")
+                ),
+                "ltv_ratio": (
+                    property_data.get("ltvRatio") or
+                    property_data.get("ltv_ratio") or
+                    loan_data.get("ltvRatio")
+                ),
+                "credit_score": (
+                    borrower_data.get("creditScore") or
+                    borrower_data.get("credit_score") or
+                    loan_data.get("creditScore")
+                ),
+                "upb_amount": loan_data.get("upbAmount") or loan_data.get("upb_amount"),
+                "seller_name": loan_data.get("originatorName") or loan_data.get("sellerName"),
+                "metadata": json.dumps({
+                    "source": "loan_data_staging",
+                    "staged_at": datetime.now().isoformat(),
+                    "original_data": loan_data
+                })
+            }
+            
+            loan = await loan_service.create_loan(new_loan_data)
+        
+        return {
+            "success": True,
+            "loan": {
+                "xp_loan_number": loan.xp_loan_number,
+                "id": loan.id,
+                "status": loan.status
+            },
+            "message": "Loan data staged successfully"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to stage loan data: {str(e)}")

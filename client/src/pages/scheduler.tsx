@@ -52,9 +52,11 @@ export default function Scheduler() {
         if (type.includes("Commitment")) {
           stagingEndpoint = "/api/staging/stage/commitment";
         } else if (type.includes("Loan")) {
-          stagingEndpoint = "/api/staging/stage/uldd";
+          stagingEndpoint = "/api/staging/stage/loan";
+        } else if (type.includes("Purchase")) {
+          stagingEndpoint = "/api/staging/stage/purchase";
         } else {
-          // For other types, create a synthetic loan
+          // For other types, use commitment endpoint as fallback
           stagingEndpoint = "/api/staging/stage/commitment";
         }
         
@@ -68,6 +70,11 @@ export default function Scheduler() {
         const stagingResult = await stagingResponse.json();
         
         if (stagingResult.success) {
+          // Delete the staged file after successful processing
+          await fetch(`/api/simple/delete/${id}`, {
+            method: "DELETE"
+          });
+          
           return { 
             ...result, 
             processedType: type,
