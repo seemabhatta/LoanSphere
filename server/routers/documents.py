@@ -16,10 +16,26 @@ async def get_documents():
         # If no documents exist, create sample data
         if not documents:
             sample_documents = [
+                # Original PDF blob that gets split into multiple documents
                 {
-                    "id": "DOC_001_XP12345",
+                    "id": "BLOB_001_XP12345",
                     "metadata": {
-                        "xp_doc_id": "DOC_001_XP12345", 
+                        "xp_doc_id": "BLOB_001_XP12345", 
+                        "xp_loan_number": "XP12345",
+                        "document_type": "Loan Package (PDF Blob)",
+                        "status": "completed",
+                        "ocr_status": "completed",
+                        "classification_status": "completed", 
+                        "extraction_status": "completed",
+                        "validation_status": "completed",
+                        "split_count": 3
+                    }
+                },
+                # Split document 1 from the blob
+                {
+                    "id": "DOC_001_1_XP12345",
+                    "metadata": {
+                        "xp_doc_id": "DOC_001_1_XP12345", 
                         "xp_loan_number": "XP12345",
                         "document_type": "Appraisal",
                         "status": "completed",
@@ -27,6 +43,8 @@ async def get_documents():
                         "classification_status": "completed", 
                         "extraction_status": "completed",
                         "validation_status": "completed",
+                        "parent_doc_id": "BLOB_001_XP12345",
+                        "is_split_document": True,
                         "extracted_data": {
                             "property_value": 450000,
                             "appraiser": "ABC Appraisal Co",
@@ -34,19 +52,39 @@ async def get_documents():
                         }
                     }
                 },
+                # Split document 2 from the blob
                 {
-                    "id": "DOC_002_XP12345", 
+                    "id": "DOC_001_2_XP12345", 
                     "metadata": {
-                        "xp_doc_id": "DOC_002_XP12345",
+                        "xp_doc_id": "DOC_001_2_XP12345",
                         "xp_loan_number": "XP12345", 
                         "document_type": "Credit Report",
                         "status": "processing",
                         "ocr_status": "completed",
                         "classification_status": "completed",
                         "extraction_status": "processing", 
-                        "validation_status": "pending"
+                        "validation_status": "pending",
+                        "parent_doc_id": "BLOB_001_XP12345",
+                        "is_split_document": True
                     }
                 },
+                # Split document 3 from the blob
+                {
+                    "id": "DOC_001_3_XP12345", 
+                    "metadata": {
+                        "xp_doc_id": "DOC_001_3_XP12345",
+                        "xp_loan_number": "XP12345", 
+                        "document_type": "W2 Form",
+                        "status": "completed",
+                        "ocr_status": "completed",
+                        "classification_status": "completed",
+                        "extraction_status": "completed", 
+                        "validation_status": "completed",
+                        "parent_doc_id": "BLOB_001_XP12345",
+                        "is_split_document": True
+                    }
+                },
+                # Single document (not from a blob)
                 {
                     "id": "DOC_003_XP67890",
                     "metadata": {
@@ -58,6 +96,21 @@ async def get_documents():
                         "classification_status": "completed",
                         "extraction_status": "failed",
                         "validation_status": "pending"
+                    }
+                },
+                # Another blob currently being processed
+                {
+                    "id": "BLOB_002_XP67890",
+                    "metadata": {
+                        "xp_doc_id": "BLOB_002_XP67890", 
+                        "xp_loan_number": "XP67890",
+                        "document_type": "Loan Package (PDF Blob)",
+                        "status": "processing",
+                        "ocr_status": "processing",
+                        "classification_status": "pending", 
+                        "extraction_status": "pending",
+                        "validation_status": "pending",
+                        "split_count": 2
                     }
                 }
             ]
@@ -85,7 +138,10 @@ async def get_documents():
                 'validation_status': metadata.get('validation_status', 'pending'),
                 'created_at': doc.get('created_at', datetime.now().isoformat()),
                 'updated_at': metadata.get('updated_at', doc.get('created_at', datetime.now().isoformat())),
-                'extracted_data': metadata.get('extracted_data')
+                'extracted_data': metadata.get('extracted_data'),
+                'parent_doc_id': metadata.get('parent_doc_id'),
+                'is_split_document': metadata.get('is_split_document', False),
+                'split_count': metadata.get('split_count')
             }
             formatted_documents.append(formatted_doc)
         

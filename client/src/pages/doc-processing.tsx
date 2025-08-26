@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
+import { FileText, Files } from "lucide-react";
 
 interface DocumentProcessing {
   id: string;
@@ -13,6 +14,9 @@ interface DocumentProcessing {
   extraction_status: string;
   validation_status: string;
   created_at: string;
+  parent_doc_id?: string;
+  is_split_document?: boolean;
+  split_count?: number;
 }
 
 export default function DocProcessing() {
@@ -139,6 +143,9 @@ export default function DocProcessing() {
                   </button>
                 </th>
                 <th className="text-left py-2 px-3 text-xs font-bold text-neutral-700">
+                  <span>Source</span>
+                </th>
+                <th className="text-left py-2 px-3 text-xs font-bold text-neutral-700">
                   <button 
                     onClick={() => handleSort('status')}
                     className="text-xs font-bold text-neutral-700 hover:text-neutral-900"
@@ -196,15 +203,33 @@ export default function DocProcessing() {
             </thead>
             <tbody>
               {sortedDocuments.map((document: DocumentProcessing) => (
-                <tr key={document.id} className="border-b border-neutral-100 hover:bg-neutral-50">
+                <tr key={document.id} className={`border-b border-neutral-100 hover:bg-neutral-50 ${document.is_split_document ? 'bg-blue-50/30' : ''}`}>
                   <td className="p-4 body-text text-neutral-900" data-testid={`loan-${document.id}`}>
                     {document.xp_loan_number}
                   </td>
                   <td className="p-4 body-text text-neutral-700" data-testid={`type-${document.id}`}>
-                    {document.document_type}
+                    <div className={`flex items-center ${document.is_split_document ? 'pl-4' : ''}`}>
+                      {document.is_split_document && <span className="text-blue-400 mr-2">└─</span>}
+                      {document.document_type}
+                    </div>
                   </td>
                   <td className="p-4 code-text text-neutral-600" data-testid={`doc-id-${document.id}`}>
                     {document.xp_doc_id}
+                  </td>
+                  <td className="p-4" data-testid={`source-${document.id}`}>
+                    {document.parent_doc_id ? (
+                      <div className="flex items-center space-x-2">
+                        <FileText className="w-3 h-3 text-blue-500" />
+                        <span className="text-xs text-blue-600">{document.parent_doc_id}</span>
+                      </div>
+                    ) : document.split_count ? (
+                      <div className="flex items-center space-x-2">
+                        <Files className="w-3 h-3 text-green-500" />
+                        <span className="text-xs text-green-600">Split → {document.split_count}</span>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-neutral-400">Single</span>
+                    )}
                   </td>
                   <td className="p-4" data-testid={`status-${document.id}`}>
                     <Badge className={getStatusBadge(document.status)}>
