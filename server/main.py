@@ -1,5 +1,6 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 from contextlib import asynccontextmanager
 import asyncio
 import json
@@ -8,9 +9,13 @@ from typing import List
 import uvicorn
 import os
 from loguru import logger
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv(dotenv_path="../.env")
 
 # from database import init_db, get_db  # Using TinyDB instead
-from routers import loans, exceptions, agents, compliance, documents, metrics, staging, purchase_advices, commitments
+from routers import loans, exceptions, agents, compliance, documents, metrics, staging, purchase_advices, commitments, auth
 from services.loan_service import LoanService
 from agents.planner_agent import PlannerAgent
 from agents.tool_agent import ToolAgent
@@ -79,6 +84,12 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+# Session middleware (required for OAuth)
+app.add_middleware(
+    SessionMiddleware, 
+    secret_key=os.getenv("SESSION_SECRET", "your-secret-key-here")
+)
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -89,6 +100,7 @@ app.add_middleware(
 )
 
 # Include routers
+app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(loans.router, prefix="/api/loans", tags=["loans"])
 app.include_router(exceptions.router, prefix="/api/exceptions", tags=["exceptions"])
 app.include_router(agents.router, prefix="/api/agents", tags=["agents"])

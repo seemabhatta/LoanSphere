@@ -1,7 +1,43 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Shield, Zap, Target, CheckCircle } from "lucide-react";
+import { ArrowRight, Shield, Zap, Target, CheckCircle, Chrome, Github, Facebook } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+
+interface OAuthProvider {
+  name: string;
+  display_name: string;
+  login_url: string;
+}
+
+interface ProvidersResponse {
+  providers: OAuthProvider[];
+}
+
+const providerIcons = {
+  google: Chrome,
+  github: Github, 
+  facebook: Facebook,
+};
 
 export default function Landing() {
+  const [showLoginOptions, setShowLoginOptions] = useState(false);
+  
+  const { data: providersData } = useQuery<ProvidersResponse>({
+    queryKey: ["/api/auth/providers"],
+    retry: false,
+  });
+
+  const handleSignInClick = () => {
+    if (providersData?.providers && providersData.providers.length > 1) {
+      setShowLoginOptions(!showLoginOptions);
+    } else if (providersData?.providers && providersData.providers.length === 1) {
+      window.location.href = providersData.providers[0].login_url;
+    } else {
+      // If no providers loaded yet, try Google directly as fallback
+      window.location.href = "/api/auth/google";
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -16,13 +52,35 @@ export default function Landing() {
               />
               <span className="text-xl font-bold text-white">Loan Xchange</span>
             </div>
-            <Button
-              onClick={() => window.location.href = "/api/login"}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-              data-testid="button-login"
-            >
-              Sign In
-            </Button>
+            <div className="relative">
+              <Button
+                onClick={handleSignInClick}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                data-testid="button-login"
+              >
+                Sign In
+              </Button>
+              
+              {showLoginOptions && providersData?.providers && providersData.providers.length > 1 && (
+                <div className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg z-10 border border-gray-700">
+                  <div className="py-1">
+                    {providersData.providers.map((provider) => {
+                      const IconComponent = providerIcons[provider.name as keyof typeof providerIcons];
+                      return (
+                        <button
+                          key={provider.name}
+                          onClick={() => window.location.href = provider.login_url}
+                          className="flex items-center w-full px-4 py-2 text-sm text-white hover:bg-gray-700 transition-colors"
+                        >
+                          {IconComponent && <IconComponent className="w-4 h-4 mr-3" />}
+                          {provider.display_name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -37,7 +95,7 @@ export default function Landing() {
             with our multi-agent loan boarding automation platform.
           </p>
           <Button
-            onClick={() => window.location.href = "/api/login"}
+            onClick={handleSignInClick}
             size="lg"
             className="bg-blue-600 hover:bg-blue-700 text-lg px-8 py-3"
             data-testid="button-get-started"

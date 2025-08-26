@@ -1,8 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
-import type { User } from "@shared/schema";
+
+interface AuthUser {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  profile_image_url?: string;
+  provider: string;
+}
 
 export function useAuth() {
-  const { data: user, isLoading } = useQuery<User>({
+  const { data: user, isLoading, error } = useQuery<AuthUser>({
     queryKey: ["/api/auth/user"],
     retry: false,
   });
@@ -10,6 +18,6 @@ export function useAuth() {
   return {
     user,
     isLoading,
-    isAuthenticated: !!user,
+    isAuthenticated: !!user && !error,
   };
 }

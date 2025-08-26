@@ -9,29 +9,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
 
-  // Auth routes - must come before proxy middleware
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      
-      // Return mock user for local development
-      if (process.env.NODE_ENV === 'development' && userId === 'local-dev-user') {
-        return res.json({
-          id: 'local-dev-user',
-          email: 'dev@localhost',
-          firstName: 'Local',
-          lastName: 'Developer',
-          profileImageUrl: null
-        });
-      }
-      
-      const user = await storage.getUser(userId);
-      res.json(user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
-    }
-  });
+  // Auth routes are now handled by Python backend
 
   // Health check endpoint (not proxied)
   app.get('/health', (req, res) => {
@@ -83,12 +61,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     timeout: 30000,
     pathRewrite: {
       '^/': '/api/'  // Add /api prefix since Express strips it
+    },
+    onProxyReq: (proxyReq, req, res) => {
+      // Forward cookies from client to Python backend
+      if (req.headers.cookie) {
+        proxyReq.setHeader('cookie', req.headers.cookie);
+      }
+    },
+    onProxyRes: (proxyRes, req, res) => {
+      // Forward set-cookie headers from Python backend to client
+      if (proxyRes.headers['set-cookie']) {
+        res.setHeader('set-cookie', proxyRes.headers['set-cookie']);
+      }
     }
   });
 
   app.use('/api', (req, res, next) => {
-    // Skip proxy for auth routes - handle them above
-    if (req.path.startsWith('/auth/') || req.path === '/auth' || req.path.startsWith('/login') || req.path.startsWith('/logout') || req.path.startsWith('/callback')) {
+    // Skip proxy for old Replit auth routes only
+    if (req.path.startsWith('/login') || req.path.startsWith('/logout') || req.path.startsWith('/callback')) {
       return next();
     }
     console.log(`🔄 Proxying ${req.method} ${req.originalUrl} to Python`);
