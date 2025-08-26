@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -158,7 +158,7 @@ export default function AIAssistant() {
         </div>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="page-title text-gray-900" data-testid="page-title">
+            <h1 className="section-header text-gray-900" data-testid="page-title">
               Assistant
             </h1>
             <p className="body-text text-gray-500 mt-1">
