@@ -24,20 +24,24 @@ const navigationSections = [
   {
     title: "OPERATIONS",
     items: [
-      { name: "Command Center", href: "/", icon: Activity, description: "Real-time dashboard", badge: "live" },
       { name: "Stage", href: "/simple-staging", icon: Upload, description: "Upload & stage files" },
       { name: "Process", href: "/scheduler", icon: Calendar, description: "Loan processing schedule" },
-      { name: "Pipeline Monitor", href: "/pipeline", icon: Route, description: "Track loan progress" },
-      { name: "Exceptions", href: "/exceptions", icon: AlertTriangle, description: "Review and resolve issues", badge: "3" },
     ]
   },
   {
-    title: "MONITORING",
+    title: "DATA & DOCS",
     items: [
       { name: "Loans", href: "/loans", icon: CreditCard, description: "Loan management" },
       { name: "Commitments", href: "/commitments", icon: FileCheck, description: "Commitment tracking" },
       { name: "PurchaseAdvices", href: "/purchase-advices", icon: Receipt, description: "Purchase advice management" },
       { name: "Documents", href: "/documents", icon: FileText, description: "Document processing" },
+    ]
+  },
+  {
+    title: "PIPELINE",
+    items: [
+      { name: "Pipeline Monitor", href: "/pipeline", icon: Route, description: "Track loan progress" },
+      { name: "Exceptions", href: "/exceptions", icon: AlertTriangle, description: "Review and resolve issues", badge: "3" },
     ]
   },
   {
