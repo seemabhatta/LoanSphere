@@ -384,11 +384,11 @@ export default function Exceptions() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
-                  <SelectItem value="documentation">📋 Documentation Required</SelectItem>
-                  <SelectItem value="data_validation">⚠️ Data Validation</SelectItem>
-                  <SelectItem value="investor_compliance">🏦 Investor Compliance</SelectItem>
-                  <SelectItem value="manual_review">👤 Manual Review</SelectItem>
-                  <SelectItem value="system_processing">🔄 System/Processing</SelectItem>
+                  <SelectItem value="documentation">Documentation Required</SelectItem>
+                  <SelectItem value="data_validation">Data Validation</SelectItem>
+                  <SelectItem value="investor_compliance">Investor Compliance</SelectItem>
+                  <SelectItem value="manual_review">Manual Review</SelectItem>
+                  <SelectItem value="system_processing">System/Processing</SelectItem>
                 </SelectContent>
               </Select>
 
