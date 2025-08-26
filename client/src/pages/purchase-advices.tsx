@@ -22,7 +22,7 @@ export default function PurchaseAdvices() {
   const { data: purchaseAdvicesData, refetch: refetchPurchaseAdvices } = useQuery({
     queryKey: ['/api/purchase-advices'],
     queryFn: async () => {
-      const response = await fetch('/api/purchase-advices');
+      const response = await fetch('/api/purchase-advices/');
       if (!response.ok) {
         throw new Error('Failed to fetch purchase advices data');
       }

@@ -31,7 +31,7 @@ export default function Commitments() {
   const { data: commitmentsData, refetch: refetchCommitments } = useQuery({
     queryKey: ['/api/commitments'],
     queryFn: async () => {
-      const response = await fetch('/api/commitments');
+      const response = await fetch('/api/commitments/');
       if (!response.ok) {
         throw new Error('Failed to fetch commitments data');
       }
