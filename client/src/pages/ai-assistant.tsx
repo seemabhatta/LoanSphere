@@ -1,0 +1,360 @@
+import { useState, useRef, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Bot,
+  Send,
+  Mic,
+  MicOff,
+  Zap,
+  TrendingUp,
+  AlertTriangle,
+  FileText,
+  Clock,
+  User,
+  Lightbulb,
+  Brain
+} from "lucide-react";
+
+interface Message {
+  id: string;
+  type: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+  suggestions?: string[];
+  data?: any;
+}
+
+interface QuickAction {
+  label: string;
+  query: string;
+  icon: any;
+  category: string;
+}
+
+export default function AIAssistant() {
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: '1',
+      type: 'assistant',
+      content: 'Hello! I\'m your AI Assistant for Xpanse Loan Xchange. I can help you with loan boarding, exception management, analytics, and system operations. What would you like to know?',
+      timestamp: new Date(),
+      suggestions: [
+        'Show me critical exceptions',
+        'What\'s my first-pass yield today?',
+        'Which loans are behind schedule?',
+        'Analyze exception trends this week'
+      ]
+    }
+  ]);
+  const [inputValue, setInputValue] = useState('');
+  const [isListening, setIsListening] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const quickActions: QuickAction[] = [
+    { label: 'Critical Exceptions', query: 'Show me all critical exceptions requiring immediate attention', icon: AlertTriangle, category: 'Operations' },
+    { label: 'System Status', query: 'What is the current system status and performance?', icon: Zap, category: 'Monitoring' },
+    { label: 'FPY Analysis', query: 'Analyze first-pass yield trends and suggest improvements', icon: TrendingUp, category: 'Analytics' },
+    { label: 'Loan Pipeline', query: 'Show me the current loan boarding pipeline status', icon: FileText, category: 'Pipeline' },
+    { label: 'SLA Alerts', query: 'Which loans are at risk of missing SLA targets?', icon: Clock, category: 'Alerts' },
+    { label: 'Auto-Fix Options', query: 'What exceptions can be auto-resolved right now?', icon: Lightbulb, category: 'Automation' },
+  ];
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const handleSendMessage = async () => {
+    if (!inputValue.trim()) return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      type: 'user',
+      content: inputValue,
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInputValue('');
+    setIsTyping(true);
+
+    // Simulate AI response
+    setTimeout(() => {
+      const aiResponse = generateAIResponse(inputValue);
+      setMessages(prev => [...prev, aiResponse]);
+      setIsTyping(false);
+    }, 1500);
+  };
+
+  const generateAIResponse = (query: string): Message => {
+    const lowerQuery = query.toLowerCase();
+    
+    if (lowerQuery.includes('exception') || lowerQuery.includes('critical')) {
+      return {
+        id: Date.now().toString(),
+        type: 'assistant',
+        content: `I found 5 active exceptions requiring attention:\n\n🔴 **HIGH Priority:**\n• XP12345 - Missing W-2 Documents (2 days old)\n• XP12346 - Interest Rate Mismatch (Auto-fix available)\n\n🟡 **MEDIUM Priority:**\n• XP12347 - DTI Ratio Exceeds Guidelines (1 day old)\n• XP12349 - Credit Score Variance (Manual review needed)\n\n🟢 **LOW Priority:**\n• XP12348 - API Connection Failed (4 hours, Auto-fix available)\n\nWould you like me to auto-resolve the fixable exceptions or provide detailed analysis for any specific loan?`,
+        timestamp: new Date(),
+        suggestions: ['Auto-resolve fixable exceptions', 'Analyze XP12345 documents', 'Show exception trends'],
+        data: { exceptions: 5, autoFixAvailable: 2, highPriority: 2 }
+      };
+    }
+    
+    if (lowerQuery.includes('status') || lowerQuery.includes('system')) {
+      return {
+        id: Date.now().toString(),
+        type: 'assistant',
+        content: `🟢 **System Status: HEALTHY**\n\n📊 **Current Metrics:**\n• First-Pass Yield: 87.3% (+2.1% ↗️)\n• Time to Board: 1.8h (-0.3h improvement)\n• Exception Auto-Clear: 73% (+5%)\n• Compliance Score: 100%\n\n⚡ **System Health:**\n• Uptime: 23h 45m\n• Active Agents: 4/4 operational\n• Processing Capacity: 78% utilized\n• No critical alerts\n\nAll systems are performing within optimal parameters. Great job on exceeding your FPY target!`,
+        timestamp: new Date(),
+        suggestions: ['Show detailed metrics', 'View agent performance', 'Check pipeline capacity'],
+        data: { fpy: 87.3, timeToBoard: 1.8, compliance: 100 }
+      };
+    }
+
+    if (lowerQuery.includes('fpy') || lowerQuery.includes('first-pass') || lowerQuery.includes('yield')) {
+      return {
+        id: Date.now().toString(),
+        type: 'assistant',
+        content: `📈 **First-Pass Yield Analysis**\n\n**Current Performance:**\n• FPY: 87.3% (Target: 85%) ✅\n• Trend: +2.1% improvement over last period\n• Ranking: Exceeding industry benchmarks\n\n**Contributing Factors:**\n✅ Improved document pre-validation (+3.2%)\n✅ Enhanced OCR accuracy (+1.8%)\n✅ Better exception auto-resolution (+2.7%)\n\n**Recommendations:**\n🎯 Continue current document validation protocols\n🎯 Expand auto-fix rules to cover more scenarios\n🎯 Consider implementing predictive exception detection\n\nYou're on track to achieve 90% FPY by month-end!`,
+        timestamp: new Date(),
+        suggestions: ['Implement predictive detection', 'Analyze failed loans', 'Export FPY report'],
+        data: { currentFPY: 87.3, target: 85, improvement: 2.1 }
+      };
+    }
+
+    // Default response
+    return {
+      id: Date.now().toString(),
+      type: 'assistant',
+      content: `I understand you're asking about "${query}". I can help you with:\n\n🎯 **Operations:** Exception management, loan boarding, document processing\n📊 **Analytics:** Performance metrics, trends, compliance reporting\n⚙️ **System:** Status monitoring, agent performance, pipeline health\n🔧 **Automation:** Auto-fix suggestions, workflow optimization\n\nCould you be more specific about what you'd like to know? I'm here to help optimize your loan boarding operations!`,
+      timestamp: new Date(),
+      suggestions: ['Show system overview', 'List current exceptions', 'Analyze performance trends', 'Check compliance status'],
+    };
+  };
+
+  const handleQuickAction = (action: QuickAction) => {
+    setInputValue(action.query);
+  };
+
+  const handleSuggestionClick = (suggestion: string) => {
+    setInputValue(suggestion);
+  };
+
+  const toggleListening = () => {
+    setIsListening(!isListening);
+    // Voice recognition would be implemented here
+  };
+
+  return (
+    <div className="flex-1 flex flex-col overflow-hidden bg-white">
+      {/* Header */}
+      <header className="px-6 py-4">
+        <div className="flex items-center caption-text mb-1">
+          <span>Command Center</span>
+          <span className="mx-2">›</span>
+          <span className="text-gray-900">AI Assistant</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="page-title text-gray-900" data-testid="page-title">
+              AI Assistant
+            </h1>
+            <p className="body-text text-gray-500 mt-1">
+              Natural language interface for intelligent loan boarding assistance
+            </p>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+              <Brain className="w-3 h-3 mr-1" />
+              GPT-5 Powered
+            </Badge>
+            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+              <Zap className="w-3 h-3 mr-1" />
+              Real-time Data
+            </Badge>
+          </div>
+        </div>
+      </header>
+
+      {/* Content */}
+      <div className="flex-1 overflow-hidden p-6">
+        <div className="h-full grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Chat Interface */}
+          <div className="lg:col-span-3 flex flex-col">
+            <Card className="flex-1 flex flex-col">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center">
+                  <Bot className="w-5 h-5 mr-2 text-blue-600" />
+                  Conversation
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="flex-1 flex flex-col">
+                {/* Messages */}
+                <div className="flex-1 overflow-y-auto mb-4 space-y-4">
+                  {messages.map((message) => (
+                    <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[80%] rounded-lg p-3 ${
+                        message.type === 'user' 
+                          ? 'bg-blue-600 text-white' 
+                          : 'bg-gray-100 text-gray-900'
+                      }`}>
+                        <div className="flex items-start space-x-2">
+                          {message.type === 'assistant' && (
+                            <Bot className="w-4 h-4 mt-0.5 text-blue-600" />
+                          )}
+                          {message.type === 'user' && (
+                            <User className="w-4 h-4 mt-0.5" />
+                          )}
+                          <div className="flex-1">
+                            <p className="body-text whitespace-pre-line">{message.content}</p>
+                            <p className={`text-xs mt-2 ${message.type === 'user' ? 'text-blue-200' : 'text-gray-500'}`}>
+                              {message.timestamp.toLocaleTimeString()}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        {/* Suggestions */}
+                        {message.suggestions && (
+                          <div className="flex flex-wrap gap-2 mt-3">
+                            {message.suggestions.map((suggestion, index) => (
+                              <button
+                                key={index}
+                                onClick={() => handleSuggestionClick(suggestion)}
+                                className="text-xs px-3 py-1 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+                                data-testid={`suggestion-${index}`}
+                              >
+                                {suggestion}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {/* Typing indicator */}
+                  {isTyping && (
+                    <div className="flex justify-start">
+                      <div className="bg-gray-100 rounded-lg p-3">
+                        <div className="flex items-center space-x-2">
+                          <Bot className="w-4 h-4 text-blue-600" />
+                          <div className="flex space-x-1">
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+                
+                {/* Input Area */}
+                <div className="flex items-center space-x-2">
+                  <div className="flex-1 relative">
+                    <Input
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                      placeholder="Ask me anything about loans, exceptions, metrics, or system status..."
+                      className="pr-12"
+                      data-testid="ai-input"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={toggleListening}
+                      className={`absolute right-2 top-1/2 -translate-y-1/2 p-1 h-6 w-6 ${
+                        isListening ? 'text-red-600' : 'text-gray-400'
+                      }`}
+                      data-testid="voice-button"
+                    >
+                      {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                    </Button>
+                  </div>
+                  <Button onClick={handleSendMessage} disabled={!inputValue.trim()} data-testid="send-button">
+                    <Send className="w-4 h-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Quick Actions Sidebar */}
+          <div className="space-y-6">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center text-base">
+                  <Lightbulb className="w-4 h-4 mr-2" />
+                  Quick Actions
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {quickActions.map((action, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleQuickAction(action)}
+                      className="w-full text-left p-3 rounded-lg border hover:bg-gray-50 transition-colors group"
+                      data-testid={`quick-action-${index}`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <action.icon className="w-4 h-4 text-gray-600 group-hover:text-blue-600" />
+                        <div className="flex-1">
+                          <p className="body-text font-medium text-gray-900">{action.label}</p>
+                          <p className="text-xs text-gray-500">{action.category}</p>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center text-base">
+                  <Brain className="w-4 h-4 mr-2" />
+                  AI Capabilities
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex items-start space-x-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+                    <div>
+                      <p className="body-text font-medium">Real-time Analysis</p>
+                      <p className="text-xs text-gray-500">Live data insights and recommendations</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+                    <div>
+                      <p className="body-text font-medium">Predictive Intelligence</p>
+                      <p className="text-xs text-gray-500">Forecasting and early warning alerts</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full mt-2"></div>
+                    <div>
+                      <p className="body-text font-medium">Automated Actions</p>
+                      <p className="text-xs text-gray-500">Smart exception resolution and workflow optimization</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

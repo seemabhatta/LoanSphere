@@ -16,15 +16,17 @@ import {
   Clock,
   CreditCard,
   FileCheck,
-  Receipt
+  Receipt,
+  Bot
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navigationSections = [
   {
-    title: "",
+    title: "COMMAND CENTER",
     items: [
       { name: "Command Center", href: "/", icon: Home, description: "Mission control dashboard" },
+      { name: "AI Assistant", href: "/ai-assistant", icon: Bot, description: "Natural language interface" },
     ]
   },
   {

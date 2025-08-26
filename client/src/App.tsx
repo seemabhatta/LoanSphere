@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Sidebar from "@/components/sidebar";
 import TopHeader from "@/components/top-header";
 import CommandCenter from "@/pages/command-center";
+import AIAssistant from "@/pages/ai-assistant";
 import PipelineMonitor from "@/pages/pipeline-monitor";
 import DocProcessing from "@/pages/doc-processing";
 import Exceptions from "@/pages/exceptions";
@@ -51,6 +52,7 @@ function Router() {
           <div className="bg-white rounded-lg shadow-sm h-full overflow-y-auto">
             <Switch>
               <Route path="/" component={CommandCenter} />
+              <Route path="/ai-assistant" component={AIAssistant} />
               <Route path="/pipeline" component={PipelineMonitor} />
               <Route path="/doc-processing" component={DocProcessing} />
               <Route path="/exceptions" component={Exceptions} />
