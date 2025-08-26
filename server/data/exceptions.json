@@ -1,0 +1,153 @@
+{
+  "_default": {
+    "1": {
+      "id": "d62bc3f6-5230-44c7-be3b-61d2a3c78810",
+      "xp_loan_number": "XP12345",
+      "rule_id": "DOC_MISSING_001",
+      "rule_name": "Missing W-2 Documents",
+      "severity": "HIGH",
+      "status": "open",
+      "confidence": 0.95,
+      "description": "Required W-2 documents are missing for borrower income verification",
+      "evidence": {
+        "missing_documents": [
+          "W-2 2023",
+          "W-2 2022"
+        ],
+        "source": "document_validation"
+      },
+      "auto_fix_suggestion": null,
+      "detected_at": "2025-08-26T01:58:49.547095",
+      "resolved_at": null,
+      "resolved_by": null,
+      "sla_due": "2025-08-27T01:58:49.547104",
+      "notes": null,
+      "category": "documentation"
+    },
+    "2": {
+      "id": "a1e958a9-c7ca-4e98-94e0-bca903219327",
+      "xp_loan_number": "XP12346",
+      "rule_id": "RATE_PARITY_001",
+      "rule_name": "Interest Rate Mismatch",
+      "severity": "HIGH",
+      "status": "open",
+      "confidence": 0.94,
+      "description": "Interest rate mismatch between purchase advice (5.25%) and ULDD data (5.75%)",
+      "evidence": {
+        "purchase_advice_rate": 5.25,
+        "uldd_rate": 5.75,
+        "difference": 0.5
+      },
+      "auto_fix_suggestion": {
+        "type": "UPDATE_RATE",
+        "description": "Use higher rate (5.75%) for conservative approach",
+        "new_value": 5.75,
+        "confidence": 0.94
+      },
+      "detected_at": "2025-08-26T02:58:49.547117",
+      "resolved_at": null,
+      "resolved_by": null,
+      "sla_due": "2025-08-27T02:58:49.547121",
+      "notes": null,
+      "category": "data_validation"
+    },
+    "3": {
+      "id": "9bfb23ea-75ce-4c0f-8e50-a556b2071ba1",
+      "xp_loan_number": "XP12347",
+      "rule_id": "COMP_DTI_001",
+      "rule_name": "DTI Ratio Exceeds Guidelines",
+      "severity": "MEDIUM",
+      "status": "open",
+      "confidence": 0.87,
+      "description": "Debt-to-income ratio of 48% exceeds Fannie Mae guideline of 45%",
+      "evidence": {
+        "calculated_dti": 48.2,
+        "guideline_limit": 45.0,
+        "investor": "FNMA"
+      },
+      "auto_fix_suggestion": null,
+      "detected_at": "2025-08-25T03:58:49.547130",
+      "resolved_at": null,
+      "resolved_by": null,
+      "sla_due": "2025-08-28T03:58:49.547133",
+      "notes": null,
+      "category": "investor_compliance"
+    },
+    "4": {
+      "id": "30909e80-00a3-49e2-bb1e-915625e1fedf",
+      "xp_loan_number": "XP12348",
+      "rule_id": "SYS_API_001",
+      "rule_name": "Agency API Connection Failed",
+      "severity": "LOW",
+      "status": "open",
+      "confidence": 0.99,
+      "description": "Unable to retrieve updated purchase advice from Freddie Mac API",
+      "evidence": {
+        "api_endpoint": "freddie_mac_purchase_advice",
+        "error_code": "TIMEOUT_ERROR",
+        "retry_count": 3
+      },
+      "auto_fix_suggestion": {
+        "type": "RETRY_API_CALL",
+        "description": "Retry API call with exponential backoff",
+        "retry_delay": 300,
+        "confidence": 0.85
+      },
+      "detected_at": "2025-08-24T03:58:49.547147",
+      "resolved_at": null,
+      "resolved_by": null,
+      "sla_due": "2025-08-29T03:58:49.547150",
+      "notes": null,
+      "category": "system_processing"
+    },
+    "5": {
+      "id": "41afe90c-adab-4961-bcf7-6d4cecf683b8",
+      "xp_loan_number": "XP12349",
+      "rule_id": "REV_UW_001",
+      "rule_name": "Credit Score Variance",
+      "severity": "MEDIUM",
+      "status": "open",
+      "confidence": 0.78,
+      "description": "Significant credit score variance between credit reports requires manual review",
+      "evidence": {
+        "scores": {
+          "experian": 742,
+          "equifax": 721,
+          "transunion": 698
+        },
+        "variance": 44
+      },
+      "auto_fix_suggestion": null,
+      "detected_at": "2025-08-23T03:58:49.547159",
+      "resolved_at": null,
+      "resolved_by": null,
+      "sla_due": "2025-08-27T03:58:49.547162",
+      "notes": null,
+      "category": "manual_review"
+    },
+    "6": {
+      "id": "e6eb8a15-4929-4979-b4b6-0536e32a5234",
+      "xp_loan_number": "XP12350",
+      "rule_id": "DOC_COMP_001",
+      "rule_name": "Appraisal Report Incomplete",
+      "severity": "HIGH",
+      "status": "resolved",
+      "confidence": 0.91,
+      "description": "Appraisal report missing comparable sales analysis section",
+      "evidence": {
+        "missing_sections": [
+          "comparable_sales",
+          "market_analysis"
+        ],
+        "appraiser_id": "APP-001"
+      },
+      "auto_fix_suggestion": null,
+      "detected_at": "2025-08-21T03:58:49.547171",
+      "resolved_at": "2025-08-25T19:58:49.547173",
+      "resolved_by": "underwriter_jane",
+      "sla_due": "2025-08-24T03:58:49.547176",
+      "notes": "Requested complete appraisal from appraiser - received within 24h",
+      "category": "documentation"
+    }
+  }
+}

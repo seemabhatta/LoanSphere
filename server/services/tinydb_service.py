@@ -56,6 +56,11 @@ class TinyDBService:
             storage=CachingMiddleware(JSONStorage),
             indent=2
         )
+        self.exceptions_db = TinyDB(
+            os.path.join(db_path, "exceptions.json"),
+            storage=CachingMiddleware(JSONStorage),
+            indent=2
+        )
         
         # Get collection references (default tables in each file)
         self.stage = self.stage_db
@@ -64,6 +69,7 @@ class TinyDBService:
         self.purchase_advice = self.purchase_advice_db
         self.documents_metadata = self.documents_metadata_db
         self.loan_tracking = self.loan_tracking_db
+        self.exceptions = self.exceptions_db
         
         logger.info(f"TinyDB initialized at: {os.path.abspath(db_path)}")
     
@@ -73,6 +79,7 @@ class TinyDBService:
         self.commitments_db.close()
         self.loan_data_db.close()
         self.purchase_advice_db.close()
+        self.exceptions_db.close()
         self.documents_metadata_db.close()
         self.loan_tracking_db.close()
     

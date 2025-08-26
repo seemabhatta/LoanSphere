@@ -14,7 +14,7 @@ class TinyDBExceptionService:
     
     def _ensure_sample_data(self):
         """Create sample exception data for demonstration"""
-        exceptions = self.db.get_all('exceptions')
+        exceptions = self.db.exceptions.all()
         
         if not exceptions:  # Only create if no exceptions exist
             sample_exceptions = [
@@ -164,7 +164,9 @@ class TinyDBExceptionService:
             ]
             
             for exception in sample_exceptions:
-                self.db.create('exceptions', exception)
+                self.db.exceptions.insert(exception)
+            
+            self.db.exceptions_db.storage.flush()  # Flush to disk
                 
             logger.info(f"Created {len(sample_exceptions)} sample exceptions")
     
@@ -178,7 +180,7 @@ class TinyDBExceptionService:
     ) -> List[Dict[str, Any]]:
         """Get paginated list of exceptions with filters"""
         try:
-            exceptions = self.db.get_all('exceptions')
+            exceptions = self.db.exceptions.all()
             
             # Apply filters
             if status and status != 'all':
@@ -205,11 +207,10 @@ class TinyDBExceptionService:
     def get_exception_by_id(self, exception_id: str) -> Optional[Dict[str, Any]]:
         """Get exception by ID"""
         try:
-            exceptions = self.db.get_all('exceptions')
-            for exception in exceptions:
-                if exception.get('id') == exception_id:
-                    return exception
-            return None
+            from tinydb import Query
+            Exception = Query()
+            results = self.db.exceptions.search(Exception.id == exception_id)
+            return results[0] if results else None
         except Exception as e:
             logger.error(f"Error getting exception {exception_id}: {e}")
             return None
@@ -363,7 +364,7 @@ class TinyDBExceptionService:
     def get_exception_stats(self) -> Dict[str, Any]:
         """Get exception statistics summary"""
         try:
-            exceptions = self.db.get_all('exceptions')
+            exceptions = self.db.exceptions.all()
             
             # Calculate stats
             total_open = len([e for e in exceptions if e.get('status') == 'open'])
