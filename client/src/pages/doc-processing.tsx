@@ -344,58 +344,29 @@ export default function DocProcessing() {
                         isChild ? 'bg-blue-50/10' : document.split_count ? 'bg-green-50/10' : ''
                       }`}>
                         <td className="p-4 body-text text-neutral-600" data-testid={`loan-${document.id}`}>
-                          <div className="flex items-center ml-6">
-                            {isChild ? (
-                              <span className="detail-text text-blue-400 mr-3">
-                                {`    ${isLastChild ? '└─' : '├─'}`}
-                              </span>
-                            ) : (
-                              <span className="detail-text text-green-500 mr-3">
-                                {isLastInLoan ? '└─' : '├─'}
-                              </span>
-                            )}
-                            <span className="caption-text">{loanNumber}</span>
-                          </div>
+                          <span className="caption-text">{loanNumber}</span>
                         </td>
                         <td className="p-4 body-text text-neutral-700" data-testid={`type-${document.id}`}>
-                          <div className="flex items-center">
-                            <div className="ml-6 mr-3">
-                              {isChild ? (
-                                <span className="detail-text text-blue-400">
-                                  {`    ${isLastChild ? '└─' : '├─'}`}
-                                </span>
-                              ) : (
-                                <span className="detail-text text-green-500">
-                                  {isLastInLoan ? '└─' : '├─'}
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <span className={`body-text ${isChild ? 'text-blue-700' : 'text-green-700'}`}>
-                                {document.document_type}
+                          <div className="flex items-center space-x-2">
+                            <span className={`body-text ${isChild ? 'text-blue-700' : 'text-green-700'}`}>
+                              {document.document_type}
+                            </span>
+                            {isChild && (
+                              <span className="detail-text text-blue-500 bg-blue-100 px-2 py-1 rounded">
+                                from {document.parent_doc_id}
                               </span>
-                              {isChild && (
-                                <span className="detail-text text-blue-500 bg-blue-100 px-2 py-1 rounded">
-                                  from {document.parent_doc_id}
-                                </span>
-                              )}
-                              {document.split_count && (
-                                <span className="detail-text text-green-500 bg-green-100 px-2 py-1 rounded">
-                                  splits into {document.split_count} docs
-                                </span>
-                              )}
-                            </div>
+                            )}
+                            {document.split_count && (
+                              <span className="detail-text text-green-500 bg-green-100 px-2 py-1 rounded">
+                                splits into {document.split_count} docs
+                              </span>
+                            )}
                           </div>
                         </td>
                         <td className="p-4 code-text text-neutral-600" data-testid={`doc-id-${document.id}`}>
-                          <div className="flex items-center ml-6">
-                            <span className="detail-text mr-3">
-                              {isChild ? `    ${isLastChild ? '└─' : '├─'}` : (isLastInLoan ? '└─' : '├─')}
-                            </span>
-                            <span className={`code-text ${isChild ? 'text-blue-600' : 'text-green-600'}`}>
-                              {document.xp_doc_id}
-                            </span>
-                          </div>
+                          <span className={`code-text ${isChild ? 'text-blue-600' : 'text-green-600'}`}>
+                            {document.xp_doc_id}
+                          </span>
                         </td>
                         <td className="p-4" data-testid={`source-${document.id}`}>
                           {document.parent_doc_id ? (
