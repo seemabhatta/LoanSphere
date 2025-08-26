@@ -330,23 +330,6 @@ export default function DocProcessing() {
                   const loanDocs = organizeWithinLoan(groupedDocuments[loanNumber]);
                   
                   return [
-                  // Loan header row
-                  <tr key={`header-${loanNumber}`} className="bg-neutral-100 border-t-2 border-t-neutral-300">
-                    <td colSpan={10} className="p-3">
-                      <div className="flex items-center space-x-3">
-                        <span className="section-header">Loan {loanNumber}</span>
-                        <span className="caption-text">({loanDocs.length} documents)</span>
-                        {(() => {
-                          const primaryBlob = loanDocs.find(doc => doc.split_count && doc.split_count > 0);
-                          return primaryBlob ? (
-                            <span className="detail-text text-green-600 bg-green-50 px-2 py-1 rounded">
-                              Primary: {primaryBlob.document_type} → {primaryBlob.split_count} splits
-                            </span>
-                          ) : null;
-                        })()}
-                      </div>
-                    </td>
-                  </tr>,
                   // Documents for this loan
                   ...loanDocs.map((document, docIndex) => {
                     const isChild = document.is_split_document;
