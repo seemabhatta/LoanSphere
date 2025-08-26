@@ -246,51 +246,52 @@ export default function AIAssistant() {
                   <div ref={messagesEndRef} />
                 </div>
                 
-                {/* Quick Actions */}
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 mb-4">
-                  {quickActions.map((action, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleQuickAction(action)}
-                      className="p-2 rounded-lg border hover:bg-gray-50 transition-colors group text-center"
-                      data-testid={`quick-action-${index}`}
-                    >
-                      <action.icon className="w-4 h-4 mx-auto mb-1 text-gray-600 group-hover:text-blue-600" />
-                      <p className="body-text font-medium text-gray-900 text-xs">{action.label}</p>
-                      <p className="text-xs text-gray-500">{action.category}</p>
-                    </button>
-                  ))}
-                </div>
-                
-                {/* Input Area */}
-                <div className="flex items-center space-x-2">
-                  <div className="flex-1 relative">
-                    <Input
-                      value={inputValue}
-                      onChange={(e) => setInputValue(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                      placeholder="Ask me anything about loans, exceptions, metrics, or system status..."
-                      className="pr-12"
-                      data-testid="ai-input"
-                    />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={toggleListening}
-                      className={`absolute right-2 top-1/2 -translate-y-1/2 p-1 h-6 w-6 ${
-                        isListening ? 'text-red-600' : 'text-gray-400'
-                      }`}
-                      data-testid="voice-button"
-                    >
-                      {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                    </Button>
-                  </div>
-                  <Button onClick={handleSendMessage} disabled={!inputValue.trim()} data-testid="send-button">
-                    <Send className="w-4 h-4" />
-                  </Button>
-                </div>
               </CardContent>
             </Card>
+          </div>
+          
+          {/* Quick Actions */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 mb-4 px-6">
+            {quickActions.map((action, index) => (
+              <button
+                key={index}
+                onClick={() => handleQuickAction(action)}
+                className="p-2 rounded-lg border hover:bg-gray-50 transition-colors group text-center"
+                data-testid={`quick-action-${index}`}
+              >
+                <action.icon className="w-4 h-4 mx-auto mb-1 text-gray-600 group-hover:text-blue-600" />
+                <p className="body-text font-medium text-gray-900 text-xs">{action.label}</p>
+                <p className="text-xs text-gray-500">{action.category}</p>
+              </button>
+            ))}
+          </div>
+          
+          {/* Input Area */}
+          <div className="flex items-center space-x-2 px-6 pb-6">
+            <div className="flex-1 relative">
+              <Input
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                placeholder="Ask me anything about loans, exceptions, metrics, or system status..."
+                className="pr-12"
+                data-testid="ai-input"
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleListening}
+                className={`absolute right-2 top-1/2 -translate-y-1/2 p-1 h-6 w-6 ${
+                  isListening ? 'text-red-600' : 'text-gray-400'
+                }`}
+                data-testid="voice-button"
+              >
+                {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              </Button>
+            </div>
+            <Button onClick={handleSendMessage} disabled={!inputValue.trim()} data-testid="send-button">
+              <Send className="w-4 h-4" />
+            </Button>
           </div>
         </div>
       </div>
