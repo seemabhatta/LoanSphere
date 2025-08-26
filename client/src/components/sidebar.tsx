@@ -40,7 +40,7 @@ const navigationSections = [
   {
     title: "PIPELINE",
     items: [
-      { name: "Pipeline Monitor", href: "/pipeline", icon: Route, description: "Track loan progress" },
+      { name: "Loan Boarding", href: "/pipeline", icon: Route, description: "Track loan progress" },
       { name: "Exceptions", href: "/exceptions", icon: AlertTriangle, description: "Review and resolve issues", badge: "3" },
     ]
   },
