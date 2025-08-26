@@ -22,7 +22,6 @@ import {
   CheckCircle,
   Clock
 } from "lucide-react";
-import PageWithAssistant from "@/components/page-with-assistant";
 
 export default function SyntheticData() {
   const [generationInProgress, setGenerationInProgress] = useState(false);
@@ -96,8 +95,7 @@ export default function SyntheticData() {
   };
 
   return (
-    <PageWithAssistant pageName="Synthetic Data Generation">
-      <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
         <header className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
@@ -365,6 +363,6 @@ export default function SyntheticData() {
           </div>
         </div>
       </div>
-    </PageWithAssistant>
+    </div>
   );
 }
