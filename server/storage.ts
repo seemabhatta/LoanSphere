@@ -6,12 +6,16 @@ import {
   type Document, type InsertDocument,
   type Metric, type InsertMetric,
   type PipelineActivity, type InsertPipelineActivity,
-  type StagedFile, type InsertStagedFile
+  type StagedFile, type InsertStagedFile,
+  type User, type UpsertUser
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 // Storage interface for the loan boarding system
 export interface IStorage {
+  // User operations - mandatory for Replit Auth
+  getUser(id: string): Promise<User | undefined>;
+  upsertUser(user: UpsertUser): Promise<User>;
   // Loans
   getLoans(): Promise<Loan[]>;
   getLoan(id: string): Promise<Loan | undefined>;
@@ -76,8 +80,8 @@ export interface IStorage {
   deleteStagedFile(id: string): Promise<boolean>;
 }
 
-// SQLite-based storage implementation
-export class SQLiteStorage implements IStorage {
+// Database-based storage implementation
+export class DatabaseStorage implements IStorage {
   private loans: Map<string, Loan> = new Map();
   private exceptions: Map<string, Exception> = new Map();
   private agents: Map<string, Agent> = new Map();
@@ -86,6 +90,26 @@ export class SQLiteStorage implements IStorage {
   private metrics: Map<string, Metric> = new Map();
   private pipelineActivities: Map<string, PipelineActivity> = new Map();
   private stagedFiles: Map<string, StagedFile> = new Map();
+  private users: Map<string, User> = new Map();
+
+  // User operations - mandatory for Replit Auth
+  async getUser(id: string): Promise<User | undefined> {
+    return this.users.get(id);
+  }
+
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const user: User = {
+      id: userData.id || randomUUID(),
+      email: userData.email,
+      firstName: userData.firstName,
+      lastName: userData.lastName,
+      profileImageUrl: userData.profileImageUrl,
+      createdAt: userData.createdAt || new Date(),
+      updatedAt: new Date(),
+    };
+    this.users.set(user.id, user);
+    return user;
+  }
 
   constructor() {
     this.initializeSampleData();
@@ -361,4 +385,4 @@ export class SQLiteStorage implements IStorage {
   async deleteStagedFile(id: string): Promise<boolean> { return this.stagedFiles.delete(id); }
 }
 
-export const storage = new SQLiteStorage();
+export const storage = new DatabaseStorage();
