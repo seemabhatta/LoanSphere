@@ -362,7 +362,6 @@ export default function SyntheticData() {
             </Tabs>
           </div>
         </div>
-      </div>
     </div>
   );
 }
