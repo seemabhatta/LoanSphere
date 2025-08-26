@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Upload, Download, List, Trash2, File, Calendar, FileText, CheckCircle, Folder } from "lucide-react";
-import PageWithAssistant from "@/components/page-with-assistant";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -117,8 +116,7 @@ export default function SimpleStaging() {
   };
 
   return (
-    <PageWithAssistant pageName="Simple Staging">
-      <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex-1 flex flex-col overflow-hidden">
       {/* Header */}
       <header className="px-6 py-4 border-b border-gray-200">
         <div className="flex items-center caption-text mb-1">
@@ -249,6 +247,5 @@ export default function SimpleStaging() {
         </div>
       </div>
     </div>
-    </PageWithAssistant>
   );
 }

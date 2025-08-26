@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
-import PageWithAssistant from "@/components/page-with-assistant";
 import { FileText, Files, Search, Filter, RotateCcw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -138,8 +137,7 @@ export default function DocProcessing() {
   };
 
   return (
-    <PageWithAssistant pageName="Document Processing">
-      <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex-1 flex flex-col overflow-hidden">
       {/* Header */}
       <header className="px-6 py-4 border-b border-gray-200">
         <div className="flex items-center caption-text mb-1">
@@ -472,7 +470,6 @@ export default function DocProcessing() {
           )}
         </div>
       </div>
-      </div>
-    </PageWithAssistant>
+    </div>
   );
 }
