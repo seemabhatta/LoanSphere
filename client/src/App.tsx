@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Sidebar from "@/components/sidebar";
 import TopHeader from "@/components/top-header";
+import RightPanelAssistant from "@/components/right-panel-assistant";
 import CommandCenter from "@/pages/command-center";
 import AIAssistant from "@/pages/ai-assistant";
 import PipelineMonitor from "@/pages/pipeline-monitor";
@@ -24,10 +25,37 @@ import NotFound from "@/pages/not-found";
 
 function Router() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [assistantExpanded, setAssistantExpanded] = useState(false);
+  const [location] = useLocation();
 
   // Toggle between expanded (icons + labels) and collapsed (icons only)
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
+  };
+
+  const toggleAssistant = () => {
+    setAssistantExpanded(!assistantExpanded);
+  };
+
+  // Get current page name for context
+  const getCurrentPageName = (path: string): string => {
+    const routes: { [key: string]: string } = {
+      '/': 'Assistant',
+      '/command-center': 'Command Center',
+      '/exceptions': 'Exceptions',
+      '/analytics': 'Analytics',
+      '/pipeline': 'Pipeline',
+      '/doc-processing': 'Document Processing',
+      '/simple-staging': 'Stage',
+      '/agents': 'Agents',
+      '/compliance': 'Compliance',
+      '/documents': 'Documents',
+      '/scheduler': 'Scheduler',
+      '/commitments': 'Commitments',
+      '/loans': 'Loans',
+      '/purchase-advices': 'Purchase Advices'
+    };
+    return routes[path] || 'Xpanse Loan Xchange';
   };
 
   return (
@@ -48,7 +76,9 @@ function Router() {
         />
         
         {/* Main Content Panel */}
-        <div className="flex-1 p-4 transition-all duration-300 overflow-hidden">
+        <div className={`flex-1 p-4 transition-all duration-300 overflow-hidden ${
+          assistantExpanded ? 'pr-96' : 'pr-12'
+        }`}>
           <div className="bg-white rounded-lg shadow-sm h-full overflow-y-auto">
             <Switch>
               <Route path="/" component={AIAssistant} />
@@ -69,6 +99,13 @@ function Router() {
             </Switch>
           </div>
         </div>
+        
+        {/* Right Panel Assistant */}
+        <RightPanelAssistant 
+          currentPage={getCurrentPageName(location)}
+          isExpanded={assistantExpanded}
+          onToggle={toggleAssistant}
+        />
       </div>
     </div>
   );
