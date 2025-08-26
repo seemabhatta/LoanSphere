@@ -9,6 +9,7 @@ import Sidebar from "@/components/sidebar";
 import TopHeader from "@/components/top-header";
 import Landing from "@/pages/landing";
 import Home from "@/pages/home";
+import Profile from "@/pages/profile";
 import CommandCenter from "@/pages/command-center";
 import AIAssistant from "@/pages/ai-assistant";
 import PipelineMonitor from "@/pages/pipeline-monitor";
@@ -63,6 +64,19 @@ function Router() {
                 <div className="flex-1 p-4 transition-all duration-300 overflow-hidden">
                   <div className="bg-white rounded-lg shadow-sm h-full overflow-y-auto">
                     <Home />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Route>
+          <Route path="/profile">
+            <div className="h-screen flex flex-col bg-gray-100">
+              <TopHeader onToggleSidebar={toggleSidebar} sidebarCollapsed={sidebarCollapsed} />
+              <div className="flex-1 flex overflow-hidden">
+                <Sidebar isOpen={true} onClose={() => {}} collapsed={sidebarCollapsed} />
+                <div className="flex-1 p-4 transition-all duration-300 overflow-hidden">
+                  <div className="bg-white rounded-lg shadow-sm h-full overflow-y-auto">
+                    <Profile />
                   </div>
                 </div>
               </div>

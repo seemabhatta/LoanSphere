@@ -18,9 +18,20 @@ import {
   FileCheck,
   Receipt,
   Bot,
-  History
+  History,
+  LogOut,
+  ChevronDown
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const navigationSections = [
   {
@@ -73,6 +84,7 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen, onClose, collapsed = false }: SidebarProps) {
   const [location] = useLocation();
+  const { user } = useAuth();
 
   return (
     <div className={cn(
@@ -135,19 +147,108 @@ export default function Sidebar({ isOpen, onClose, collapsed = false }: SidebarP
         "border-t border-gray-200",
         collapsed ? "px-3 py-3" : "px-4 py-3"
       )}>
-        <div className={cn(
-          "flex items-center",
-          collapsed ? "justify-center" : "space-x-2"
-        )} data-testid="user-profile">
-          <div className="w-6 h-6 bg-gray-400 text-white rounded-full flex items-center justify-center detail-text">
-            <User className="w-3 h-3" />
-          </div>
-          {!collapsed && (
-            <div className="flex-1 min-w-0">
-              <p className="nav-text text-gray-700 truncate">System User</p>
-            </div>
-          )}
-        </div>
+        {collapsed ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="w-full h-auto p-1 hover:bg-gray-50"
+                data-testid="user-profile-collapsed"
+              >
+                {user?.profileImageUrl ? (
+                  <img 
+                    src={user.profileImageUrl} 
+                    alt="Profile" 
+                    className="w-6 h-6 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-medium">
+                    {user?.firstName ? user.firstName.charAt(0).toUpperCase() : 
+                     user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="right" align="start" className="w-48">
+              <div className="px-2 py-2">
+                <p className="text-sm font-medium text-gray-900 truncate">
+                  {user?.firstName && user?.lastName ? 
+                    `${user.firstName} ${user.lastName}` : 
+                    user?.email || 'User'}
+                </p>
+                <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/profile" className="w-full cursor-pointer">
+                  <User className="mr-2 h-4 w-4" />
+                  Profile & Settings
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => window.location.href = "/api/logout"}
+                className="text-red-600 hover:text-red-700 cursor-pointer"
+                data-testid="button-logout-collapsed"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Sign Out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start h-auto p-2 hover:bg-gray-50"
+                data-testid="user-profile"
+              >
+                <div className="flex items-center space-x-3 flex-1 min-w-0">
+                  {user?.profileImageUrl ? (
+                    <img 
+                      src={user.profileImageUrl} 
+                      alt="Profile" 
+                      className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0">
+                      {user?.firstName ? user.firstName.charAt(0).toUpperCase() : 
+                       user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0 text-left">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {user?.firstName && user?.lastName ? 
+                        `${user.firstName} ${user.lastName}` : 
+                        user?.email || 'User'}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                </div>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="top" className="w-56">
+              <DropdownMenuItem asChild>
+                <Link href="/profile" className="w-full cursor-pointer">
+                  <User className="mr-2 h-4 w-4" />
+                  Profile & Settings
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => window.location.href = "/api/logout"}
+                className="text-red-600 hover:text-red-700 cursor-pointer"
+                data-testid="button-logout"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Sign Out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
     </div>
   );
