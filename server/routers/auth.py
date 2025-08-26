@@ -123,7 +123,9 @@ async def google_oauth_login(request: Request):
     if not client:
         raise HTTPException(status_code=400, detail="Google OAuth not configured")
     
-    redirect_uri = "http://localhost:5000/api/auth/google/callback"
+    # Dynamic redirect URI based on environment
+    base_url = os.getenv("APP_URL", "http://localhost:5000")
+    redirect_uri = f"{base_url}/api/auth/google/callback"
     return await client.authorize_redirect(request, redirect_uri)
 
 @router.get("/google/callback")
