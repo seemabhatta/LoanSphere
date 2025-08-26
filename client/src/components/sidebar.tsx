@@ -47,7 +47,7 @@ const navigationSections = [
     ]
   },
   {
-    title: "PIPELINE",
+    title: "JOBS & PIPELINES",
     items: [
       { name: "Loan Boarding", href: "/pipeline", icon: Route, description: "Track loan progress" },
       { name: "Doc Processing", href: "/doc-processing", icon: Zap, description: "Document processing pipeline" },
