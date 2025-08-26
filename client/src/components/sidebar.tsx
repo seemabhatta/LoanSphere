@@ -27,6 +27,8 @@ const navigationSections = [
       { name: "Command Center", href: "/", icon: Activity, description: "Real-time dashboard", badge: "live" },
       { name: "Stage", href: "/simple-staging", icon: Upload, description: "Upload & stage files" },
       { name: "Process", href: "/scheduler", icon: Calendar, description: "Loan processing schedule" },
+      { name: "Pipeline Monitor", href: "/pipeline", icon: Route, description: "Track loan progress" },
+      { name: "Exceptions", href: "/exceptions", icon: AlertTriangle, description: "Review and resolve issues", badge: "3" },
     ]
   },
   {
@@ -36,8 +38,6 @@ const navigationSections = [
       { name: "Commitments", href: "/commitments", icon: FileCheck, description: "Commitment tracking" },
       { name: "PurchaseAdvices", href: "/purchase-advices", icon: Receipt, description: "Purchase advice management" },
       { name: "Documents", href: "/documents", icon: FileText, description: "Document processing" },
-      { name: "Pipeline Monitor", href: "/pipeline", icon: Route, description: "Track loan progress" },
-      { name: "Exceptions", href: "/exceptions", icon: AlertTriangle, description: "Review and resolve issues", badge: "3" },
     ]
   },
   {
