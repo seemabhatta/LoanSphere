@@ -27,7 +27,7 @@ export function getSession() {
   const pgStore = connectPg(session);
   const sessionStore = new pgStore({
     conString: process.env.DATABASE_URL,
-    createTableIfMissing: false,
+    createTableIfMissing: true, // Let the store create sessions table
     ttl: sessionTtl,
     tableName: "sessions",
   });
