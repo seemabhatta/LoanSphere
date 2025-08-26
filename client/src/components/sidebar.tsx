@@ -41,6 +41,7 @@ const navigationSections = [
     title: "PIPELINE",
     items: [
       { name: "Loan Boarding", href: "/pipeline", icon: Route, description: "Track loan progress" },
+      { name: "Doc Processing", href: "/doc-processing", icon: FileText, description: "Document processing pipeline" },
       { name: "Exceptions", href: "/exceptions", icon: AlertTriangle, description: "Review and resolve issues", badge: "3" },
     ]
   },

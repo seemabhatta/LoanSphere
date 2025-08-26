@@ -8,6 +8,7 @@ import Sidebar from "@/components/sidebar";
 import TopHeader from "@/components/top-header";
 import CommandCenter from "@/pages/command-center";
 import PipelineMonitor from "@/pages/pipeline-monitor";
+import DocProcessing from "@/pages/doc-processing";
 import Exceptions from "@/pages/exceptions";
 import Documents from "@/pages/documents";
 import Compliance from "@/pages/compliance";
@@ -51,6 +52,7 @@ function Router() {
             <Switch>
               <Route path="/" component={CommandCenter} />
               <Route path="/pipeline" component={PipelineMonitor} />
+              <Route path="/doc-processing" component={DocProcessing} />
               <Route path="/exceptions" component={Exceptions} />
               <Route path="/documents" component={Documents} />
               <Route path="/compliance" component={Compliance} />
