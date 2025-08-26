@@ -13,7 +13,10 @@ import {
   Home,
   TrendingUp,
   Zap,
-  Clock
+  Clock,
+  CreditCard,
+  FileCheck,
+  Receipt
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -29,15 +32,17 @@ const navigationSections = [
   {
     title: "MONITORING",
     items: [
+      { name: "Loans", href: "/loans", icon: CreditCard, description: "Loan management" },
+      { name: "Commitments", href: "/commitments", icon: FileCheck, description: "Commitment tracking" },
+      { name: "PurchaseAdvices", href: "/purchase-advices", icon: Receipt, description: "Purchase advice management" },
+      { name: "Documents", href: "/documents", icon: FileText, description: "Document processing" },
       { name: "Pipeline Monitor", href: "/pipeline", icon: Route, description: "Track loan progress" },
       { name: "Exceptions", href: "/exceptions", icon: AlertTriangle, description: "Review and resolve issues", badge: "3" },
-      { name: "Agents", href: "/agents", icon: Settings, description: "AI agent status" },
     ]
   },
   {
     title: "GOVERNANCE",
     items: [
-      { name: "Documents", href: "/documents", icon: FileText, description: "Document processing" },
       { name: "Compliance", href: "/compliance", icon: Shield, description: "RESPA/TILA tracking" },
       { name: "Analytics", href: "/analytics", icon: BarChart3, description: "Performance insights" },
     ]
