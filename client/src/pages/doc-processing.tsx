@@ -266,9 +266,6 @@ export default function DocProcessing() {
                   </button>
                 </th>
                 <th className="text-left py-2 px-3 text-xs font-bold text-neutral-700">
-                  <span>Source</span>
-                </th>
-                <th className="text-left py-2 px-3 text-xs font-bold text-neutral-700">
                   <button 
                     onClick={() => handleSort('status')}
                     className="text-xs font-bold text-neutral-700 hover:text-neutral-900"
@@ -368,24 +365,6 @@ export default function DocProcessing() {
                             {document.xp_doc_id}
                           </span>
                         </td>
-                        <td className="p-4" data-testid={`source-${document.id}`}>
-                          {document.parent_doc_id ? (
-                            <div className="flex items-center space-x-1">
-                              <FileText className="w-4 h-4 text-blue-500" />
-                              <span className="detail-text text-blue-600 font-medium">Split Document</span>
-                            </div>
-                          ) : document.split_count ? (
-                            <div className="flex items-center space-x-1">
-                              <Files className="w-4 h-4 text-green-500" />
-                              <span className="detail-text text-green-600 font-medium">PDF Blob</span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center space-x-1">
-                              <FileText className="w-4 h-4 text-neutral-400" />
-                              <span className="detail-text">Single Doc</span>
-                            </div>
-                          )}
-                        </td>
                         <td className="p-4" data-testid={`status-${document.id}`}>
                           <Badge className={getStatusBadge(document.status)}>
                             {document.status}
@@ -449,24 +428,6 @@ export default function DocProcessing() {
                       <span className={`code-text ${document.is_split_document ? 'text-blue-600' : 'text-green-600'}`}>
                         {document.xp_doc_id}
                       </span>
-                    </td>
-                    <td className="p-4" data-testid={`source-${document.id}`}>
-                      {document.parent_doc_id ? (
-                        <div className="flex items-center space-x-1">
-                          <FileText className="w-4 h-4 text-blue-500" />
-                          <span className="detail-text text-blue-600 font-medium">Split Document</span>
-                        </div>
-                      ) : document.split_count ? (
-                        <div className="flex items-center space-x-1">
-                          <Files className="w-4 h-4 text-green-500" />
-                          <span className="detail-text text-green-600 font-medium">PDF Blob</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center space-x-1">
-                          <FileText className="w-4 h-4 text-neutral-400" />
-                          <span className="detail-text">Single Doc</span>
-                        </div>
-                      )}
                     </td>
                     <td className="p-4" data-testid={`status-${document.id}`}>
                       <Badge className={getStatusBadge(document.status)}>
