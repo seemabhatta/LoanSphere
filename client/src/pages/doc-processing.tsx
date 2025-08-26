@@ -69,17 +69,41 @@ export default function DocProcessing() {
 
   const documents = documentsData?.documents || [];
 
-  const sortedDocuments = [...documents].sort((a, b) => {
-    let aVal = a[sortField as keyof DocumentProcessing];
-    let bVal = b[sortField as keyof DocumentProcessing];
-    
-    if (sortField === 'created_at') {
-      aVal = new Date(aVal as string).getTime();
-      bVal = new Date(bVal as string).getTime();
+  // Group documents to show parent-child relationships
+  const organizeDocuments = (docs: DocumentProcessing[]) => {
+    const organized: DocumentProcessing[] = [];
+    const parentDocs = docs.filter(doc => !doc.is_split_document);
+    const childDocs = docs.filter(doc => doc.is_split_document);
+
+    for (const parent of parentDocs) {
+      organized.push(parent);
+      // Find children of this parent
+      const children = childDocs.filter(child => child.parent_doc_id === parent.xp_doc_id);
+      organized.push(...children);
     }
-    
-    if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
-    if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+
+    // Add any orphaned child documents
+    const addedChildIds = new Set(organized.filter(doc => doc.is_split_document).map(doc => doc.id));
+    const orphans = childDocs.filter(doc => !addedChildIds.has(doc.id));
+    organized.push(...orphans);
+
+    return organized;
+  };
+
+  const sortedDocuments = organizeDocuments([...documents]).sort((a, b) => {
+    // If sorting is applied, respect it but maintain parent-child grouping
+    if (sortField && !a.is_split_document && !b.is_split_document) {
+      let aVal = a[sortField as keyof DocumentProcessing];
+      let bVal = b[sortField as keyof DocumentProcessing];
+      
+      if (sortField === 'created_at') {
+        aVal = new Date(aVal as string).getTime();
+        bVal = new Date(bVal as string).getTime();
+      }
+      
+      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+    }
     return 0;
   });
 
@@ -202,40 +226,80 @@ export default function DocProcessing() {
               </tr>
             </thead>
             <tbody>
-              {sortedDocuments.map((document: DocumentProcessing) => (
-                <tr key={document.id} className={`border-b border-neutral-100 hover:bg-neutral-50 ${document.is_split_document ? 'bg-blue-50/30' : ''}`}>
-                  <td className="p-4 body-text text-neutral-900" data-testid={`loan-${document.id}`}>
-                    {document.xp_loan_number}
-                  </td>
-                  <td className="p-4 body-text text-neutral-700" data-testid={`type-${document.id}`}>
-                    <div className={`flex items-center ${document.is_split_document ? 'pl-4' : ''}`}>
-                      {document.is_split_document && <span className="text-blue-400 mr-2">└─</span>}
-                      {document.document_type}
-                    </div>
-                  </td>
-                  <td className="p-4 code-text text-neutral-600" data-testid={`doc-id-${document.id}`}>
-                    {document.xp_doc_id}
-                  </td>
-                  <td className="p-4" data-testid={`source-${document.id}`}>
-                    {document.parent_doc_id ? (
-                      <div className="flex items-center space-x-2">
-                        <FileText className="w-3 h-3 text-blue-500" />
-                        <span className="text-xs text-blue-600">{document.parent_doc_id}</span>
+              {sortedDocuments.map((document: DocumentProcessing, index: number) => {
+                const isParent = !document.is_split_document;
+                const isChild = document.is_split_document;
+                const prevDocument = index > 0 ? sortedDocuments[index - 1] : null;
+                const nextDocument = index < sortedDocuments.length - 1 ? sortedDocuments[index + 1] : null;
+                
+                // Check if this is the last child in a group
+                const isLastChild = isChild && (!nextDocument || !nextDocument.is_split_document || nextDocument.parent_doc_id !== document.parent_doc_id);
+                
+                return (
+                  <tr key={document.id} className={`border-b border-neutral-100 hover:bg-neutral-50 ${
+                    isChild ? 'bg-blue-50/20 border-l-4 border-l-blue-200' : 
+                    document.split_count ? 'bg-green-50/20 border-l-4 border-l-green-200' : ''
+                  }`}>
+                    <td className="p-4 body-text text-neutral-900" data-testid={`loan-${document.id}`}>
+                      <div className={`flex items-center ${isChild ? 'pl-4' : ''}`}>
+                        {isChild && (
+                          <div className="flex items-center mr-3 text-blue-400">
+                            <div className="w-4 h-4 flex items-center justify-center">
+                              {isLastChild ? '└─' : '├─'}
+                            </div>
+                          </div>
+                        )}
+                        {document.xp_loan_number}
                       </div>
-                    ) : document.split_count ? (
-                      <div className="flex items-center space-x-2">
-                        <Files className="w-3 h-3 text-green-500" />
-                        <span className="text-xs text-green-600">Split → {document.split_count}</span>
+                    </td>
+                    <td className="p-4 body-text text-neutral-700" data-testid={`type-${document.id}`}>
+                      <div className={`flex items-center ${isChild ? 'pl-4' : ''}`}>
+                        {isChild && (
+                          <div className="flex items-center mr-3 text-blue-400">
+                            <div className="w-4 h-4 flex items-center justify-center text-xs">
+                              {isLastChild ? '└─' : '├─'}
+                            </div>
+                          </div>
+                        )}
+                        <div className="flex items-center space-x-2">
+                          {document.document_type}
+                          {isChild && <span className="text-xs text-blue-500 bg-blue-100 px-1 rounded">from blob</span>}
+                          {document.split_count && <span className="text-xs text-green-500 bg-green-100 px-1 rounded">splits to {document.split_count}</span>}
+                        </div>
                       </div>
-                    ) : (
-                      <span className="text-xs text-neutral-400">Single</span>
-                    )}
-                  </td>
-                  <td className="p-4" data-testid={`status-${document.id}`}>
-                    <Badge className={getStatusBadge(document.status)}>
-                      {document.status}
-                    </Badge>
-                  </td>
+                    </td>
+                    <td className="p-4 code-text text-neutral-600" data-testid={`doc-id-${document.id}`}>
+                      <div className={`${isChild ? 'pl-4' : ''}`}>
+                        {isChild && (
+                          <div className="flex items-center mr-3 text-blue-400">
+                            <div className="w-4 h-4 flex items-center justify-center text-xs">
+                              {isLastChild ? '└─' : '├─'}
+                            </div>
+                          </div>
+                        )}
+                        {document.xp_doc_id}
+                      </div>
+                    </td>
+                    <td className="p-4" data-testid={`source-${document.id}`}>
+                      {document.parent_doc_id ? (
+                        <div className="flex items-center space-x-2">
+                          <FileText className="w-3 h-3 text-blue-500" />
+                          <span className="text-xs text-blue-600">← {document.parent_doc_id}</span>
+                        </div>
+                      ) : document.split_count ? (
+                        <div className="flex items-center space-x-2">
+                          <Files className="w-3 h-3 text-green-500" />
+                          <span className="text-xs text-green-600">→ Split → {document.split_count}</span>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-neutral-400">Single</span>
+                      )}
+                    </td>
+                    <td className="p-4" data-testid={`status-${document.id}`}>
+                      <Badge className={getStatusBadge(document.status)}>
+                        {document.status}
+                      </Badge>
+                    </td>
                   <td className="p-4" data-testid={`ocr-${document.id}`}>
                     <Badge className={getStatusBadge(document.ocr_status)}>
                       {document.ocr_status}
@@ -260,7 +324,8 @@ export default function DocProcessing() {
                     {formatDate(document.created_at)}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
 
