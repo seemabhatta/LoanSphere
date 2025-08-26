@@ -22,14 +22,21 @@ import { cn } from "@/lib/utils";
 
 const navigationSections = [
   {
+    title: "COMMAND CENTER",
+    items: [
+      { name: "Command Center", href: "/", icon: Home, description: "Mission control dashboard" },
+    ]
+  },
+  {
     title: "OPERATIONS",
     items: [
       { name: "Stage", href: "/simple-staging", icon: Upload, description: "Upload & stage files" },
       { name: "Process", href: "/scheduler", icon: Calendar, description: "Loan processing schedule" },
+      { name: "Exceptions", href: "/exceptions", icon: AlertTriangle, description: "Review and resolve issues", badge: "5" },
     ]
   },
   {
-    title: "DATA & DOCS",
+    title: "DATA & WORKFLOWS",
     items: [
       { name: "Loans", href: "/loans", icon: CreditCard, description: "Loan management" },
       { name: "Commitments", href: "/commitments", icon: FileCheck, description: "Commitment tracking" },
@@ -41,8 +48,7 @@ const navigationSections = [
     title: "PIPELINE",
     items: [
       { name: "Loan Boarding", href: "/pipeline", icon: Route, description: "Track loan progress" },
-      { name: "Doc Processing", href: "/doc-processing", icon: FileText, description: "Document processing pipeline" },
-      { name: "Exceptions", href: "/exceptions", icon: AlertTriangle, description: "Review and resolve issues", badge: "3" },
+      { name: "Doc Processing", href: "/doc-processing", icon: Zap, description: "Document processing pipeline" },
     ]
   },
   {
