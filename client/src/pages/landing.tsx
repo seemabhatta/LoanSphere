@@ -8,11 +8,13 @@ export default function Landing() {
         {/* Header */}
         <div className="pt-8 pb-8">
           <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">X</span>
-              </div>
-              <span className="text-xl font-bold text-gray-900">Xpanse Loan Xchange</span>
+            <div className="flex items-center space-x-3">
+              <img 
+                src="https://www.xpanse.com/logo.svg" 
+                alt="Xpanse Logo" 
+                className="h-8 w-auto"
+              />
+              <span className="text-xl font-bold text-gray-900">Loan Xchange</span>
             </div>
             <Button
               onClick={() => window.location.href = "/api/login"}
