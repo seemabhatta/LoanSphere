@@ -169,7 +169,7 @@ export default function Exceptions() {
     });
   };
 
-  const exceptions = transformExceptions(exceptionsData?.exceptions || []);
+  const exceptions = transformExceptions(exceptionsData || []);
 
   // Filter exceptions
   const filteredExceptions = exceptions.filter(exception => {
