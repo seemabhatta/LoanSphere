@@ -34,7 +34,6 @@ const navigationSections = [
     items: [
       { name: "Stage", href: "/simple-staging", icon: Upload, description: "Upload & stage files" },
       { name: "Process", href: "/scheduler", icon: Calendar, description: "Loan processing schedule" },
-      { name: "Exceptions", href: "/exceptions", icon: AlertTriangle, description: "Review and resolve issues", badge: "5" },
       { name: "Synthetic Data Generation", href: "/synthetic-data", icon: Zap, description: "Generate synthetic loan data" },
     ]
   },
@@ -52,6 +51,7 @@ const navigationSections = [
     items: [
       { name: "Loan Boarding", href: "/pipeline", icon: Route, description: "Track loan progress" },
       { name: "Doc Processing", href: "/doc-processing", icon: Zap, description: "Document processing pipeline" },
+      { name: "Exceptions", href: "/exceptions", icon: AlertTriangle, description: "Review and resolve issues", badge: "5" },
     ]
   },
   {
