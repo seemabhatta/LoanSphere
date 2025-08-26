@@ -20,10 +20,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Start Python FastAPI server
   console.log('🐍 Starting Python FastAPI server...');
   const isProduction = process.env.NODE_ENV === 'production';
-  const pythonCmd = isProduction ? 'python3' : 'python';
-  const uvicornArgs = isProduction 
-    ? ['-m', 'uvicorn', 'main:app', '--host', '0.0.0.0', '--port', '8000'] 
-    : ['-m', 'uvicorn', 'main:app', '--host', '0.0.0.0', '--port', '8000', '--reload'];
+  const pythonCmd = 'uvicorn';
+  const uvicornArgs = ['main:app', '--host', '0.0.0.0', '--port', '8000'];
   
   const pythonProcess = spawn(pythonCmd, uvicornArgs, {
     cwd: './server',

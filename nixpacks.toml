@@ -16,6 +16,9 @@ cmds = [
   'npm install'
 ]
 
+[phases.setup]
+nixLibs = ['uvicorn']
+
 [phases.build]
 cmds = ['npm run build']
 
