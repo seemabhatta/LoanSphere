@@ -15,6 +15,7 @@ import Agents from "@/pages/agents";
 import Analytics from "@/pages/analytics";
 import SimpleStaging from "@/pages/simple-staging";
 import Scheduler from "@/pages/scheduler";
+import Commitments from "@/pages/commitments";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -55,6 +56,7 @@ function Router() {
               <Route path="/analytics" component={Analytics} />
               <Route path="/simple-staging" component={SimpleStaging} />
               <Route path="/scheduler" component={Scheduler} />
+              <Route path="/commitments" component={Commitments} />
               <Route component={NotFound} />
             </Switch>
           </div>
