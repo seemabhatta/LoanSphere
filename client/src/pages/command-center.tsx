@@ -191,7 +191,7 @@ export default function CommandCenter() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="label-text text-neutral-500">{kpi.label}</p>
-                      <p className="metric-large text-gray-900 mt-2">{kpi.value}</p>
+                      <p className="metric-medium text-gray-900 mt-2">{kpi.value}</p>
                       {kpi.target && (
                         <p className="body-text text-gray-500 mt-1">Target: {kpi.target}</p>
                       )}
