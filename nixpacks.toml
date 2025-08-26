@@ -10,14 +10,12 @@ nixPkgs = [
   'python311Packages.python-dotenv',
   'python311Packages.tinydb'
 ]
+nixLibs = ['uvicorn']
 
 [phases.install]
 cmds = [
   'npm install'
 ]
-
-[phases.setup]
-nixLibs = ['uvicorn']
 
 [phases.build]
 cmds = ['npm run build']
