@@ -1,14 +1,22 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import PageWithAssistant from "@/components/page-with-assistant";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "@/hooks/use-toast";
 import { 
   FileText,
   Eye,
-  ArrowUpDown
+  ArrowUpDown,
+  Upload,
+  File,
+  CheckCircle,
+  AlertCircle
 } from "lucide-react";
 
 interface Document {
@@ -31,6 +39,13 @@ export default function Documents() {
   const [sortField, setSortField] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  
+  // Upload states
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [documentType, setDocumentType] = useState("");
+  const [loanNumber, setLoanNumber] = useState("");
+  const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
+  const queryClient = useQueryClient();
 
   const { data: documentsData, refetch: refetchDocuments } = useQuery({
     queryKey: ['/api/documents'],
@@ -106,6 +121,79 @@ export default function Documents() {
     }
   };
 
+  // File upload handlers
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    setSelectedFiles(files);
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Upload mutation
+  const uploadMutation = useMutation({
+    mutationFn: async (uploadData: { files: File[], documentType: string, loanNumber: string }) => {
+      const formData = new FormData();
+      uploadData.files.forEach((file, index) => {
+        formData.append(`files`, file);
+      });
+      formData.append('document_type', uploadData.documentType);
+      formData.append('loan_number', uploadData.loanNumber);
+
+      // Simulate upload with progress
+      const response = await fetch('/api/documents/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+      
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Success",
+        description: `Successfully uploaded ${selectedFiles.length} document(s)`,
+      });
+      setSelectedFiles([]);
+      setDocumentType("");
+      setLoanNumber("");
+      queryClient.invalidateQueries({ queryKey: ['/api/documents'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Upload Error",
+        description: "Failed to upload documents. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleUpload = () => {
+    if (selectedFiles.length === 0) {
+      toast({
+        title: "No Files Selected",
+        description: "Please select at least one file to upload.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!documentType) {
+      toast({
+        title: "Document Type Required",
+        description: "Please select a document type.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    uploadMutation.mutate({ files: selectedFiles, documentType, loanNumber });
+  };
+
   const sortedDocuments = getSortedDocuments();
 
   return (
@@ -139,6 +227,112 @@ export default function Documents() {
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6">
+        {/* Upload Section */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="section-header flex items-center gap-2">
+              <Upload className="w-4 h-4" />
+              Upload Documents
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* File Selection */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="file-upload">Select Files</Label>
+                <Input
+                  id="file-upload"
+                  type="file"
+                  multiple
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.tiff,.txt"
+                  onChange={handleFileSelect}
+                  className="cursor-pointer"
+                  data-testid="input-file-upload"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="document-type">Document Type</Label>
+                <Select value={documentType} onValueChange={setDocumentType}>
+                  <SelectTrigger id="document-type" data-testid="select-document-type">
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="loan-application">Loan Application</SelectItem>
+                    <SelectItem value="income-verification">Income Verification</SelectItem>
+                    <SelectItem value="property-appraisal">Property Appraisal</SelectItem>
+                    <SelectItem value="credit-report">Credit Report</SelectItem>
+                    <SelectItem value="bank-statements">Bank Statements</SelectItem>
+                    <SelectItem value="tax-returns">Tax Returns</SelectItem>
+                    <SelectItem value="employment-verification">Employment Verification</SelectItem>
+                    <SelectItem value="insurance">Insurance Documents</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="loan-number">Loan Number (Optional)</Label>
+                <Input
+                  id="loan-number"
+                  value={loanNumber}
+                  onChange={(e) => setLoanNumber(e.target.value)}
+                  placeholder="e.g., XP-2024-001"
+                  data-testid="input-loan-number"
+                />
+              </div>
+            </div>
+
+            {/* Selected Files Display */}
+            {selectedFiles.length > 0 && (
+              <div className="space-y-2">
+                <Label>Selected Files ({selectedFiles.length})</Label>
+                <div className="space-y-2 max-h-32 overflow-y-auto">
+                  {selectedFiles.map((file, index) => (
+                    <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <div className="flex items-center gap-2">
+                        <File className="w-4 h-4 text-blue-500" />
+                        <span className="text-sm truncate">{file.name}</span>
+                        <Badge variant="outline" className="text-xs">
+                          {(file.size / 1024 / 1024).toFixed(1)} MB
+                        </Badge>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveFile(index)}
+                        className="h-6 w-6 p-0"
+                        data-testid={`button-remove-file-${index}`}
+                      >
+                        ×
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Upload Button */}
+            <div className="flex justify-end">
+              <Button
+                onClick={handleUpload}
+                disabled={uploadMutation.isPending || selectedFiles.length === 0}
+                className="min-w-32"
+                data-testid="button-upload-documents"
+              >
+                {uploadMutation.isPending ? (
+                  <>Processing...</>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4 mr-2" />
+                    Upload {selectedFiles.length > 0 ? `${selectedFiles.length} File${selectedFiles.length > 1 ? 's' : ''}` : 'Files'}
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+        {/* Documents List */}
         <Card>
           <CardHeader>
             <CardTitle className="section-header">Documents List</CardTitle>
