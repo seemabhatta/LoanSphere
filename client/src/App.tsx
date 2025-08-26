@@ -17,6 +17,7 @@ import Agents from "@/pages/agents";
 import Analytics from "@/pages/analytics";
 import SimpleStaging from "@/pages/simple-staging";
 import Scheduler from "@/pages/scheduler";
+import SyntheticData from "@/pages/synthetic-data";
 import Commitments from "@/pages/commitments";
 import Loans from "@/pages/loans";
 import PurchaseAdvices from "@/pages/purchase-advices";
@@ -62,6 +63,7 @@ function Router() {
               <Route path="/analytics" component={Analytics} />
               <Route path="/simple-staging" component={SimpleStaging} />
               <Route path="/scheduler" component={Scheduler} />
+              <Route path="/synthetic-data" component={SyntheticData} />
               <Route path="/commitments" component={Commitments} />
               <Route path="/loans" component={Loans} />
               <Route path="/purchase-advices" component={PurchaseAdvices} />

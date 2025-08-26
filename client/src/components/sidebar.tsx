@@ -35,6 +35,7 @@ const navigationSections = [
       { name: "Stage", href: "/simple-staging", icon: Upload, description: "Upload & stage files" },
       { name: "Process", href: "/scheduler", icon: Calendar, description: "Loan processing schedule" },
       { name: "Exceptions", href: "/exceptions", icon: AlertTriangle, description: "Review and resolve issues", badge: "5" },
+      { name: "Synthetic Data Generation", href: "/synthetic-data", icon: Zap, description: "Generate synthetic loan data" },
     ]
   },
   {
