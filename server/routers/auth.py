@@ -18,7 +18,7 @@ router = APIRouter()
 # OAuth2 configuration
 oauth = OAuth()
 
-# OAuth provider configurations
+# OAuth provider configurations - Google only
 OAUTH_PROVIDERS = {
     "google": {
         "client_id": os.getenv("GOOGLE_CLIENT_ID"),
@@ -26,26 +26,6 @@ OAUTH_PROVIDERS = {
         "server_metadata_url": "https://accounts.google.com/.well-known/openid-configuration",
         "client_kwargs": {
             "scope": "openid email profile"
-        }
-    },
-    "github": {
-        "client_id": os.getenv("GITHUB_CLIENT_ID"),
-        "client_secret": os.getenv("GITHUB_CLIENT_SECRET"),
-        "access_token_url": "https://github.com/login/oauth/access_token",
-        "authorize_url": "https://github.com/login/oauth/authorize",
-        "api_base_url": "https://api.github.com/",
-        "client_kwargs": {
-            "scope": "user:email"
-        }
-    },
-    "facebook": {
-        "client_id": os.getenv("FACEBOOK_APP_ID"),
-        "client_secret": os.getenv("FACEBOOK_APP_SECRET"),
-        "access_token_url": "https://graph.facebook.com/oauth/access_token",
-        "authorize_url": "https://www.facebook.com/dialog/oauth",
-        "api_base_url": "https://graph.facebook.com/",
-        "client_kwargs": {
-            "scope": "email"
         }
     }
 }
@@ -73,7 +53,7 @@ class UserSession(BaseModel):
 sessions: Dict[str, UserSession] = {}
 
 async def get_user_info(provider: str, token: dict) -> Dict[str, Any]:
-    """Get user information from OAuth provider"""
+    """Get user information from Google OAuth provider"""
     
     if provider == "google":
         async with httpx.AsyncClient() as client:
@@ -91,53 +71,7 @@ async def get_user_info(provider: str, token: dict) -> Dict[str, Any]:
                 "provider": "google"
             }
     
-    elif provider == "github":
-        async with httpx.AsyncClient() as client:
-            # Get user info
-            response = await client.get(
-                "https://api.github.com/user",
-                headers={"Authorization": f"token {token['access_token']}"}
-            )
-            user_data = response.json()
-            
-            # Get user email
-            email_response = await client.get(
-                "https://api.github.com/user/emails",
-                headers={"Authorization": f"token {token['access_token']}"}
-            )
-            emails = email_response.json()
-            primary_email = next((email["email"] for email in emails if email["primary"]), None)
-            
-            name_parts = (user_data.get("name") or "").split(" ", 1)
-            return {
-                "id": f"github_{user_data['id']}",
-                "email": primary_email or user_data.get("email", ""),
-                "first_name": name_parts[0] if name_parts else user_data["login"],
-                "last_name": name_parts[1] if len(name_parts) > 1 else "",
-                "profile_image_url": user_data.get("avatar_url"),
-                "provider": "github"
-            }
-    
-    elif provider == "facebook":
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                "https://graph.facebook.com/me",
-                params={
-                    "fields": "id,email,first_name,last_name,picture.type(large)",
-                    "access_token": token["access_token"]
-                }
-            )
-            user_data = response.json()
-            return {
-                "id": f"facebook_{user_data['id']}",
-                "email": user_data.get("email", ""),
-                "first_name": user_data.get("first_name", ""),
-                "last_name": user_data.get("last_name", ""),
-                "profile_image_url": user_data.get("picture", {}).get("data", {}).get("url"),
-                "provider": "facebook"
-            }
-    
-    raise HTTPException(status_code=400, detail=f"Unknown provider: {provider}")
+    raise HTTPException(status_code=400, detail=f"Unsupported provider: {provider}")
 
 @router.get("/providers")
 async def get_providers():
@@ -168,53 +102,40 @@ async def get_current_user(request: Request):
     
     return sessions[session_token]
 
-@router.post("/logout")
+@router.get("/logout")
+@router.post("/logout") 
 async def logout(request: Request):
-    """Logout user"""
+    """Logout user - accepts both GET and POST"""
     session_token = request.cookies.get("session_token")
     
     if session_token and session_token in sessions:
         del sessions[session_token]
+        logger.info(f"Logged out user with token: {session_token[:10]}...")
     
-    response = RedirectResponse(url="/login")
+    response = RedirectResponse(url="/")
     response.delete_cookie("session_token")
     return response
 
-@router.get("/{provider}")
-async def oauth_login(provider: str, request: Request):
-    """Initiate OAuth login with provider"""
-    # Skip if this is not actually a provider route
-    if provider in ["user", "providers", "logout"]:
-        raise HTTPException(status_code=404, detail="Not found")
-        
-    if provider not in OAUTH_PROVIDERS:
-        raise HTTPException(status_code=404, detail="Provider not found")
-    
-    client = oauth.create_client(provider)
+@router.get("/google")
+async def google_oauth_login(request: Request):
+    """Initiate Google OAuth login"""
+    client = oauth.create_client("google")
     if not client:
-        raise HTTPException(status_code=400, detail=f"Provider {provider} not configured")
+        raise HTTPException(status_code=400, detail="Google OAuth not configured")
     
-    # Use hardcoded redirect URI to match Google OAuth settings
-    if provider == "google":
-        redirect_uri = "http://localhost:5000/api/auth/google/callback"
-    else:
-        redirect_uri = f"http://localhost:5000/api/auth/{provider}/callback"
-    
+    redirect_uri = "http://localhost:5000/api/auth/google/callback"
     return await client.authorize_redirect(request, redirect_uri)
 
-@router.get("/{provider}/callback")
-async def oauth_callback(provider: str, request: Request):
-    """Handle OAuth callback"""
-    if provider not in OAUTH_PROVIDERS:
-        raise HTTPException(status_code=404, detail="Provider not found")
-    
-    client = oauth.create_client(provider)
+@router.get("/google/callback")
+async def google_oauth_callback(request: Request):
+    """Handle Google OAuth callback"""
+    client = oauth.create_client("google")
     if not client:
-        raise HTTPException(status_code=400, detail=f"Provider {provider} not configured")
+        raise HTTPException(status_code=400, detail="Google OAuth not configured")
     
     try:
         token = await client.authorize_access_token(request)
-        user_info = await get_user_info(provider, token)
+        user_info = await get_user_info("google", token)
         
         # Create session
         session_token = generate_token()
@@ -237,7 +158,7 @@ async def oauth_callback(provider: str, request: Request):
         return response
         
     except Exception as e:
-        logger.error(f"OAuth callback error for {provider}: {str(e)}")
+        logger.error(f"Google OAuth callback error: {str(e)}")
         return RedirectResponse(url="/login?error=auth_failed")
 
 # Dependency to get current user

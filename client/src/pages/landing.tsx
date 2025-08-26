@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Shield, Zap, Target, CheckCircle, Chrome, Github, Facebook } from "lucide-react";
+import { ArrowRight, Shield, Zap, Target, CheckCircle, Chrome } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
@@ -15,8 +15,6 @@ interface ProvidersResponse {
 
 const providerIcons = {
   google: Chrome,
-  github: Github, 
-  facebook: Facebook,
 };
 
 export default function Landing() {

@@ -188,7 +188,7 @@ export default function Sidebar({ isOpen, onClose, collapsed = false }: SidebarP
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                onClick={() => window.location.href = "/api/logout"}
+                onClick={() => window.location.href = "/api/auth/logout"}
                 className="text-red-600 hover:text-red-700 cursor-pointer"
                 data-testid="button-logout-collapsed"
               >
@@ -239,7 +239,7 @@ export default function Sidebar({ isOpen, onClose, collapsed = false }: SidebarP
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                onClick={() => window.location.href = "/api/logout"}
+                onClick={() => window.location.href = "/api/auth/logout"}
                 className="text-red-600 hover:text-red-700 cursor-pointer"
                 data-testid="button-logout"
               >

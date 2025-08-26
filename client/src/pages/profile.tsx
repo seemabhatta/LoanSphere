@@ -212,7 +212,7 @@ export default function Profile() {
                     <div>
                       <h4 className="font-medium text-green-900">Single Sign-On (SSO)</h4>
                       <p className="text-sm text-green-700">
-                        Your account is secured with Replit authentication
+                        Your account is secured with OAuth 2.0 authentication
                       </p>
                     </div>
                   </div>

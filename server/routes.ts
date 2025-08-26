@@ -2,14 +2,9 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { spawn } from 'child_process';
-import { setupAuth, isAuthenticated } from "./replitAuth";
-import { storage } from "./storage";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth middleware
-  await setupAuth(app);
-
-  // Auth routes are now handled by Python backend
+  // Authentication is now handled by Python backend
 
   // Health check endpoint (not proxied)
   app.get('/health', (req, res) => {
@@ -18,7 +13,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       message: 'All API requests forwarded to Python FastAPI',
       python_api: 'http://127.0.0.1:8000',
       architecture: 'Node.js Express → Python FastAPI',
-      auth: 'Replit OpenID Connect'
+      auth: 'OAuth 2.0 (Google only)'
     });
   });
 
@@ -77,10 +72,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.use('/api', (req, res, next) => {
-    // Skip proxy for old Replit auth routes only
-    if (req.path.startsWith('/login') || req.path.startsWith('/logout') || req.path.startsWith('/callback')) {
-      return next();
-    }
+    // Proxy all API requests to Python backend
     console.log(`🔄 Proxying ${req.method} ${req.originalUrl} to Python`);
     apiProxy(req, res, (err: any) => {
       if (err) {
