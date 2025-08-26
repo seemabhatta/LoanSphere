@@ -193,8 +193,8 @@ export default function AIAssistant() {
                     data-testid={`quick-action-${index}`}
                   >
                     <action.icon className="w-5 h-5 mx-auto mb-2 text-gray-600 group-hover:text-blue-600" />
-                    <p className="body-text font-medium text-gray-900 text-sm">{action.label}</p>
-                    <p className="text-xs text-gray-500">{action.category}</p>
+                    <p className="label-text text-gray-900">{action.label}</p>
+                    <p className="caption-text">{action.category}</p>
                   </button>
                 ))}
               </div>
@@ -223,7 +223,7 @@ export default function AIAssistant() {
                           )}
                           <div className="flex-1">
                             <p className="body-text whitespace-pre-line">{message.content}</p>
-                            <p className={`text-xs mt-2 ${message.type === 'user' ? 'text-blue-200' : 'text-gray-500'}`}>
+                            <p className={`caption-text mt-2 ${message.type === 'user' ? 'text-blue-200' : 'text-gray-500'}`}>
                               {message.timestamp.toLocaleTimeString()}
                             </p>
                           </div>
@@ -236,7 +236,7 @@ export default function AIAssistant() {
                               <button
                                 key={index}
                                 onClick={() => handleSuggestionClick(suggestion)}
-                                className="text-xs px-3 py-1 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+                                className="caption-text px-3 py-1 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
                                 data-testid={`suggestion-${index}`}
                               >
                                 {suggestion}
