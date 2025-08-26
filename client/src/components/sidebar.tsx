@@ -30,7 +30,7 @@ const navigationSections = [
     ]
   },
   {
-    title: "OPERATIONS",
+    title: "WORKSPACE",
     items: [
       { name: "Stage", href: "/simple-staging", icon: Upload, description: "Upload & stage files" },
       { name: "Process", href: "/scheduler", icon: Calendar, description: "Loan processing schedule" },
