@@ -127,9 +127,6 @@ export default function PipelineMonitor() {
                     >
                       <div className="flex items-center justify-between mb-3">
                         <div>
-                          <h3 className="section-header text-neutral-800">
-                            {record.xpLoanNumber}
-                          </h3>
                           <p className="body-text text-neutral-500">
                             {record.externalIds?.investorName || 'Unknown Investor'}
                           </p>
