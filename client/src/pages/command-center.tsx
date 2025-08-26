@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import PageWithAssistant from "@/components/page-with-assistant";
@@ -131,7 +131,7 @@ export default function CommandCenter() {
             <div className="flex items-center caption-text mb-1">
               <span className="text-gray-500">Command Center</span>
             </div>
-            <h1 className="page-title text-gray-900" data-testid="page-title">
+            <h1 className="section-header text-gray-900" data-testid="page-title">
               Mission Control
             </h1>
             <p className="body-text text-gray-500 mt-1">
@@ -157,10 +157,10 @@ export default function CommandCenter() {
           {/* System Status */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="flex items-center">
-                <Activity className="w-5 h-5 mr-2" />
+              <div className="section-header flex items-center">
+                <Activity className="w-4 h-4 mr-2" />
                 System Status
-              </CardTitle>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
@@ -222,13 +222,13 @@ export default function CommandCenter() {
             {/* Critical Exceptions */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center justify-between">
+                <div className="section-header flex items-center justify-between">
                   <div className="flex items-center">
-                    <AlertTriangle className="w-5 h-5 mr-2 text-red-600" />
+                    <AlertTriangle className="w-4 h-4 mr-2 text-red-600" />
                     Critical Exceptions
                   </div>
                   <Badge variant="secondary">{criticalExceptions?.length || 0}</Badge>
-                </CardTitle>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
@@ -264,10 +264,10 @@ export default function CommandCenter() {
             {/* Recent Activity */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Activity className="w-5 h-5 mr-2" />
+                <div className="section-header flex items-center">
+                  <Activity className="w-4 h-4 mr-2" />
                   Recent Activity
-                </CardTitle>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
