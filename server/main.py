@@ -10,7 +10,7 @@ import os
 from loguru import logger
 
 # from database import init_db, get_db  # Using TinyDB instead
-from routers import loans, exceptions, agents, compliance, documents, metrics, staging
+from routers import loans, exceptions, agents, compliance, documents, metrics, staging, purchase_advices
 from services.loan_service import LoanService
 from agents.planner_agent import PlannerAgent
 from agents.tool_agent import ToolAgent
@@ -97,6 +97,7 @@ app.include_router(documents.router, prefix="/api/documents", tags=["documents"]
 app.include_router(metrics.router, prefix="/api/metrics", tags=["metrics"])
 app.include_router(staging.router, prefix="/api/simple", tags=["staging"])
 app.include_router(staging.router, prefix="/api/staging", tags=["staging"])
+app.include_router(purchase_advices.router, prefix="/api/purchase-advices", tags=["purchase-advices"])
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):

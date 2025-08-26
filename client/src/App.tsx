@@ -16,6 +16,8 @@ import Analytics from "@/pages/analytics";
 import SimpleStaging from "@/pages/simple-staging";
 import Scheduler from "@/pages/scheduler";
 import Commitments from "@/pages/commitments";
+import Loans from "@/pages/loans";
+import PurchaseAdvices from "@/pages/purchase-advices";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -57,6 +59,8 @@ function Router() {
               <Route path="/simple-staging" component={SimpleStaging} />
               <Route path="/scheduler" component={Scheduler} />
               <Route path="/commitments" component={Commitments} />
+              <Route path="/loans" component={Loans} />
+              <Route path="/purchase-advices" component={PurchaseAdvices} />
               <Route component={NotFound} />
             </Switch>
           </div>
