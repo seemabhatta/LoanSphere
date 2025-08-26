@@ -204,13 +204,7 @@ export default function AIAssistant() {
           {/* Chat Interface */}
           <div className="flex-1 flex flex-col">
             <Card className="flex-1 flex flex-col">
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center">
-                  <Bot className="w-5 h-5 mr-2 text-blue-600" />
-                  Conversation
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="flex-1 flex flex-col">
+              <CardContent className="flex-1 flex flex-col pt-6">
                 {/* Messages */}
                 <div className="flex-1 overflow-y-auto mb-4 space-y-4">
                   {messages.map((message) => (
