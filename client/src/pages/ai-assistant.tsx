@@ -42,20 +42,7 @@ export default function AIAssistant() {
     return `Hello! I'm your AI Assistant for Xpanse Loan Xchange. I can help you with loan boarding, exception management, analytics, and system operations. What would you like to know?`;
   };
 
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      type: 'assistant',
-      content: getWelcomeMessage(),
-      timestamp: new Date(),
-      suggestions: [
-        'Show me critical exceptions',
-        'What\'s my first-pass yield today?',
-        'Which loans are behind schedule?',
-        'Analyze exception trends this week'
-      ]
-    }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
