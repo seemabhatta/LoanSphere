@@ -4,10 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RefreshCw, Play, Pause, AlertCircle } from "lucide-react";
+import { RefreshCw, Play, Pause, AlertCircle, ChevronUp, ChevronDown } from "lucide-react";
 
 export default function PipelineMonitor() {
   const [selectedLoan, setSelectedLoan] = useState<string | null>(null);
+  const [sortField, setSortField] = useState<string>('');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   const { data: loansData, refetch: refetchLoans } = useQuery({
     queryKey: ['/api/staging/tracking'],
@@ -69,6 +71,51 @@ export default function PipelineMonitor() {
     }
   };
 
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const sortedLoans = loansData?.records ? [...loansData.records].sort((a: any, b: any) => {
+    if (!sortField) return 0;
+
+    let aValue = '';
+    let bValue = '';
+
+    switch (sortField) {
+      case 'xpLoanNumber':
+        aValue = a.xpLoanNumber || '';
+        bValue = b.xpLoanNumber || '';
+        break;
+      case 'commitment':
+        aValue = a.externalIds?.commitmentId ? 'received' : 'pending';
+        bValue = b.externalIds?.commitmentId ? 'received' : 'pending';
+        break;
+      case 'purchaseAdvice':
+        aValue = a.externalIds?.purchaseAdviceId ? 'received' : 'pending';
+        bValue = b.externalIds?.purchaseAdviceId ? 'received' : 'pending';
+        break;
+      case 'loanData':
+        aValue = a.metaData?.['loan_data'] ? 'received' : 'pending';
+        bValue = b.metaData?.['loan_data'] ? 'received' : 'pending';
+        break;
+      case 'documents':
+        aValue = Object.keys(a.metaData || {}).length > 0 ? 'received' : 'pending';
+        bValue = Object.keys(b.metaData || {}).length > 0 ? 'received' : 'pending';
+        break;
+    }
+
+    if (sortDirection === 'asc') {
+      return aValue.localeCompare(bValue);
+    } else {
+      return bValue.localeCompare(aValue);
+    }
+  }) : [];
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Header */}
@@ -115,71 +162,122 @@ export default function PipelineMonitor() {
           <TabsContent value="loans" className="space-y-6">
             <Card>
               <CardContent className="pt-6">
-                <div className="space-y-4">
-                  {loansData?.records?.map((record: any) => (
-                    <div 
-                      key={record.xpLoanNumber}
-                      className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                        selectedLoan === record.xpLoanNumber ? 'bg-blue-50 border-blue-200' : 'hover:bg-gray-50'
-                      }`}
-                      onClick={() => setSelectedLoan(record.xpLoanNumber)}
-                      data-testid={`loan-item-${record.xpLoanNumber}`}
-                    >
-                      <div className="flex items-center justify-between mb-3">
-                        <div>
-                          <p className="body-text text-neutral-500">
-                            {record.externalIds?.investorName || 'Unknown Investor'}
-                          </p>
-                        </div>
-                        <Badge 
-                          className={getStatusColor(record.status?.boardingReadiness || 'pending')}
-                          data-testid={`status-${record.xpLoanNumber}`}
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-3 px-4 font-medium text-neutral-700">
+                          <button 
+                            className="flex items-center space-x-1 hover:text-neutral-900"
+                            onClick={() => handleSort('xpLoanNumber')}
+                            data-testid="sort-loan-number"
+                          >
+                            <span>Loan Number</span>
+                            {sortField === 'xpLoanNumber' && (
+                              sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                            )}
+                          </button>
+                        </th>
+                        <th className="text-left py-3 px-4 font-medium text-neutral-700">
+                          <button 
+                            className="flex items-center space-x-1 hover:text-neutral-900"
+                            onClick={() => handleSort('commitment')}
+                            data-testid="sort-commitment"
+                          >
+                            <span>Commitment</span>
+                            {sortField === 'commitment' && (
+                              sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                            )}
+                          </button>
+                        </th>
+                        <th className="text-left py-3 px-4 font-medium text-neutral-700">
+                          <button 
+                            className="flex items-center space-x-1 hover:text-neutral-900"
+                            onClick={() => handleSort('purchaseAdvice')}
+                            data-testid="sort-purchase-advice"
+                          >
+                            <span>Purchase Advice</span>
+                            {sortField === 'purchaseAdvice' && (
+                              sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                            )}
+                          </button>
+                        </th>
+                        <th className="text-left py-3 px-4 font-medium text-neutral-700">
+                          <button 
+                            className="flex items-center space-x-1 hover:text-neutral-900"
+                            onClick={() => handleSort('loanData')}
+                            data-testid="sort-loan-data"
+                          >
+                            <span>Loan Data</span>
+                            {sortField === 'loanData' && (
+                              sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                            )}
+                          </button>
+                        </th>
+                        <th className="text-left py-3 px-4 font-medium text-neutral-700">
+                          <button 
+                            className="flex items-center space-x-1 hover:text-neutral-900"
+                            onClick={() => handleSort('documents')}
+                            data-testid="sort-documents"
+                          >
+                            <span>Documents</span>
+                            {sortField === 'documents' && (
+                              sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                            )}
+                          </button>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sortedLoans?.map((record: any) => (
+                        <tr 
+                          key={record.xpLoanNumber}
+                          className="border-b hover:bg-gray-50 transition-colors"
+                          data-testid={`loan-row-${record.xpLoanNumber}`}
                         >
-                          {record.status?.boardingReadiness || 'Pending'}
-                        </Badge>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 body-text">
-                        <div>
-                          <span className="text-neutral-500">Loan Number:</span>
-                          <span className="ml-2 font-mono">
-                            {record.externalIds?.correspondentLoanNumber || record.externalIds?.investorLoanNumber || 'N/A'}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-neutral-500">Commitment:</span>
-                          <span className="ml-2 font-mono">
-                            {record.externalIds?.commitmentId || 'N/A'}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-neutral-500">Documents:</span>
-                          <span className="ml-2 font-mono">
-                            {Object.keys(record.metaData || {}).length}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-neutral-500">Updated:</span>
-                          <span className="ml-2 font-mono">
-                            {record.updatedAt ? new Date(record.updatedAt).toLocaleDateString() : 'N/A'}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Show document types in metaData */}
-                      {record.metaData && Object.keys(record.metaData).length > 0 && (
-                        <div className="mt-3 pt-3 border-t">
-                          <div className="flex flex-wrap gap-2">
-                            {Object.keys(record.metaData).map((docType) => (
-                              <Badge key={docType} variant="outline" className="detail-text">
-                                {docType.replace('_', ' ')}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                          <td className="py-3 px-4 font-mono text-sm">
+                            {record.xpLoanNumber || 'N/A'}
+                          </td>
+                          <td className="py-3 px-4">
+                            <Badge 
+                              variant={record.externalIds?.commitmentId ? 'default' : 'outline'}
+                              className={`${record.externalIds?.commitmentId ? 'bg-green-100 text-green-800' : 'text-gray-500'}`}
+                              data-testid={`commitment-status-${record.xpLoanNumber}`}
+                            >
+                              {record.externalIds?.commitmentId ? 'Received' : 'Pending'}
+                            </Badge>
+                          </td>
+                          <td className="py-3 px-4">
+                            <Badge 
+                              variant={record.externalIds?.purchaseAdviceId ? 'default' : 'outline'}
+                              className={`${record.externalIds?.purchaseAdviceId ? 'bg-green-100 text-green-800' : 'text-gray-500'}`}
+                              data-testid={`purchase-advice-status-${record.xpLoanNumber}`}
+                            >
+                              {record.externalIds?.purchaseAdviceId ? 'Received' : 'Pending'}
+                            </Badge>
+                          </td>
+                          <td className="py-3 px-4">
+                            <Badge 
+                              variant={record.metaData?.['loan_data'] ? 'default' : 'outline'}
+                              className={`${record.metaData?.['loan_data'] ? 'bg-green-100 text-green-800' : 'text-gray-500'}`}
+                              data-testid={`loan-data-status-${record.xpLoanNumber}`}
+                            >
+                              {record.metaData?.['loan_data'] ? 'Received' : 'Pending'}
+                            </Badge>
+                          </td>
+                          <td className="py-3 px-4">
+                            <Badge 
+                              variant={Object.keys(record.metaData || {}).length > 0 ? 'default' : 'outline'}
+                              className={`${Object.keys(record.metaData || {}).length > 0 ? 'bg-green-100 text-green-800' : 'text-gray-500'}`}
+                              data-testid={`documents-status-${record.xpLoanNumber}`}
+                            >
+                              {Object.keys(record.metaData || {}).length > 0 ? 'Received' : 'Pending'}
+                            </Badge>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                   
                   {!loansData?.records?.length && (
                     <div className="text-center py-8 text-neutral-500" data-testid="no-loans">
