@@ -69,43 +69,39 @@ export default function DocProcessing() {
 
   const documents = documentsData?.documents || [];
 
-  // Group documents by loan number, then by parent-child relationships
-  const organizeDocuments = (docs: DocumentProcessing[]) => {
+  // Group documents by loan number for better organization
+  const groupedDocuments = documents.reduce((acc: Record<string, DocumentProcessing[]>, doc: DocumentProcessing) => {
+    if (!acc[doc.xp_loan_number]) {
+      acc[doc.xp_loan_number] = [];
+    }
+    acc[doc.xp_loan_number].push(doc);
+    return acc;
+  }, {});
+
+  // Sort loan numbers
+  const sortedLoanNumbers = Object.keys(groupedDocuments).sort();
+
+  // Function to organize documents within a loan (parent-child relationships)
+  const organizeWithinLoan = (docs: DocumentProcessing[]) => {
     const organized: DocumentProcessing[] = [];
-    
-    // Group by loan number
-    const byLoan = docs.reduce((acc, doc) => {
-      if (!acc[doc.xp_loan_number]) {
-        acc[doc.xp_loan_number] = [];
-      }
-      acc[doc.xp_loan_number].push(doc);
-      return acc;
-    }, {} as Record<string, DocumentProcessing[]>);
+    const parentDocs = docs.filter(doc => !doc.is_split_document);
+    const childDocs = docs.filter(doc => doc.is_split_document);
 
-    // For each loan, organize parent-child relationships
-    Object.keys(byLoan).sort().forEach(loanNumber => {
-      const loanDocs = byLoan[loanNumber];
-      const parentDocs = loanDocs.filter(doc => !doc.is_split_document);
-      const childDocs = loanDocs.filter(doc => doc.is_split_document);
+    // Add parent documents and their children
+    for (const parent of parentDocs) {
+      organized.push(parent);
+      // Find children of this parent
+      const children = childDocs.filter(child => child.parent_doc_id === parent.xp_doc_id);
+      organized.push(...children);
+    }
 
-      // Add parent documents and their children
-      for (const parent of parentDocs) {
-        organized.push(parent);
-        // Find children of this parent
-        const children = childDocs.filter(child => child.parent_doc_id === parent.xp_doc_id);
-        organized.push(...children);
-      }
-
-      // Add any orphaned child documents for this loan
-      const addedChildIds = new Set(organized.filter(doc => doc.is_split_document && doc.xp_loan_number === loanNumber).map(doc => doc.id));
-      const orphans = childDocs.filter(doc => !addedChildIds.has(doc.id));
-      organized.push(...orphans);
-    });
+    // Add any orphaned child documents
+    const addedChildIds = new Set(organized.filter(doc => doc.is_split_document).map(doc => doc.id));
+    const orphans = childDocs.filter(doc => !addedChildIds.has(doc.id));
+    organized.push(...orphans);
 
     return organized;
   };
-
-  const sortedDocuments = organizeDocuments([...documents]);
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -226,121 +222,105 @@ export default function DocProcessing() {
               </tr>
             </thead>
             <tbody>
-              {sortedDocuments.map((document: DocumentProcessing, index: number) => {
-                const isChild = document.is_split_document;
-                const prevDocument = index > 0 ? sortedDocuments[index - 1] : null;
-                const nextDocument = index < sortedDocuments.length - 1 ? sortedDocuments[index + 1] : null;
+              {sortedLoanNumbers.map(loanNumber => {
+                const loanDocs = organizeWithinLoan(groupedDocuments[loanNumber]);
                 
-                // Check if this is the last child in a parent group
-                const isLastChild = isChild && (!nextDocument || !nextDocument.is_split_document || nextDocument.parent_doc_id !== document.parent_doc_id);
-                
-                // Check if this is the first document of a new loan
-                const isNewLoan = !prevDocument || prevDocument.xp_loan_number !== document.xp_loan_number;
-                
-                // Check if next document is from different loan
-                const isLastInLoan = !nextDocument || nextDocument.xp_loan_number !== document.xp_loan_number;
-                
-                return (
-                  <tr key={document.id} className={`border-b border-neutral-100 hover:bg-neutral-50 ${
-                    isChild ? 'bg-blue-50/20' : 
-                    document.split_count ? 'bg-green-50/20' : ''
-                  } ${isNewLoan ? 'border-t-2 border-t-neutral-300' : ''}`}>
-                    <td className="p-4 body-text text-neutral-900" data-testid={`loan-${document.id}`}>
-                      <div className="flex items-center">
-                        {isNewLoan && (
-                          <div className="flex items-center mr-2 text-neutral-600">
-                            <span className="text-sm font-semibold">📋</span>
-                          </div>
-                        )}
-                        {!isNewLoan && isChild && (
-                          <div className="flex items-center mr-3 text-blue-400 ml-4">
-                            <span className="text-xs">{isLastChild ? '└─' : '├─'}</span>
-                          </div>
-                        )}
-                        {!isNewLoan && !isChild && (
-                          <div className="flex items-center mr-3 text-green-400 ml-4">
-                            <span className="text-xs">├─</span>
-                          </div>
-                        )}
-                        <span className={`${isNewLoan ? 'font-semibold' : 'text-neutral-600'}`}>
-                          {document.xp_loan_number}
-                        </span>
+                return [
+                  // Loan header row
+                  <tr key={`header-${loanNumber}`} className="bg-neutral-100 border-t-2 border-t-neutral-300">
+                    <td colSpan={10} className="p-3">
+                      <div className="flex items-center space-x-3">
+                        <span className="text-lg">📋</span>
+                        <span className="font-bold text-neutral-800">Loan {loanNumber}</span>
+                        <span className="text-sm text-neutral-500">({loanDocs.length} documents)</span>
                       </div>
                     </td>
-                    <td className="p-4 body-text text-neutral-700" data-testid={`type-${document.id}`}>
-                      <div className="flex items-center">
-                        {!isNewLoan && (
-                          <div className="flex items-center mr-3 text-neutral-400 ml-4">
-                            <span className="text-xs">
-                              {isChild ? (isLastChild ? '└─' : '├─') : '├─'}
-                            </span>
+                  </tr>,
+                  // Documents for this loan
+                  ...loanDocs.map((document, docIndex) => {
+                    const isChild = document.is_split_document;
+                    const nextDoc = docIndex < loanDocs.length - 1 ? loanDocs[docIndex + 1] : null;
+                    const isLastChild = isChild && (!nextDoc || !nextDoc.is_split_document || nextDoc.parent_doc_id !== document.parent_doc_id);
+                    
+                    return (
+                      <tr key={document.id} className={`border-b border-neutral-100 hover:bg-neutral-50 ${
+                        isChild ? 'bg-blue-50/10' : document.split_count ? 'bg-green-50/10' : ''
+                      }`}>
+                        <td className="p-4 body-text text-neutral-600" data-testid={`loan-${document.id}`}>
+                          <div className="flex items-center ml-6">
+                            {isChild ? (
+                              <span className="text-blue-400 mr-3 text-xs">{isLastChild ? '└─' : '├─'}</span>
+                            ) : (
+                              <span className="text-green-400 mr-3 text-xs">├─</span>
+                            )}
+                            {loanNumber}
                           </div>
-                        )}
-                        <div className="flex items-center space-x-2">
-                          {document.document_type}
-                          {isChild && <span className="text-xs text-blue-500 bg-blue-100 px-1 rounded">split doc</span>}
-                          {document.split_count && <span className="text-xs text-green-500 bg-green-100 px-1 rounded">→ {document.split_count}</span>}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="p-4 code-text text-neutral-600" data-testid={`doc-id-${document.id}`}>
-                      <div className="flex items-center">
-                        {!isNewLoan && (
-                          <div className="flex items-center mr-3 text-neutral-400 ml-4">
-                            <span className="text-xs">
-                              {isChild ? (isLastChild ? '└─' : '├─') : '├─'}
-                            </span>
+                        </td>
+                        <td className="p-4 body-text text-neutral-700" data-testid={`type-${document.id}`}>
+                          <div className="flex items-center ml-6">
+                            {isChild ? (
+                              <span className="text-blue-400 mr-3 text-xs">{isLastChild ? '└─' : '├─'}</span>
+                            ) : (
+                              <span className="text-green-400 mr-3 text-xs">├─</span>
+                            )}
+                            <div className="flex items-center space-x-2">
+                              {document.document_type}
+                              {isChild && <span className="text-xs text-blue-500 bg-blue-100 px-1 rounded">split</span>}
+                              {document.split_count && <span className="text-xs text-green-500 bg-green-100 px-1 rounded">→{document.split_count}</span>}
+                            </div>
                           </div>
-                        )}
-                        {document.xp_doc_id}
-                      </div>
-                    </td>
-                    <td className="p-4" data-testid={`source-${document.id}`}>
-                      {document.parent_doc_id ? (
-                        <div className="flex items-center space-x-2">
-                          <FileText className="w-3 h-3 text-blue-500" />
-                          <span className="text-xs text-blue-600">from blob</span>
-                        </div>
-                      ) : document.split_count ? (
-                        <div className="flex items-center space-x-2">
-                          <Files className="w-3 h-3 text-green-500" />
-                          <span className="text-xs text-green-600">splits</span>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-neutral-400">single</span>
-                      )}
-                    </td>
-                    <td className="p-4" data-testid={`status-${document.id}`}>
-                      <Badge className={getStatusBadge(document.status)}>
-                        {document.status}
-                      </Badge>
-                    </td>
-                  <td className="p-4" data-testid={`ocr-${document.id}`}>
-                    <Badge className={getStatusBadge(document.ocr_status)}>
-                      {document.ocr_status}
-                    </Badge>
-                  </td>
-                  <td className="p-4" data-testid={`classification-${document.id}`}>
-                    <Badge className={getStatusBadge(document.classification_status)}>
-                      {document.classification_status}
-                    </Badge>
-                  </td>
-                  <td className="p-4" data-testid={`extraction-${document.id}`}>
-                    <Badge className={getStatusBadge(document.extraction_status)}>
-                      {document.extraction_status}
-                    </Badge>
-                  </td>
-                  <td className="p-4" data-testid={`validation-${document.id}`}>
-                    <Badge className={getStatusBadge(document.validation_status)}>
-                      {document.validation_status}
-                    </Badge>
-                  </td>
-                  <td className="p-4 detail-text text-neutral-500" data-testid={`created-${document.id}`}>
-                    {formatDate(document.created_at)}
-                  </td>
-                </tr>
-                );
-              })}
+                        </td>
+                        <td className="p-4 code-text text-neutral-600" data-testid={`doc-id-${document.id}`}>
+                          {document.xp_doc_id}
+                        </td>
+                        <td className="p-4" data-testid={`source-${document.id}`}>
+                          {document.parent_doc_id ? (
+                            <div className="flex items-center space-x-1">
+                              <FileText className="w-3 h-3 text-blue-500" />
+                              <span className="text-xs text-blue-600">blob</span>
+                            </div>
+                          ) : document.split_count ? (
+                            <div className="flex items-center space-x-1">
+                              <Files className="w-3 h-3 text-green-500" />
+                              <span className="text-xs text-green-600">splits</span>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-neutral-400">single</span>
+                          )}
+                        </td>
+                        <td className="p-4" data-testid={`status-${document.id}`}>
+                          <Badge className={getStatusBadge(document.status)}>
+                            {document.status}
+                          </Badge>
+                        </td>
+                        <td className="p-4" data-testid={`ocr-${document.id}`}>
+                          <Badge className={getStatusBadge(document.ocr_status)}>
+                            {document.ocr_status}
+                          </Badge>
+                        </td>
+                        <td className="p-4" data-testid={`classification-${document.id}`}>
+                          <Badge className={getStatusBadge(document.classification_status)}>
+                            {document.classification_status}
+                          </Badge>
+                        </td>
+                        <td className="p-4" data-testid={`extraction-${document.id}`}>
+                          <Badge className={getStatusBadge(document.extraction_status)}>
+                            {document.extraction_status}
+                          </Badge>
+                        </td>
+                        <td className="p-4" data-testid={`validation-${document.id}`}>
+                          <Badge className={getStatusBadge(document.validation_status)}>
+                            {document.validation_status}
+                          </Badge>
+                        </td>
+                        <td className="p-4 detail-text text-neutral-500" data-testid={`created-${document.id}`}>
+                          {formatDate(document.created_at)}
+                        </td>
+                      </tr>
+                    );
+                  })
+                ];
+              }).flat()}
             </tbody>
           </table>
 
