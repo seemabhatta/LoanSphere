@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/useAuth";
 import { 
   Bot,
   Send,
@@ -35,11 +36,20 @@ interface QuickAction {
 }
 
 export default function AIAssistant() {
+  const { user } = useAuth();
+  
+  const getWelcomeMessage = () => {
+    const firstName = user?.firstName;
+    const welcomeName = firstName ? `, ${firstName}` : '';
+    
+    return `Welcome back${welcomeName}! I'm your AI Assistant for Xpanse Loan Xchange. I can help you manage your loan boarding operations from your central dashboard with exception management, analytics, and system operations. What would you like to know?`;
+  };
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       type: 'assistant',
-      content: 'Hello! I\'m your AI Assistant for Xpanse Loan Xchange. I can help you with loan boarding, exception management, analytics, and system operations. What would you like to know?',
+      content: getWelcomeMessage(),
       timestamp: new Date(),
       suggestions: [
         'Show me critical exceptions',
@@ -70,6 +80,16 @@ export default function AIAssistant() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Update welcome message when user data loads
+  useEffect(() => {
+    if (user && messages.length === 1 && messages[0].id === '1') {
+      setMessages([{
+        ...messages[0],
+        content: getWelcomeMessage()
+      }]);
+    }
+  }, [user]);
 
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
