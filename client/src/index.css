@@ -78,7 +78,7 @@
 .page-title,
 [class*="page-title"] {
   font-family: 'Inter', sans-serif !important;
-  font-size: 20px !important;
+  font-size: 18px !important;
   font-weight: 500 !important;
   line-height: 1.4 !important;
   letter-spacing: -0.02em !important;
@@ -92,7 +92,7 @@ h2.section-header,
 h3.section-header,
 h4.section-header {
   font-family: 'Inter', sans-serif !important;
-  font-size: 18px !important;
+  font-size: 16px !important;
   font-weight: 500 !important;
   line-height: 1.4 !important;
   letter-spacing: -0.02em !important;
@@ -105,7 +105,7 @@ h4.section-header {
 p.metric-large,
 div.metric-large {
   font-family: 'Inter', sans-serif !important;
-  font-size: 30px !important;
+  font-size: 24px !important;
   font-weight: 600 !important;
   line-height: 1.2 !important;
   letter-spacing: -0.02em !important;
@@ -113,7 +113,7 @@ div.metric-large {
 
 .metric-medium {
   font-family: 'Inter', sans-serif !important;
-  font-size: 24px !important;
+  font-size: 20px !important;
   font-weight: 600 !important;
   line-height: 1.2 !important;
   letter-spacing: -0.02em !important;
@@ -121,7 +121,7 @@ div.metric-large {
 
 .body-text {
   font-family: 'Inter', sans-serif !important;
-  font-size: 14px !important;
+  font-size: 12px !important;
   font-weight: 400 !important;
   line-height: 1.4 !important;
   letter-spacing: -0.02em !important;
@@ -129,7 +129,7 @@ div.metric-large {
 
 .detail-text {
   font-family: 'Inter', sans-serif !important;
-  font-size: 12px !important;
+  font-size: 11px !important;
   font-weight: 400 !important;
   line-height: 1.4 !important;
   letter-spacing: -0.02em !important;
@@ -137,7 +137,7 @@ div.metric-large {
 
 .nav-text {
   font-family: 'Inter', sans-serif !important;
-  font-size: 14px !important;
+  font-size: 12px !important;
   font-weight: 400 !important;
   line-height: 1.4 !important;
   letter-spacing: -0.02em !important;
@@ -145,7 +145,7 @@ div.metric-large {
 
 .button-text {
   font-family: 'Inter', sans-serif !important;
-  font-size: 14px !important;
+  font-size: 12px !important;
   font-weight: 500 !important;
   line-height: 1.4 !important;
   letter-spacing: -0.02em !important;
@@ -153,7 +153,7 @@ div.metric-large {
 
 .label-text {
   font-family: 'Inter', sans-serif !important;
-  font-size: 14px !important;
+  font-size: 12px !important;
   font-weight: 500 !important;
   line-height: 1.4 !important;
   letter-spacing: -0.02em !important;
@@ -161,7 +161,7 @@ div.metric-large {
 
 .caption-text {
   font-family: 'Inter', sans-serif !important;
-  font-size: 12px !important;
+  font-size: 11px !important;
   font-weight: 400 !important;
   line-height: 1.4 !important;
   letter-spacing: -0.02em !important;
@@ -170,7 +170,7 @@ div.metric-large {
 
 .code-text {
   font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace !important;
-  font-size: 14px !important;
+  font-size: 12px !important;
   font-weight: 400 !important;
   line-height: 1.4 !important;
   letter-spacing: -0.02em !important;

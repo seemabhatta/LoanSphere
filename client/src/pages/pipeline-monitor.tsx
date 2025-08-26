@@ -135,7 +135,7 @@ export default function PipelineMonitor() {
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left py-3 px-4 font-medium text-neutral-700">
+                      <th className="text-left py-2 px-3 text-xs font-medium text-neutral-700">
                         <button 
                           className="flex items-center space-x-1 hover:text-neutral-900"
                           onClick={() => handleSort('xpLoanNumber')}
@@ -147,7 +147,7 @@ export default function PipelineMonitor() {
                           )}
                         </button>
                       </th>
-                      <th className="text-left py-3 px-4 font-medium text-neutral-700">
+                      <th className="text-left py-2 px-3 text-xs font-medium text-neutral-700">
                         <button 
                           className="flex items-center space-x-1 hover:text-neutral-900"
                           onClick={() => handleSort('commitment')}
@@ -159,7 +159,7 @@ export default function PipelineMonitor() {
                           )}
                         </button>
                       </th>
-                      <th className="text-left py-3 px-4 font-medium text-neutral-700">
+                      <th className="text-left py-2 px-3 text-xs font-medium text-neutral-700">
                         <button 
                           className="flex items-center space-x-1 hover:text-neutral-900"
                           onClick={() => handleSort('purchaseAdvice')}
@@ -171,7 +171,7 @@ export default function PipelineMonitor() {
                           )}
                         </button>
                       </th>
-                      <th className="text-left py-3 px-4 font-medium text-neutral-700">
+                      <th className="text-left py-2 px-3 text-xs font-medium text-neutral-700">
                         <button 
                           className="flex items-center space-x-1 hover:text-neutral-900"
                           onClick={() => handleSort('loanData')}
@@ -183,7 +183,7 @@ export default function PipelineMonitor() {
                           )}
                         </button>
                       </th>
-                      <th className="text-left py-3 px-4 font-medium text-neutral-700">
+                      <th className="text-left py-2 px-3 text-xs font-medium text-neutral-700">
                         <button 
                           className="flex items-center space-x-1 hover:text-neutral-900"
                           onClick={() => handleSort('documents')}
@@ -204,40 +204,40 @@ export default function PipelineMonitor() {
                         className="border-b hover:bg-gray-50 transition-colors"
                         data-testid={`loan-row-${record.xpLoanNumber}`}
                       >
-                        <td className="py-3 px-4 font-mono text-sm">
+                        <td className="py-2 px-3 font-mono text-xs">
                           {record.xpLoanNumber || 'N/A'}
                         </td>
-                        <td className="py-3 px-4">
+                        <td className="py-2 px-3">
                           <Badge 
                             variant={record.externalIds?.commitmentId ? 'default' : 'outline'}
-                            className={`${record.externalIds?.commitmentId ? 'bg-green-100 text-green-800' : 'text-gray-500'}`}
+                            className={`text-xs px-2 py-0.5 ${record.externalIds?.commitmentId ? 'bg-green-100 text-green-800' : 'text-gray-500'}`}
                             data-testid={`commitment-status-${record.xpLoanNumber}`}
                           >
                             {record.externalIds?.commitmentId ? 'Received' : 'Pending'}
                           </Badge>
                         </td>
-                        <td className="py-3 px-4">
+                        <td className="py-2 px-3">
                           <Badge 
                             variant={record.externalIds?.purchaseAdviceId ? 'default' : 'outline'}
-                            className={`${record.externalIds?.purchaseAdviceId ? 'bg-green-100 text-green-800' : 'text-gray-500'}`}
+                            className={`text-xs px-2 py-0.5 ${record.externalIds?.purchaseAdviceId ? 'bg-green-100 text-green-800' : 'text-gray-500'}`}
                             data-testid={`purchase-advice-status-${record.xpLoanNumber}`}
                           >
                             {record.externalIds?.purchaseAdviceId ? 'Received' : 'Pending'}
                           </Badge>
                         </td>
-                        <td className="py-3 px-4">
+                        <td className="py-2 px-3">
                           <Badge 
                             variant={record.metaData?.['loan_data'] ? 'default' : 'outline'}
-                            className={`${record.metaData?.['loan_data'] ? 'bg-green-100 text-green-800' : 'text-gray-500'}`}
+                            className={`text-xs px-2 py-0.5 ${record.metaData?.['loan_data'] ? 'bg-green-100 text-green-800' : 'text-gray-500'}`}
                             data-testid={`loan-data-status-${record.xpLoanNumber}`}
                           >
                             {record.metaData?.['loan_data'] ? 'Received' : 'Pending'}
                           </Badge>
                         </td>
-                        <td className="py-3 px-4">
+                        <td className="py-2 px-3">
                           <Badge 
                             variant={Object.keys(record.metaData || {}).length > 0 ? 'default' : 'outline'}
-                            className={`${Object.keys(record.metaData || {}).length > 0 ? 'bg-green-100 text-green-800' : 'text-gray-500'}`}
+                            className={`text-xs px-2 py-0.5 ${Object.keys(record.metaData || {}).length > 0 ? 'bg-green-100 text-green-800' : 'text-gray-500'}`}
                             data-testid={`documents-status-${record.xpLoanNumber}`}
                           >
                             {Object.keys(record.metaData || {}).length > 0 ? 'Received' : 'Pending'}
