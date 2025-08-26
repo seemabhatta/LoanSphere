@@ -15,6 +15,7 @@ import Documents from "@/pages/documents";
 import Compliance from "@/pages/compliance";
 import Agents from "@/pages/agents";
 import Analytics from "@/pages/analytics";
+import AuditLog from "@/pages/audit-log";
 import SimpleStaging from "@/pages/simple-staging";
 import Scheduler from "@/pages/scheduler";
 import SyntheticData from "@/pages/synthetic-data";
@@ -61,6 +62,7 @@ function Router() {
               <Route path="/compliance" component={Compliance} />
               <Route path="/agents" component={Agents} />
               <Route path="/analytics" component={Analytics} />
+              <Route path="/audit-log" component={AuditLog} />
               <Route path="/simple-staging" component={SimpleStaging} />
               <Route path="/scheduler" component={Scheduler} />
               <Route path="/synthetic-data" component={SyntheticData} />

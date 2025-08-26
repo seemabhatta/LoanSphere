@@ -17,7 +17,8 @@ import {
   CreditCard,
   FileCheck,
   Receipt,
-  Bot
+  Bot,
+  History
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -59,6 +60,7 @@ const navigationSections = [
     items: [
       { name: "Compliance", href: "/compliance", icon: Shield, description: "RESPA/TILA tracking" },
       { name: "Analytics", href: "/analytics", icon: BarChart3, description: "Performance insights" },
+      { name: "Audit Log", href: "/audit-log", icon: History, description: "System audit trail" },
     ]
   }
 ];
