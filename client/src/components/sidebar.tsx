@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
 
 const navigationSections = [
   {
-    title: "COMMAND CENTER",
+    title: "",
     items: [
       { name: "Command Center", href: "/", icon: Home, description: "Mission control dashboard" },
     ]
