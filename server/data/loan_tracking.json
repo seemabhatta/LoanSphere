@@ -1,42 +1,32 @@
 {
   "_default": {
     "1": {
-      "xpLoanNumber": "XP1756154597",
+      "xpLoanNumber": "INV123456",
       "tenantId": "default_tenant",
       "externalIds": {
-        "correspondentLoanNumber": "IL12345",
-        "investorName": "Test Investor",
-        "commitmentId": "TEST_COMMIT_001"
+        "correspondentLoanNumber": "INV123456",
+        "investorName": "Fannie Mae"
       },
       "status": {
-        "boardingReadiness": "CommitmentLinked",
-        "lastEvaluated": "2025-08-25T16:43:17.192546"
+        "boardingReadiness": "ULDDReceived",
+        "lastEvaluated": "2025-08-25T21:54:29.914882"
       },
       "metaData": {
-        "purchase_advice": [
+        "loan_data": [
           {
             "links": {
-              "raw": "stage/test_purchase_001",
-              "transformed": "processed/purchase_advice/XP1756154597_1756154597.json",
+              "raw": "stage/test_uldd_001",
+              "transformed": "processed/loan_data/INV123456_1756173269.json",
               "documentDb": {
-                "collection": "purchase_advice",
-                "documentId": "XP1756154597_1756154597"
+                "collection": "loan_data",
+                "documentId": "INV123456_1756173269"
               }
             }
           }
-        ],
-        "commitment": {
-          "links": {
-            "documentDb": {
-              "collection": "commitments",
-              "documentId": "TEST_COMMIT_001"
-            }
-          },
-          "matchedBy": "commitment_mapping"
-        }
+        ]
       },
-      "createdAt": "2025-08-25T16:43:17.173658",
-      "updatedAt": "2025-08-25T16:43:17.192580"
+      "createdAt": "2025-08-25T21:54:29.914912",
+      "updatedAt": "2025-08-25T21:54:29.914915"
     }
   }
 }

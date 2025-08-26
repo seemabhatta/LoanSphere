@@ -1,0 +1,22 @@
+{
+  "_default": {
+    "1": {
+      "id": "INV123456_1756173269",
+      "loan_data": {
+        "loanAmount": 350000,
+        "interestRate": 0.0675,
+        "loanPurpose": "Purchase",
+        "propertyType": "SingleFamily",
+        "occupancyStatus": "OwnerOccupied",
+        "creditScore": 740,
+        "loanToValueRatio": 0.8,
+        "correspondentLoanNumber": "CORR789123",
+        "aggregatorLoanNumber": "AGG456789",
+        "investorLoanNumber": "INV123456",
+        "investorName": "Fannie Mae"
+      },
+      "source_file_id": "test_uldd_001",
+      "processed_at": "2025-08-25T21:54:29.929282"
+    }
+  }
+}
