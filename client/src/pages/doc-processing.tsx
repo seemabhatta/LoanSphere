@@ -20,17 +20,6 @@ export default function DocProcessing() {
     refetchInterval: 5000
   });
 
-  const { data: statsData } = useQuery({
-    queryKey: ['/api/documents/stats/summary'],
-    queryFn: async () => {
-      const response = await fetch('/api/documents/stats/summary');
-      if (!response.ok) {
-        throw new Error('Failed to fetch document stats');
-      }
-      return response.json();
-    },
-    refetchInterval: 30000
-  });
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -154,93 +143,6 @@ export default function DocProcessing() {
           </CardContent>
         </Card>
 
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="label-text text-neutral-500">Total Documents</p>
-                  <p className="metric-large text-neutral-800 mt-2" data-testid="stat-total">
-                    {statsData?.total_documents || 0}
-                  </p>
-                </div>
-                <Eye className="w-8 h-8 text-gray-400" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="label-text text-neutral-500">Processing Rate</p>
-                  <p className="metric-large text-neutral-800 mt-2" data-testid="stat-processing-rate">
-                    {statsData?.processing_rate || 0}%
-                  </p>
-                </div>
-                <CheckCircle className="w-8 h-8 text-green-500" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="label-text text-neutral-500">Pending</p>
-                  <p className="metric-large text-neutral-800 mt-2" data-testid="stat-pending">
-                    {statsData?.by_status?.pending || 0}
-                  </p>
-                </div>
-                <Database className="w-8 h-8 text-yellow-500" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="label-text text-neutral-500">Errors</p>
-                  <p className="metric-large text-neutral-800 mt-2" data-testid="stat-errors">
-                    {statsData?.by_status?.error || 0}
-                  </p>
-                </div>
-                <Tags className="w-8 h-8 text-red-500" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Document Type Breakdown */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="section-header">Document Type Breakdown</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {Object.entries(statsData?.by_type || {}).map(([type, count]: [string, any]) => (
-                <div key={type} className="flex items-center justify-between">
-                  <span className="text-neutral-700">{type}</span>
-                  <div className="flex items-center space-x-3">
-                    <div className="w-32 bg-neutral-200 rounded-full h-2">
-                      <div 
-                        className="bg-blue-600 h-2 rounded-full transition-all duration-500" 
-                        style={{ 
-                          width: `${(count / (statsData?.total_documents || 1) * 100)}%` 
-                        }}
-                      ></div>
-                    </div>
-                    <span className="text-neutral-600 code-text w-8 text-right">
-                      {count}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );

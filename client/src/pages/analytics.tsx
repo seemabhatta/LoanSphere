@@ -10,7 +10,11 @@ import {
   Target,
   Clock,
   CheckCircle,
-  AlertTriangle
+  AlertTriangle,
+  FileText,
+  Eye,
+  Database,
+  Tags
 } from "lucide-react";
 import { useState } from "react";
 
@@ -30,6 +34,18 @@ export default function Analytics() {
   const { data: fpyTrend } = useQuery({
     queryKey: ['/api/metrics/trends/first_pass_yield', { days: parseInt(timeRange) }],
     refetchInterval: 300000
+  });
+
+  const { data: docStatsData } = useQuery({
+    queryKey: ['/api/documents/stats/summary'],
+    queryFn: async () => {
+      const response = await fetch('/api/documents/stats/summary');
+      if (!response.ok) {
+        throw new Error('Failed to fetch document stats');
+      }
+      return response.json();
+    },
+    refetchInterval: 30000
   });
 
   const getMetricIcon = (metric: string) => {
@@ -56,7 +72,7 @@ export default function Analytics() {
       {/* Header */}
       <header className="px-6 py-4 border-b border-gray-200">
         <div className="flex items-center caption-text mb-1">
-          <span>Loan Boarding</span>
+          <span>Governance</span>
           <span className="mx-2">›</span>
           <span className="text-gray-900">Analytics</span>
         </div>
@@ -88,8 +104,9 @@ export default function Analytics() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6">
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-3">
+          <TabsList className="grid w-full max-w-lg grid-cols-4">
             <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
+            <TabsTrigger value="documents" data-testid="tab-documents">Documents</TabsTrigger>
             <TabsTrigger value="trends" data-testid="tab-trends">Trends</TabsTrigger>
             <TabsTrigger value="detailed" data-testid="tab-detailed">Detailed</TabsTrigger>
           </TabsList>
@@ -238,6 +255,96 @@ export default function Analytics() {
                       {performanceSummary?.summary?.total_compliance_events || 0}
                     </p>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="documents" className="space-y-6">
+            {/* Document Processing Statistics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="label-text text-neutral-500">Total Documents</p>
+                      <p className="metric-large text-neutral-800 mt-2" data-testid="stat-total">
+                        {docStatsData?.total_documents || 0}
+                      </p>
+                    </div>
+                    <FileText className="w-8 h-8 text-gray-400" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="label-text text-neutral-500">Processing Rate</p>
+                      <p className="metric-large text-neutral-800 mt-2" data-testid="stat-processing-rate">
+                        {docStatsData?.processing_rate || 0}%
+                      </p>
+                    </div>
+                    <CheckCircle className="w-8 h-8 text-green-500" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="label-text text-neutral-500">Pending</p>
+                      <p className="metric-large text-neutral-800 mt-2" data-testid="stat-pending">
+                        {docStatsData?.by_status?.pending || 0}
+                      </p>
+                    </div>
+                    <Clock className="w-8 h-8 text-yellow-500" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="label-text text-neutral-500">Errors</p>
+                      <p className="metric-large text-neutral-800 mt-2" data-testid="stat-errors">
+                        {docStatsData?.by_status?.error || 0}
+                      </p>
+                    </div>
+                    <AlertTriangle className="w-8 h-8 text-red-500" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Document Type Breakdown */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="section-header">Document Type Breakdown</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {Object.entries(docStatsData?.by_type || {}).map(([type, count]: [string, any]) => (
+                    <div key={type} className="flex items-center justify-between">
+                      <span className="text-neutral-700">{type}</span>
+                      <div className="flex items-center space-x-3">
+                        <div className="w-32 bg-neutral-200 rounded-full h-2">
+                          <div 
+                            className="bg-blue-600 h-2 rounded-full transition-all duration-500" 
+                            style={{ 
+                              width: `${(count / (docStatsData?.total_documents || 1) * 100)}%` 
+                            }}
+                          ></div>
+                        </div>
+                        <span className="text-neutral-600 code-text w-8 text-right">
+                          {count}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
