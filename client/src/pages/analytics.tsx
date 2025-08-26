@@ -14,7 +14,9 @@ import {
   FileText,
   Eye,
   Database,
-  Tags
+  Tags,
+  XCircle,
+  Wrench
 } from "lucide-react";
 import { useState } from "react";
 
@@ -45,6 +47,11 @@ export default function Analytics() {
       }
       return response.json();
     },
+    refetchInterval: 30000
+  });
+
+  const { data: exceptionStatsData } = useQuery({
+    queryKey: ['/api/exceptions/stats/summary'],
     refetchInterval: 30000
   });
 
@@ -174,6 +181,86 @@ export default function Analytics() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Exception Management Statistics */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="section-header">Exception Management</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="detail-text text-neutral-500">Total Open</p>
+                          <p className="section-header text-neutral-800 mt-1" data-testid="stat-total-open">
+                            {exceptionStatsData?.total_open || 0}
+                          </p>
+                        </div>
+                        <AlertTriangle className="w-8 h-8 text-red-500" />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="detail-text text-neutral-500">High Priority</p>
+                          <p className="section-header text-red-600 mt-1" data-testid="stat-high-priority">
+                            {exceptionStatsData?.by_severity?.high || 0}
+                          </p>
+                        </div>
+                        <XCircle className="w-8 h-8 text-red-500" />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="detail-text text-neutral-500">Over 3 Days</p>
+                          <p className="section-header text-orange-600 mt-1" data-testid="stat-over-3-days">
+                            {exceptionStatsData?.by_age?.over_three_days || 0}
+                          </p>
+                        </div>
+                        <Clock className="w-8 h-8 text-orange-500" />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="detail-text text-neutral-500">Auto-Fix Available</p>
+                          <p className="section-header text-blue-600 mt-1" data-testid="stat-auto-fix">
+                            {exceptionStatsData?.auto_fix_available || 0}
+                          </p>
+                        </div>
+                        <Wrench className="w-8 h-8 text-blue-500" />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="detail-text text-neutral-500">Resolved Today</p>
+                          <p className="section-header text-green-600 mt-1" data-testid="stat-resolved">
+                            {exceptionStatsData?.total_resolved || 0}
+                          </p>
+                        </div>
+                        <CheckCircle className="w-8 h-8 text-green-500" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Current Metrics Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
