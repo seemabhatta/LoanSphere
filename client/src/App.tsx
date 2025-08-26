@@ -8,7 +8,6 @@ import { useAuth } from "@/hooks/useAuth";
 import Sidebar from "@/components/sidebar";
 import TopHeader from "@/components/top-header";
 import Landing from "@/pages/landing";
-import Home from "@/pages/home";
 import Profile from "@/pages/profile";
 import CommandCenter from "@/pages/command-center";
 import AIAssistant from "@/pages/ai-assistant";
@@ -45,25 +44,12 @@ function Router() {
         <>
           <Route path="/">
             <div className="h-screen flex flex-col bg-gray-100">
-              {/* Top Header */}
-              <TopHeader 
-                onToggleSidebar={toggleSidebar}
-                sidebarCollapsed={sidebarCollapsed}
-              />
-              
-              {/* Main Layout */}
+              <TopHeader onToggleSidebar={toggleSidebar} sidebarCollapsed={sidebarCollapsed} />
               <div className="flex-1 flex overflow-hidden">
-                {/* Sidebar */}
-                <Sidebar 
-                  isOpen={true} 
-                  onClose={() => {}}
-                  collapsed={sidebarCollapsed}
-                />
-                
-                {/* Main Content Panel */}
+                <Sidebar isOpen={true} onClose={() => {}} collapsed={sidebarCollapsed} />
                 <div className="flex-1 p-4 transition-all duration-300 overflow-hidden">
                   <div className="bg-white rounded-lg shadow-sm h-full overflow-y-auto">
-                    <Home />
+                    <AIAssistant />
                   </div>
                 </div>
               </div>
@@ -77,19 +63,6 @@ function Router() {
                 <div className="flex-1 p-4 transition-all duration-300 overflow-hidden">
                   <div className="bg-white rounded-lg shadow-sm h-full overflow-y-auto">
                     <Profile />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Route>
-          <Route path="/ai-assistant">
-            <div className="h-screen flex flex-col bg-gray-100">
-              <TopHeader onToggleSidebar={toggleSidebar} sidebarCollapsed={sidebarCollapsed} />
-              <div className="flex-1 flex overflow-hidden">
-                <Sidebar isOpen={true} onClose={() => {}} collapsed={sidebarCollapsed} />
-                <div className="flex-1 p-4 transition-all duration-300 overflow-hidden">
-                  <div className="bg-white rounded-lg shadow-sm h-full overflow-y-auto">
-                    <AIAssistant />
                   </div>
                 </div>
               </div>

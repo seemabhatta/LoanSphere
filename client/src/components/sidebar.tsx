@@ -37,7 +37,7 @@ const navigationSections = [
   {
     title: "COMMAND CENTER",
     items: [
-      { name: "Assistant", href: "/ai-assistant", icon: Bot, description: "Natural language interface" },
+      { name: "Assistant", href: "/", icon: Bot, description: "Natural language interface" },
       { name: "Command Center", href: "/command-center", icon: Home, description: "Mission control dashboard" },
     ]
   },
