@@ -166,16 +166,16 @@ export default function CommandCenter() {
                   <Badge className={getStatusColor(systemStatus?.status || 'healthy')}>
                     {systemStatus?.status?.toUpperCase() || 'HEALTHY'}
                   </Badge>
-                  <span className="detail-text text-gray-600">
+                  <span className="body-text text-gray-600">
                     Uptime: {systemStatus?.uptime || '0h 0m'}
                   </span>
-                  <span className="detail-text text-gray-600">
+                  <span className="body-text text-gray-600">
                     Agents: {systemStatus?.activeAgents || 0}/{systemStatus?.totalAgents || 0} Active
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Zap className="w-4 h-4 text-green-600" />
-                  <span className="detail-text text-green-600 font-medium">All Systems Operational</span>
+                  <span className="body-text text-green-600 font-medium">All Systems Operational</span>
                 </div>
               </div>
             </CardContent>
@@ -188,10 +188,10 @@ export default function CommandCenter() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="detail-text text-gray-600">{kpi.label}</p>
-                      <p className="text-2xl font-bold text-gray-900 mt-1">{kpi.value}</p>
+                      <p className="label-text text-neutral-500">{kpi.label}</p>
+                      <p className="metric-large text-gray-900 mt-2">{kpi.value}</p>
                       {kpi.target && (
-                        <p className="detail-text text-gray-500 mt-1">Target: {kpi.target}</p>
+                        <p className="body-text text-gray-500 mt-1">Target: {kpi.target}</p>
                       )}
                     </div>
                     <div className="flex flex-col items-end">
@@ -202,9 +202,9 @@ export default function CommandCenter() {
                       ) : (
                         <div className="w-4 h-4" />
                       )}
-                      <p className={`detail-text font-medium mt-1 ${
-                        kpi.trend === 'up' ? 'text-green-600' : 
-                        kpi.trend === 'down' ? 'text-red-600' : 
+                      <p className={`body-text font-medium mt-1 ${
+                        kpi.trend === 'up' ? 'text-success' : 
+                        kpi.trend === 'down' ? 'text-error' : 
                         'text-gray-600'
                       }`}>
                         {kpi.change}
@@ -237,15 +237,15 @@ export default function CommandCenter() {
                           <Badge className={getSeverityColor(exception.severity)}>
                             {exception.severity}
                           </Badge>
-                          <span className="nav-text font-medium">{exception.loanNumber}</span>
+                          <span className="body-text font-medium">{exception.loanNumber}</span>
                           {exception.autoFix && (
                             <Badge variant="outline" className="text-blue-600 border-blue-200">
                               Auto-Fix Available
                             </Badge>
                           )}
                         </div>
-                        <p className="detail-text text-gray-600 mt-1">{exception.description}</p>
-                        <p className="detail-text text-gray-500 mt-1">
+                        <p className="body-text text-gray-600 mt-1">{exception.description}</p>
+                        <p className="body-text text-gray-500 mt-1">
                           <Clock className="w-3 h-3 inline mr-1" />
                           {exception.age}
                         </p>
@@ -273,8 +273,8 @@ export default function CommandCenter() {
                     <div key={activity.id} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50">
                       {getActivityIcon(activity.type)}
                       <div className="flex-1 min-w-0">
-                        <p className="nav-text text-gray-900">{activity.message}</p>
-                        <p className="detail-text text-gray-500 mt-1">{activity.timestamp}</p>
+                        <p className="body-text text-gray-900">{activity.message}</p>
+                        <p className="body-text text-gray-500 mt-1">{activity.timestamp}</p>
                       </div>
                     </div>
                   ))}
