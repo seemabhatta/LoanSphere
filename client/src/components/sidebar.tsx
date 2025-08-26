@@ -38,7 +38,7 @@ const navigationSections = [
     ]
   },
   {
-    title: "DATA & WORKFLOWS",
+    title: "DATA & DOCS",
     items: [
       { name: "Loans", href: "/loans", icon: CreditCard, description: "Loan management" },
       { name: "Commitments", href: "/commitments", icon: FileCheck, description: "Commitment tracking" },
