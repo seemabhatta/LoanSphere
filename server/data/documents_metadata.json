@@ -1,0 +1,51 @@
+{
+  "_default": {
+    "1": {
+      "id": "DOC_001_XP12345",
+      "metadata": {
+        "xp_doc_id": "DOC_001_XP12345",
+        "xp_loan_number": "XP12345",
+        "document_type": "Appraisal",
+        "status": "completed",
+        "ocr_status": "completed",
+        "classification_status": "completed",
+        "extraction_status": "completed",
+        "validation_status": "completed",
+        "extracted_data": {
+          "property_value": 450000,
+          "appraiser": "ABC Appraisal Co",
+          "appraisal_date": "2024-08-20"
+        }
+      },
+      "created_at": "2025-08-26T02:50:30.999174"
+    },
+    "2": {
+      "id": "DOC_002_XP12345",
+      "metadata": {
+        "xp_doc_id": "DOC_002_XP12345",
+        "xp_loan_number": "XP12345",
+        "document_type": "Credit Report",
+        "status": "processing",
+        "ocr_status": "completed",
+        "classification_status": "completed",
+        "extraction_status": "processing",
+        "validation_status": "pending"
+      },
+      "created_at": "2025-08-26T02:50:31.001056"
+    },
+    "3": {
+      "id": "DOC_003_XP67890",
+      "metadata": {
+        "xp_doc_id": "DOC_003_XP67890",
+        "xp_loan_number": "XP67890",
+        "document_type": "Income Documentation",
+        "status": "error",
+        "ocr_status": "completed",
+        "classification_status": "completed",
+        "extraction_status": "failed",
+        "validation_status": "pending"
+      },
+      "created_at": "2025-08-26T02:50:31.004158"
+    }
+  }
+}

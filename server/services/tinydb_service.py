@@ -198,6 +198,16 @@ class TinyDBService:
         """Get all purchase advice"""
         return self.purchase_advice.all()
     
+    def get_all_documents_metadata(self) -> List[Dict[str, Any]]:
+        """Get all document metadata"""
+        return self.documents_metadata.all()
+    
+    def get_document_metadata(self, metadata_id: str) -> Optional[Dict[str, Any]]:
+        """Get document metadata by ID"""
+        Doc = Query()
+        results = self.documents_metadata.search(Doc.id == metadata_id)
+        return results[0] if results else None
+    
     # Loan Tracking Operations
     def create_loan_tracking_record(self, xp_loan_number: str, tenant_id: str,
                                   external_ids: Dict[str, Any], status: Dict[str, Any],

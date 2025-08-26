@@ -3,44 +3,44 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { 
-  FileText, 
-  Eye, 
-  Tags, 
-  Database, 
-  CheckCircle, 
-  Clock, 
-  AlertCircle,
-  Search,
-  Filter 
+  FileText,
+  Eye,
+  ArrowUpDown
 } from "lucide-react";
 
+interface Document {
+  id: string;
+  xp_doc_id: string;
+  xp_loan_number: string;
+  document_type: string;
+  status: string;
+  ocr_status?: string;
+  classification_status?: string;
+  extraction_status?: string;
+  validation_status?: string;
+  created_at: string;
+  updated_at: string;
+  extracted_data?: any;
+}
+
 export default function Documents() {
-  const [statusFilter, setStatusFilter] = useState<string>('');
-  const [typeFilter, setTypeFilter] = useState<string>('');
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+  const [sortField, setSortField] = useState<string>('');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
-  const { data: documentsData } = useQuery({
-    queryKey: ['/api/documents', { 
-      status: statusFilter, 
-      document_type: typeFilter,
-      search: searchQuery 
-    }],
+  const { data: documentsData, refetch: refetchDocuments } = useQuery({
+    queryKey: ['/api/documents'],
+    queryFn: async () => {
+      const response = await fetch('/api/documents/');
+      if (!response.ok) {
+        throw new Error('Failed to fetch documents data');
+      }
+      return response.json();
+    },
     refetchInterval: 10000
-  });
-
-  const { data: pipelineData } = useQuery({
-    queryKey: ['/api/documents/pipeline/status'],
-    refetchInterval: 5000
-  });
-
-  const { data: statsData } = useQuery({
-    queryKey: ['/api/documents/stats/summary'],
-    refetchInterval: 30000
   });
 
   const getStatusColor = (status: string) => {
@@ -58,40 +58,61 @@ export default function Documents() {
     }
   };
 
-  const getStageStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'text-green-600';
-      case 'processing':
-        return 'text-blue-600';
-      case 'failed':
-        return 'text-red-600';
-      case 'pending':
-        return 'text-yellow-600';
-      default:
-        return 'text-gray-600';
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
     }
   };
 
-  const getStageIcon = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return <CheckCircle className="w-4 h-4" />;
-      case 'processing':
-        return <Clock className="w-4 h-4 animate-spin" />;
-      case 'failed':
-        return <AlertCircle className="w-4 h-4" />;
-      default:
-        return <Clock className="w-4 h-4" />;
+  const getSortedDocuments = () => {
+    if (!documentsData?.documents) return [];
+    
+    const documents = [...documentsData.documents];
+    
+    if (sortField) {
+      documents.sort((a, b) => {
+        let aValue = a[sortField as keyof Document];
+        let bValue = b[sortField as keyof Document];
+        
+        // Handle different data types
+        if (typeof aValue === 'string' && typeof bValue === 'string') {
+          aValue = aValue.toLowerCase();
+          bValue = bValue.toLowerCase();
+        }
+        
+        if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+    
+    return documents;
+  };
+
+  const handleViewDetails = (document: Document) => {
+    setSelectedDocument(document);
+    setIsDetailsOpen(true);
+  };
+
+  const formatDate = (dateString: string) => {
+    try {
+      return new Date(dateString).toLocaleDateString();
+    } catch {
+      return dateString;
     }
   };
+
+  const sortedDocuments = getSortedDocuments();
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Header */}
       <header className="px-6 py-4 border-b border-gray-200">
         <div className="flex items-center caption-text mb-1">
-          <span>Loan Boarding</span>
+          <span>Data & Docs</span>
           <span className="mx-2">›</span>
           <span className="text-gray-900">Documents</span>
         </div>
@@ -101,48 +122,14 @@ export default function Documents() {
               Documents
             </h1>
             <p className="text-gray-500 mt-1">
-              Monitor document processing pipeline
+              View and manage processed documents
             </p>
           </div>
-          
           <div className="flex items-center space-x-4">
-            <div className="relative">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <Input
-                placeholder="Search documents..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 w-64"
-                data-testid="input-search"
-              />
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <Filter className="w-4 h-4 text-gray-500" />
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[120px]" data-testid="filter-status">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="processing">Processing</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="error">Error</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-[140px]" data-testid="filter-type">
-                  <SelectValue placeholder="Document Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="Appraisal">Appraisal</SelectItem>
-                  <SelectItem value="Income_Documentation">Income Docs</SelectItem>
-                  <SelectItem value="Credit_Report">Credit Report</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex items-center space-x-2 text-sm text-gray-600">
+              <span>Total: {documentsData?.total || 0}</span>
+              <span>•</span>
+              <span>Auto-refresh: 10s</span>
             </div>
           </div>
         </div>
@@ -150,327 +137,223 @@ export default function Documents() {
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6">
-        <Tabs defaultValue="pipeline" className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-3">
-            <TabsTrigger value="pipeline" data-testid="tab-pipeline">Pipeline</TabsTrigger>
-            <TabsTrigger value="documents" data-testid="tab-documents">Documents</TabsTrigger>
-            <TabsTrigger value="stats" data-testid="tab-stats">Statistics</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="pipeline" className="space-y-6">
-            {/* Processing Pipeline Status */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="section-header">Document Processing Pipeline</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                  {/* OCR Processing */}
-                  <div className="text-center">
-                    <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                      <Eye className="text-blue-600 w-8 h-8" />
-                    </div>
-                    <h4 className="section-header text-neutral-800 mb-2">OCR Processing</h4>
-                    <div className="metric-large text-blue-600 mb-1" data-testid="ocr-queue">
-                      {pipelineData?.ocr_processing?.queue || 0}
-                    </div>
-                    <p className="detail-text text-neutral-500">Documents in queue</p>
-                    <div className="w-full bg-neutral-200 rounded-full h-1 mt-2">
-                      <div 
-                        className="bg-blue-600 h-1 rounded-full transition-all duration-500" 
-                        style={{ width: `${pipelineData?.ocr_processing?.progress || 0}%` }}
-                      ></div>
-                    </div>
-                    <p className="detail-text text-neutral-500 mt-1">
-                      {pipelineData?.ocr_processing?.progress || 0}% complete
-                    </p>
-                  </div>
-
-                  {/* Classification */}
-                  <div className="text-center">
-                    <div className="w-16 h-16 bg-cyan-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                      <Tags className="text-cyan-600 w-8 h-8" />
-                    </div>
-                    <h4 className="section-header text-neutral-800 mb-2">Classification</h4>
-                    <div className="metric-large text-cyan-600 mb-1" data-testid="classification-completed">
-                      {pipelineData?.classification?.completed || 0}
-                    </div>
-                    <p className="detail-text text-neutral-500">Documents classified</p>
-                    <div className="w-full bg-neutral-200 rounded-full h-1 mt-2">
-                      <div 
-                        className="bg-cyan-600 h-1 rounded-full transition-all duration-500" 
-                        style={{ width: `${pipelineData?.classification?.progress || 0}%` }}
-                      ></div>
-                    </div>
-                    <p className="detail-text text-neutral-500 mt-1">
-                      {pipelineData?.classification?.progress || 0}% complete
-                    </p>
-                  </div>
-
-                  {/* Data Extraction */}
-                  <div className="text-center">
-                    <div className="w-16 h-16 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                      <Database className="text-green-600 w-8 h-8" />
-                    </div>
-                    <h4 className="section-header text-neutral-800 mb-2">Data Extraction</h4>
-                    <div className="metric-large text-green-600 mb-1" data-testid="extraction-completed">
-                      {pipelineData?.extraction?.completed || 0}
-                    </div>
-                    <p className="detail-text text-neutral-500">Fields extracted</p>
-                    <div className="w-full bg-neutral-200 rounded-full h-1 mt-2">
-                      <div 
-                        className="bg-green-600 h-1 rounded-full transition-all duration-500" 
-                        style={{ width: `${pipelineData?.extraction?.progress || 0}%` }}
-                      ></div>
-                    </div>
-                    <p className="detail-text text-neutral-500 mt-1">
-                      {pipelineData?.extraction?.progress || 0}% complete
-                    </p>
-                  </div>
-
-                  {/* Validation */}
-                  <div className="text-center">
-                    <div className="w-16 h-16 bg-yellow-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                      <CheckCircle className="text-yellow-600 w-8 h-8" />
-                    </div>
-                    <h4 className="section-header text-neutral-800 mb-2">Validation</h4>
-                    <div className="metric-large text-yellow-600 mb-1" data-testid="validation-pending">
-                      {pipelineData?.validation?.queue || 0}
-                    </div>
-                    <p className="detail-text text-neutral-500">Pending review</p>
-                    <div className="w-full bg-neutral-200 rounded-full h-1 mt-2">
-                      <div 
-                        className="bg-yellow-600 h-1 rounded-full transition-all duration-500" 
-                        style={{ width: `${pipelineData?.validation?.progress || 0}%` }}
-                      ></div>
-                    </div>
-                    <p className="detail-text text-neutral-500 mt-1">
-                      {pipelineData?.validation?.progress || 0}% complete
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="documents" className="space-y-6">
-            {/* Documents List */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="section-header">Document List</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {documentsData?.documents?.map((document: any) => (
-                    <div 
-                      key={document.id}
-                      className="border border-neutral-200 rounded-lg p-4"
-                      data-testid={`document-${document.xp_doc_id}`}
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <div className="flex items-center space-x-3 mb-2">
-                            <FileText className="w-5 h-5 text-gray-500" />
-                            <h3 className="section-header text-neutral-800">
-                              {document.xp_doc_id}
-                            </h3>
-                            <Badge className={getStatusColor(document.status)}>
-                              {document.status}
-                            </Badge>
-                          </div>
-                          
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 body-text">
-                            <div>
-                              <span className="text-neutral-500">Loan:</span>
-                              <span className="ml-2 font-mono">
-                                {document.xp_loan_number}
-                              </span>
-                            </div>
-                            <div>
-                              <span className="text-neutral-500">Type:</span>
-                              <span className="ml-2">
-                                {document.document_type}
-                              </span>
-                            </div>
-                            <div>
-                              <span className="text-neutral-500">Created:</span>
-                              <span className="ml-2">
-                                {new Date(document.created_at).toLocaleDateString()}
-                              </span>
-                            </div>
-                            <div>
-                              <span className="text-neutral-500">Updated:</span>
-                              <span className="ml-2">
-                                {new Date(document.updated_at).toLocaleDateString()}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* Processing Stages */}
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-3 border-t border-neutral-100">
-                        <div className="flex items-center space-x-2">
-                          <div className={getStageStatusColor(document.ocr_status)}>
-                            {getStageIcon(document.ocr_status)}
-                          </div>
-                          <span className="body-text text-neutral-600">OCR</span>
-                          <span className={`detail-text ${getStageStatusColor(document.ocr_status)}`}>
-                            {document.ocr_status}
-                          </span>
-                        </div>
-                        
-                        <div className="flex items-center space-x-2">
-                          <div className={getStageStatusColor(document.classification_status)}>
-                            {getStageIcon(document.classification_status)}
-                          </div>
-                          <span className="body-text text-neutral-600">Classification</span>
-                          <span className={`detail-text ${getStageStatusColor(document.classification_status)}`}>
-                            {document.classification_status}
-                          </span>
-                        </div>
-                        
-                        <div className="flex items-center space-x-2">
-                          <div className={getStageStatusColor(document.extraction_status)}>
-                            {getStageIcon(document.extraction_status)}
-                          </div>
-                          <span className="body-text text-neutral-600">Extraction</span>
-                          <span className={`detail-text ${getStageStatusColor(document.extraction_status)}`}>
-                            {document.extraction_status}
-                          </span>
-                        </div>
-                        
-                        <div className="flex items-center space-x-2">
-                          <div className={getStageStatusColor(document.validation_status)}>
-                            {getStageIcon(document.validation_status)}
-                          </div>
-                          <span className="body-text text-neutral-600">Validation</span>
-                          <span className={`detail-text ${getStageStatusColor(document.validation_status)}`}>
-                            {document.validation_status}
-                          </span>
-                        </div>
-                      </div>
-                      
-                      {/* Extracted Data Preview */}
-                      {document.extracted_data && (
-                        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                          <h4 className="section-header text-neutral-800 mb-2">Extracted Data</h4>
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 detail-text">
-                            {Object.entries(document.extracted_data).map(([key, value]: [string, any]) => (
-                              <div key={key}>
-                                <span className="text-neutral-500">{key}:</span>
-                                <span className="ml-2 font-mono">
-                                  {typeof value === 'object' ? JSON.stringify(value) : String(value)}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="section-header">Documents List</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="min-w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-3 px-4">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handleSort('xp_doc_id')}
+                        className="text-xs font-bold text-gray-700 hover:text-gray-900 p-0 h-auto"
+                        data-testid="sort-doc-id"
+                      >
+                        Document ID
+                        <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </th>
+                    <th className="text-left py-3 px-4">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handleSort('xp_loan_number')}
+                        className="text-xs font-bold text-gray-700 hover:text-gray-900 p-0 h-auto"
+                        data-testid="sort-loan-number"
+                      >
+                        Loan Number
+                        <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </th>
+                    <th className="text-left py-3 px-4">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handleSort('document_type')}
+                        className="text-xs font-bold text-gray-700 hover:text-gray-900 p-0 h-auto"
+                        data-testid="sort-document-type"
+                      >
+                        Document Type
+                        <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </th>
+                    <th className="text-left py-3 px-4">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handleSort('status')}
+                        className="text-xs font-bold text-gray-700 hover:text-gray-900 p-0 h-auto"
+                        data-testid="sort-status"
+                      >
+                        Status
+                        <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </th>
+                    <th className="text-left py-3 px-4">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handleSort('created_at')}
+                        className="text-xs font-bold text-gray-700 hover:text-gray-900 p-0 h-auto"
+                        data-testid="sort-created"
+                      >
+                        Created Date
+                        <ArrowUpDown className="ml-1 h-3 w-3" />
+                      </Button>
+                    </th>
+                    <th className="text-left py-3 px-4">
+                      <span className="text-xs font-bold text-gray-700">Actions</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedDocuments.map((document: Document) => (
+                    <tr key={document.id} className="border-b border-gray-100 hover:bg-gray-50" data-testid={`document-row-${document.id}`}>
+                      <td className="py-3 px-4 text-xs font-mono">{document.xp_doc_id}</td>
+                      <td className="py-3 px-4 text-xs font-mono">{document.xp_loan_number}</td>
+                      <td className="py-3 px-4 text-xs">{document.document_type}</td>
+                      <td className="py-3 px-4">
+                        <Badge className={`text-xs ${getStatusColor(document.status)}`}>
+                          {document.status}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-4 text-xs">{formatDate(document.created_at)}</td>
+                      <td className="py-3 px-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleViewDetails(document)}
+                          className="text-xs"
+                          data-testid={`button-view-${document.id}`}
+                        >
+                          <Eye className="h-3 w-3 mr-1" />
+                          View
+                        </Button>
+                      </td>
+                    </tr>
                   ))}
-                  
-                  {!documentsData?.documents?.length && (
-                    <div className="text-center py-8 text-neutral-500" data-testid="no-documents">
-                      No documents found matching the current filters
-                    </div>
-                  )}
+                </tbody>
+              </table>
+              
+              {!sortedDocuments.length && (
+                <div className="text-center py-8 text-gray-500" data-testid="no-documents">
+                  <FileText className="h-12 w-12 mx-auto text-gray-300 mb-4" />
+                  <p>No documents found</p>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="stats" className="space-y-6">
-            {/* Statistics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="label-text text-neutral-500">Total Documents</p>
-                      <p className="metric-large text-neutral-800 mt-2" data-testid="stat-total">
-                        {statsData?.total_documents || 0}
-                      </p>
-                    </div>
-                    <FileText className="w-8 h-8 text-gray-400" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="label-text text-neutral-500">Processing Rate</p>
-                      <p className="metric-large text-neutral-800 mt-2" data-testid="stat-processing-rate">
-                        {statsData?.processing_rate || 0}%
-                      </p>
-                    </div>
-                    <CheckCircle className="w-8 h-8 text-green-500" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="label-text text-neutral-500">Pending</p>
-                      <p className="metric-large text-neutral-800 mt-2" data-testid="stat-pending">
-                        {statsData?.by_status?.pending || 0}
-                      </p>
-                    </div>
-                    <Clock className="w-8 h-8 text-yellow-500" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="label-text text-neutral-500">Errors</p>
-                      <p className="metric-large text-neutral-800 mt-2" data-testid="stat-errors">
-                        {statsData?.by_status?.error || 0}
-                      </p>
-                    </div>
-                    <AlertCircle className="w-8 h-8 text-red-500" />
-                  </div>
-                </CardContent>
-              </Card>
+              )}
             </div>
-
-            {/* Document Type Breakdown */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="section-header">Document Type Breakdown</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {Object.entries(statsData?.by_type || {}).map(([type, count]: [string, any]) => (
-                    <div key={type} className="flex items-center justify-between">
-                      <span className="text-neutral-700">{type}</span>
-                      <div className="flex items-center space-x-3">
-                        <div className="w-32 bg-neutral-200 rounded-full h-2">
-                          <div 
-                            className="bg-blue-600 h-2 rounded-full transition-all duration-500" 
-                            style={{ 
-                              width: `${(count / (statsData?.total_documents || 1) * 100)}%` 
-                            }}
-                          ></div>
-                        </div>
-                        <span className="text-neutral-600 code-text w-8 text-right">
-                          {count}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Document Details Dialog */}
+      <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto" data-testid="dialog-document-details">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2">
+              <FileText className="h-5 w-5" />
+              <span>Document Details</span>
+            </DialogTitle>
+            <DialogDescription>
+              Detailed information for document {selectedDocument?.xp_doc_id}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedDocument && (
+            <div className="space-y-6">
+              {/* Basic Information */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-semibold text-gray-700">Document ID</label>
+                  <p className="text-sm font-mono mt-1" data-testid="detail-doc-id">{selectedDocument.xp_doc_id}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-700">Loan Number</label>
+                  <p className="text-sm font-mono mt-1" data-testid="detail-loan-number">{selectedDocument.xp_loan_number}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-700">Document Type</label>
+                  <p className="text-sm mt-1" data-testid="detail-document-type">{selectedDocument.document_type}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-700">Status</label>
+                  <div className="mt-1">
+                    <Badge className={`text-xs ${getStatusColor(selectedDocument.status)}`}>
+                      {selectedDocument.status}
+                    </Badge>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-700">Created Date</label>
+                  <p className="text-sm mt-1" data-testid="detail-created">{formatDate(selectedDocument.created_at)}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-700">Updated Date</label>
+                  <p className="text-sm mt-1" data-testid="detail-updated">{formatDate(selectedDocument.updated_at)}</p>
+                </div>
+              </div>
+
+              {/* Processing Status */}
+              {(selectedDocument.ocr_status || selectedDocument.classification_status || selectedDocument.extraction_status || selectedDocument.validation_status) && (
+                <div className="border-t pt-4">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">Processing Status</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {selectedDocument.ocr_status && (
+                      <div>
+                        <label className="text-xs text-gray-600">OCR</label>
+                        <Badge className={`block text-xs mt-1 ${getStatusColor(selectedDocument.ocr_status)}`}>
+                          {selectedDocument.ocr_status}
+                        </Badge>
+                      </div>
+                    )}
+                    {selectedDocument.classification_status && (
+                      <div>
+                        <label className="text-xs text-gray-600">Classification</label>
+                        <Badge className={`block text-xs mt-1 ${getStatusColor(selectedDocument.classification_status)}`}>
+                          {selectedDocument.classification_status}
+                        </Badge>
+                      </div>
+                    )}
+                    {selectedDocument.extraction_status && (
+                      <div>
+                        <label className="text-xs text-gray-600">Extraction</label>
+                        <Badge className={`block text-xs mt-1 ${getStatusColor(selectedDocument.extraction_status)}`}>
+                          {selectedDocument.extraction_status}
+                        </Badge>
+                      </div>
+                    )}
+                    {selectedDocument.validation_status && (
+                      <div>
+                        <label className="text-xs text-gray-600">Validation</label>
+                        <Badge className={`block text-xs mt-1 ${getStatusColor(selectedDocument.validation_status)}`}>
+                          {selectedDocument.validation_status}
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Extracted Data */}
+              {selectedDocument.extracted_data && (
+                <div className="border-t pt-4">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">Extracted Data</h3>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <pre className="text-xs text-gray-800 whitespace-pre-wrap" data-testid="detail-extracted-data">
+                      {JSON.stringify(selectedDocument.extracted_data, null, 2)}
+                    </pre>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
