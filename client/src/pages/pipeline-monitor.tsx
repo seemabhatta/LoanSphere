@@ -10,7 +10,14 @@ export default function PipelineMonitor() {
   const [selectedLoan, setSelectedLoan] = useState<string | null>(null);
 
   const { data: loansData, refetch: refetchLoans } = useQuery({
-    queryKey: ['/api/loans'],
+    queryKey: ['/api/staging/tracking'],
+    queryFn: async () => {
+      const response = await fetch('/api/staging/tracking');
+      if (!response.ok) {
+        throw new Error('Failed to fetch loan tracking data');
+      }
+      return response.json();
+    },
     refetchInterval: 10000
   });
 
@@ -26,6 +33,14 @@ export default function PipelineMonitor() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case 'ReadyToBoard':
+        return 'bg-green-100 text-green-800';
+      case 'CommitmentLinked':
+        return 'bg-blue-100 text-blue-800';
+      case 'PurchaseAdviceReceived':
+        return 'bg-purple-100 text-purple-800';
+      case 'DataReceived':
+        return 'bg-yellow-100 text-yellow-800';
       case 'completed':
         return 'bg-green-100 text-green-800';
       case 'boarding_in_progress':
@@ -104,62 +119,75 @@ export default function PipelineMonitor() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {loansData?.loans?.map((loan: any) => (
+                  {loansData?.records?.map((record: any) => (
                     <div 
-                      key={loan.id}
+                      key={record.xpLoanNumber}
                       className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                        selectedLoan === loan.id ? 'bg-blue-50 border-blue-200' : 'hover:bg-gray-50'
+                        selectedLoan === record.xpLoanNumber ? 'bg-blue-50 border-blue-200' : 'hover:bg-gray-50'
                       }`}
-                      onClick={() => setSelectedLoan(loan.id)}
-                      data-testid={`loan-item-${loan.xp_loan_number}`}
+                      onClick={() => setSelectedLoan(record.xpLoanNumber)}
+                      data-testid={`loan-item-${record.xpLoanNumber}`}
                     >
                       <div className="flex items-center justify-between mb-3">
                         <div>
                           <h3 className="section-header text-neutral-800">
-                            {loan.xp_loan_number}
+                            {record.xpLoanNumber}
                           </h3>
                           <p className="body-text text-neutral-500">
-                            {loan.seller_name}
+                            {record.externalIds?.investorName || 'Unknown Investor'}
                           </p>
                         </div>
                         <Badge 
-                          className={getStatusColor(loan.status)}
-                          data-testid={`status-${loan.xp_loan_number}`}
+                          className={getStatusColor(record.status?.boardingReadiness || 'pending')}
+                          data-testid={`status-${record.xpLoanNumber}`}
                         >
-                          {loan.status}
+                          {record.status?.boardingReadiness || 'Pending'}
                         </Badge>
                       </div>
                       
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 body-text">
                         <div>
-                          <span className="text-neutral-500">Amount:</span>
+                          <span className="text-neutral-500">Loan Number:</span>
                           <span className="ml-2 font-mono">
-                            ${loan.note_amount ? Number(loan.note_amount).toLocaleString() : 'N/A'}
+                            {record.externalIds?.correspondentLoanNumber || record.externalIds?.investorLoanNumber || 'N/A'}
                           </span>
                         </div>
                         <div>
-                          <span className="text-neutral-500">Rate:</span>
+                          <span className="text-neutral-500">Commitment:</span>
                           <span className="ml-2 font-mono">
-                            {loan.interest_rate ? `${(Number(loan.interest_rate) * 100).toFixed(3)}%` : 'N/A'}
+                            {record.externalIds?.commitmentId || 'N/A'}
                           </span>
                         </div>
                         <div>
-                          <span className="text-neutral-500">LTV:</span>
+                          <span className="text-neutral-500">Documents:</span>
                           <span className="ml-2 font-mono">
-                            {loan.ltv_ratio ? `${(Number(loan.ltv_ratio) * 100).toFixed(1)}%` : 'N/A'}
+                            {Object.keys(record.metaData || {}).length}
                           </span>
                         </div>
                         <div>
-                          <span className="text-neutral-500">Credit:</span>
+                          <span className="text-neutral-500">Updated:</span>
                           <span className="ml-2 font-mono">
-                            {loan.credit_score || 'N/A'}
+                            {record.updatedAt ? new Date(record.updatedAt).toLocaleDateString() : 'N/A'}
                           </span>
                         </div>
                       </div>
+
+                      {/* Show document types in metaData */}
+                      {record.metaData && Object.keys(record.metaData).length > 0 && (
+                        <div className="mt-3 pt-3 border-t">
+                          <div className="flex flex-wrap gap-2">
+                            {Object.keys(record.metaData).map((docType) => (
+                              <Badge key={docType} variant="outline" className="detail-text">
+                                {docType.replace('_', ' ')}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                   
-                  {!loansData?.loans?.length && (
+                  {!loansData?.records?.length && (
                     <div className="text-center py-8 text-neutral-500" data-testid="no-loans">
                       No loans currently in pipeline
                     </div>

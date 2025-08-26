@@ -149,9 +149,10 @@ class LoanTrackingService:
         # Extract investor name from file data
         external_ids['investorName'] = self._extract_investor_name(file_data, file_type)
         
-        # Build status
+        # Build status - determine boarding readiness based on file type and data completeness
+        boarding_readiness = self._determine_boarding_readiness(file_type, file_data, loan_numbers)
         status = {
-            "boardingReadiness": "DataReceived",
+            "boardingReadiness": boarding_readiness,
             "lastEvaluated": datetime.now().isoformat()
         }
         
@@ -394,7 +395,8 @@ class LoanTrackingService:
         loan_number_fields = [
             'lenderLoanNo', 'fannieMaeLn', 'loanNumber', 'loan_number',
             'loanId', 'originalLoanNumber', 'investorLoanNumber',
-            'InvestorLoanIdentifier', 'SellerLoanIdentifier'
+            'InvestorLoanIdentifier', 'SellerLoanIdentifier',
+            'correspondentLoanNumber', 'aggregatorLoanNumber'
         ]
         for field in loan_number_fields:
             value = loan_data.get(field)
@@ -609,3 +611,44 @@ class LoanTrackingService:
             logger.info(f"Associated loan {tracking_record['xpLoanNumber']} with commitment {commitment_id}")
         else:
             logger.info(f"No matching commitments found for purchase advice. Tried IDs: {commitment_ids_to_try}, Loan numbers: {loan_numbers}")
+    
+    def _determine_boarding_readiness(self, file_type: str, file_data: Dict[str, Any], loan_numbers: List[str]) -> str:
+        """Determine boarding readiness based on file type and data completeness"""
+        
+        if file_type == 'loan_data' and self._has_comprehensive_uldd_data(file_data):
+            # ULDD with comprehensive data can be ReadyToBoard if it has key loan identifiers
+            if len(loan_numbers) >= 2:  # Has multiple loan numbers (correspondent, aggregator, investor)
+                return "ReadyToBoard"
+            else:
+                return "ULDDReceived"
+        elif file_type == 'purchase_advice':
+            return "PurchaseAdviceReceived"
+        elif file_type == 'commitment':
+            return "CommitmentReceived"
+        else:
+            return "DataReceived"
+    
+    def _has_comprehensive_uldd_data(self, file_data: Dict[str, Any]) -> bool:
+        """Check if ULDD data contains comprehensive loan information"""
+        
+        # Check for key ULDD fields that indicate comprehensive data
+        key_fields = [
+            'loanAmount', 'interestRate', 'loanPurpose', 
+            'propertyType', 'occupancyStatus', 'creditScore',
+            'loanToValueRatio', 'debtToIncomeRatio'
+        ]
+        
+        # Also check nested ULDD structure
+        if 'DEAL' in file_data:
+            deal = file_data.get('DEAL', {})
+            loans = deal.get('LOANS', {})
+            loan = loans.get('LOAN', {}) if isinstance(loans.get('LOAN'), dict) else (loans.get('LOAN', [{}])[0] if loans.get('LOAN') else {})
+            
+            # Check loan-level data
+            loan_detail = loan.get('LOAN_DETAIL', {})
+            if loan_detail.get('LoanAmount') and loan_detail.get('NoteRatePercent'):
+                return True
+        
+        # Check flat structure
+        present_fields = sum(1 for field in key_fields if file_data.get(field))
+        return present_fields >= 4  # Has at least 4 key fields
