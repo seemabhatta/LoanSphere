@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -199,98 +198,94 @@ export default function AIAssistant() {
           
           {/* Chat Interface */}
           <div className="flex-1 flex flex-col">
-            <Card className="flex-1 flex flex-col">
-              <CardContent className="flex-1 flex flex-col pt-6">
-                {/* Messages */}
-                <div className="flex-1 overflow-y-auto mb-4 space-y-4">
-                  {messages.map((message) => (
-                    <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[80%] rounded-lg p-3 ${
-                        message.type === 'user' 
-                          ? 'bg-blue-600 text-white' 
-                          : 'bg-gray-100 text-gray-900'
-                      }`}>
-                        <div className="flex items-start space-x-2">
-                          {message.type === 'assistant' && (
-                            <Bot className="w-4 h-4 mt-0.5 text-blue-600" />
-                          )}
-                          {message.type === 'user' && (
-                            <User className="w-4 h-4 mt-0.5" />
-                          )}
-                          <div className="flex-1">
-                            <p className="body-text whitespace-pre-line">{message.content}</p>
-                            <p className={`caption-text mt-2 ${message.type === 'user' ? 'text-blue-200' : 'text-gray-500'}`}>
-                              {message.timestamp.toLocaleTimeString()}
-                            </p>
-                          </div>
-                        </div>
-                        
-                        {/* Suggestions */}
-                        {message.suggestions && (
-                          <div className="flex flex-wrap gap-2 mt-3">
-                            {message.suggestions.map((suggestion, index) => (
-                              <button
-                                key={index}
-                                onClick={() => handleSuggestionClick(suggestion)}
-                                className="caption-text px-3 py-1 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
-                                data-testid={`suggestion-${index}`}
-                              >
-                                {suggestion}
-                              </button>
-                            ))}
-                          </div>
-                        )}
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto mb-4 space-y-4">
+              {messages.map((message) => (
+                <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[80%] rounded-lg p-3 ${
+                    message.type === 'user' 
+                      ? 'bg-blue-600 text-white' 
+                      : 'bg-gray-100 text-gray-900'
+                  }`}>
+                    <div className="flex items-start space-x-2">
+                      {message.type === 'assistant' && (
+                        <Bot className="w-4 h-4 mt-0.5 text-blue-600" />
+                      )}
+                      {message.type === 'user' && (
+                        <User className="w-4 h-4 mt-0.5" />
+                      )}
+                      <div className="flex-1">
+                        <p className="body-text whitespace-pre-line">{message.content}</p>
+                        <p className={`caption-text mt-2 ${message.type === 'user' ? 'text-blue-200' : 'text-gray-500'}`}>
+                          {message.timestamp.toLocaleTimeString()}
+                        </p>
                       </div>
                     </div>
-                  ))}
-                  
-                  {/* Typing indicator */}
-                  {isTyping && (
-                    <div className="flex justify-start">
-                      <div className="bg-gray-100 rounded-lg p-3">
-                        <div className="flex items-center space-x-2">
-                          <Bot className="w-4 h-4 text-blue-600" />
-                          <div className="flex space-x-1">
-                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                          </div>
-                        </div>
+                    
+                    {/* Suggestions */}
+                    {message.suggestions && (
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        {message.suggestions.map((suggestion, index) => (
+                          <button
+                            key={index}
+                            onClick={() => handleSuggestionClick(suggestion)}
+                            className="caption-text px-3 py-1 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+                            data-testid={`suggestion-${index}`}
+                          >
+                            {suggestion}
+                          </button>
+                        ))}
                       </div>
-                    </div>
-                  )}
-                  <div ref={messagesEndRef} />
-                </div>
-                
-                {/* Input Area */}
-                <div className="flex items-center space-x-2">
-                  <div className="flex-1 relative">
-                    <Input
-                      value={inputValue}
-                      onChange={(e) => setInputValue(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                      placeholder="Ask me anything about loans, exceptions, metrics, or system status..."
-                      className="pr-12"
-                      data-testid="ai-input"
-                    />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={toggleListening}
-                      className={`absolute right-2 top-1/2 -translate-y-1/2 p-1 h-6 w-6 ${
-                        isListening ? 'text-red-600' : 'text-gray-400'
-                      }`}
-                      data-testid="voice-button"
-                    >
-                      {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                    </Button>
+                    )}
                   </div>
-                  <Button onClick={handleSendMessage} disabled={!inputValue.trim()} data-testid="send-button">
-                    <Send className="w-4 h-4" />
-                  </Button>
                 </div>
-              </CardContent>
-            </Card>
+              ))}
+              
+              {/* Typing indicator */}
+              {isTyping && (
+                <div className="flex justify-start">
+                  <div className="bg-gray-100 rounded-lg p-3">
+                    <div className="flex items-center space-x-2">
+                      <Bot className="w-4 h-4 text-blue-600" />
+                      <div className="flex space-x-1">
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+            
+            {/* Input Area */}
+            <div className="flex items-center space-x-2">
+              <div className="flex-1 relative">
+                <Input
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                  placeholder="Ask me anything about loans, exceptions, metrics, or system status..."
+                  className="pr-12"
+                  data-testid="ai-input"
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={toggleListening}
+                  className={`absolute right-2 top-1/2 -translate-y-1/2 p-1 h-6 w-6 ${
+                    isListening ? 'text-red-600' : 'text-gray-400'
+                  }`}
+                  data-testid="voice-button"
+                >
+                  {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                </Button>
+              </div>
+              <Button onClick={handleSendMessage} disabled={!inputValue.trim()} data-testid="send-button">
+                <Send className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>
