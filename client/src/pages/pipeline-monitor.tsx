@@ -135,7 +135,7 @@ export default function PipelineMonitor() {
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left py-2 px-3 text-xs font-medium text-neutral-700">
+                      <th className="text-left py-2 px-3 text-xs font-bold text-neutral-700">
                         <button 
                           className="flex items-center space-x-1 hover:text-neutral-900"
                           onClick={() => handleSort('xpLoanNumber')}
@@ -147,7 +147,7 @@ export default function PipelineMonitor() {
                           )}
                         </button>
                       </th>
-                      <th className="text-left py-2 px-3 text-xs font-medium text-neutral-700">
+                      <th className="text-left py-2 px-3 text-xs font-bold text-neutral-700">
                         <button 
                           className="flex items-center space-x-1 hover:text-neutral-900"
                           onClick={() => handleSort('commitment')}
@@ -159,7 +159,7 @@ export default function PipelineMonitor() {
                           )}
                         </button>
                       </th>
-                      <th className="text-left py-2 px-3 text-xs font-medium text-neutral-700">
+                      <th className="text-left py-2 px-3 text-xs font-bold text-neutral-700">
                         <button 
                           className="flex items-center space-x-1 hover:text-neutral-900"
                           onClick={() => handleSort('purchaseAdvice')}
@@ -171,7 +171,7 @@ export default function PipelineMonitor() {
                           )}
                         </button>
                       </th>
-                      <th className="text-left py-2 px-3 text-xs font-medium text-neutral-700">
+                      <th className="text-left py-2 px-3 text-xs font-bold text-neutral-700">
                         <button 
                           className="flex items-center space-x-1 hover:text-neutral-900"
                           onClick={() => handleSort('loanData')}
@@ -183,7 +183,7 @@ export default function PipelineMonitor() {
                           )}
                         </button>
                       </th>
-                      <th className="text-left py-2 px-3 text-xs font-medium text-neutral-700">
+                      <th className="text-left py-2 px-3 text-xs font-bold text-neutral-700">
                         <button 
                           className="flex items-center space-x-1 hover:text-neutral-900"
                           onClick={() => handleSort('documents')}
