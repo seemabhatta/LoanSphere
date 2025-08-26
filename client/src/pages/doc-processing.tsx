@@ -1,25 +1,83 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { 
+  FileText,
   Eye,
   Tags, 
   Database, 
-  CheckCircle
+  CheckCircle,
+  Clock,
+  AlertTriangle,
+  ArrowRight,
+  ChevronRight
 } from "lucide-react";
 
+interface DocumentProcessing {
+  id: string;
+  xp_doc_id: string;
+  xp_loan_number: string;
+  document_type: string;
+  status: string;
+  ocr_status: string;
+  classification_status: string;
+  extraction_status: string;
+  validation_status: string;
+  created_at: string;
+}
+
 export default function DocProcessing() {
-  const { data: pipelineData } = useQuery({
-    queryKey: ['/api/documents/pipeline/status'],
+  const { data: documentsData } = useQuery({
+    queryKey: ['/api/documents'],
     queryFn: async () => {
-      const response = await fetch('/api/documents/pipeline/status');
+      const response = await fetch('/api/documents/');
       if (!response.ok) {
-        throw new Error('Failed to fetch pipeline status');
+        throw new Error('Failed to fetch documents');
       }
       return response.json();
     },
-    refetchInterval: 5000
+    refetchInterval: 10000
   });
 
+  const getStageStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'text-green-600 bg-green-50 border-green-200';
+      case 'processing':
+        return 'text-blue-600 bg-blue-50 border-blue-200';
+      case 'failed':
+      case 'error':
+        return 'text-red-600 bg-red-50 border-red-200';
+      case 'pending':
+        return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+      default:
+        return 'text-gray-600 bg-gray-50 border-gray-200';
+    }
+  };
+
+  const getStageIcon = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return <CheckCircle className="w-4 h-4" />;
+      case 'processing':
+        return <Clock className="w-4 h-4 animate-spin" />;
+      case 'failed':
+      case 'error':
+        return <AlertTriangle className="w-4 h-4" />;
+      default:
+        return <Clock className="w-4 h-4" />;
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    try {
+      return new Date(dateString).toLocaleString();
+    } catch {
+      return dateString;
+    }
+  };
+
+  const documents = documentsData?.documents || [];
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -36,110 +94,146 @@ export default function DocProcessing() {
               Document Processing Pipeline
             </h1>
             <p className="text-gray-500 mt-1">
-              Monitor document processing stages and performance
+              Track individual document processing steps by loan
             </p>
           </div>
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2 text-sm text-gray-600">
-              <span>Auto-refresh: 5s</span>
+              <span>Total: {documents.length}</span>
+              <span>•</span>
+              <span>Auto-refresh: 10s</span>
             </div>
           </div>
         </div>
       </header>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
-        {/* Processing Pipeline Status */}
-        <Card>
-          <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              {/* OCR Processing */}
-              <div className="text-center">
-                <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                  <Eye className="text-blue-600 w-8 h-8" />
+      <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        {documents.map((document: DocumentProcessing) => (
+          <Card key={document.id} className="border-l-4 border-l-blue-500">
+            <CardContent className="p-6">
+              {/* Document Header */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-3">
+                  <FileText className="w-5 h-5 text-gray-500" />
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900">
+                      Loan {document.xp_loan_number}
+                    </h3>
+                    <p className="text-xs text-gray-500">
+                      {document.document_type} • {document.xp_doc_id}
+                    </p>
+                  </div>
                 </div>
-                <h4 className="section-header text-neutral-800 mb-2">OCR Processing</h4>
-                <div className="metric-large text-blue-600 mb-1" data-testid="ocr-queue">
-                  {pipelineData?.ocr_processing?.queue || 0}
+                <div className="flex items-center space-x-2">
+                  <Badge className={`text-xs px-2 py-1 ${
+                    document.status === 'completed' ? 'bg-green-100 text-green-800' :
+                    document.status === 'processing' ? 'bg-blue-100 text-blue-800' :
+                    document.status === 'error' ? 'bg-red-100 text-red-800' :
+                    'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {document.status}
+                  </Badge>
+                  <span className="text-xs text-gray-500">
+                    {formatDate(document.created_at)}
+                  </span>
                 </div>
-                <p className="detail-text text-neutral-500">Documents in queue</p>
-                <div className="w-full bg-neutral-200 rounded-full h-1 mt-2">
-                  <div 
-                    className="bg-blue-600 h-1 rounded-full transition-all duration-500" 
-                    style={{ width: `${pipelineData?.ocr_processing?.progress || 0}%` }}
-                  ></div>
-                </div>
-                <p className="detail-text text-neutral-500 mt-1">
-                  {pipelineData?.ocr_processing?.progress || 0}% complete
-                </p>
               </div>
 
-              {/* Classification */}
-              <div className="text-center">
-                <div className="w-16 h-16 bg-cyan-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                  <Tags className="text-cyan-600 w-8 h-8" />
+              {/* Processing Flow */}
+              <div className="flex items-center justify-between space-x-2">
+                {/* OCR Stage */}
+                <div className={`flex items-center space-x-2 px-3 py-2 rounded-lg border text-xs ${getStageStatusColor(document.ocr_status)}`}>
+                  <Eye className="w-4 h-4" />
+                  <span className="font-medium">OCR</span>
+                  {getStageIcon(document.ocr_status)}
                 </div>
-                <h4 className="section-header text-neutral-800 mb-2">Classification</h4>
-                <div className="metric-large text-cyan-600 mb-1" data-testid="classification-completed">
-                  {pipelineData?.classification?.completed || 0}
+                
+                <ChevronRight className="w-4 h-4 text-gray-400" />
+                
+                {/* Classification Stage */}
+                <div className={`flex items-center space-x-2 px-3 py-2 rounded-lg border text-xs ${getStageStatusColor(document.classification_status)}`}>
+                  <Tags className="w-4 h-4" />
+                  <span className="font-medium">Classification</span>
+                  {getStageIcon(document.classification_status)}
                 </div>
-                <p className="detail-text text-neutral-500">Documents classified</p>
-                <div className="w-full bg-neutral-200 rounded-full h-1 mt-2">
-                  <div 
-                    className="bg-cyan-600 h-1 rounded-full transition-all duration-500" 
-                    style={{ width: `${pipelineData?.classification?.progress || 0}%` }}
-                  ></div>
+                
+                <ChevronRight className="w-4 h-4 text-gray-400" />
+                
+                {/* Extraction Stage */}
+                <div className={`flex items-center space-x-2 px-3 py-2 rounded-lg border text-xs ${getStageStatusColor(document.extraction_status)}`}>
+                  <Database className="w-4 h-4" />
+                  <span className="font-medium">Extraction</span>
+                  {getStageIcon(document.extraction_status)}
                 </div>
-                <p className="detail-text text-neutral-500 mt-1">
-                  {pipelineData?.classification?.progress || 0}% complete
-                </p>
+                
+                <ChevronRight className="w-4 h-4 text-gray-400" />
+                
+                {/* Validation Stage */}
+                <div className={`flex items-center space-x-2 px-3 py-2 rounded-lg border text-xs ${getStageStatusColor(document.validation_status)}`}>
+                  <CheckCircle className="w-4 h-4" />
+                  <span className="font-medium">Validation</span>
+                  {getStageIcon(document.validation_status)}
+                </div>
               </div>
 
-              {/* Data Extraction */}
-              <div className="text-center">
-                <div className="w-16 h-16 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                  <Database className="text-green-600 w-8 h-8" />
+              {/* Processing Details */}
+              <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                <div>
+                  <span className="text-gray-500">OCR:</span>
+                  <span className={`ml-1 font-medium ${
+                    document.ocr_status === 'completed' ? 'text-green-600' :
+                    document.ocr_status === 'processing' ? 'text-blue-600' :
+                    document.ocr_status === 'failed' ? 'text-red-600' :
+                    'text-yellow-600'
+                  }`}>
+                    {document.ocr_status}
+                  </span>
                 </div>
-                <h4 className="section-header text-neutral-800 mb-2">Data Extraction</h4>
-                <div className="metric-large text-green-600 mb-1" data-testid="extraction-completed">
-                  {pipelineData?.extraction?.completed || 0}
+                <div>
+                  <span className="text-gray-500">Classification:</span>
+                  <span className={`ml-1 font-medium ${
+                    document.classification_status === 'completed' ? 'text-green-600' :
+                    document.classification_status === 'processing' ? 'text-blue-600' :
+                    document.classification_status === 'failed' ? 'text-red-600' :
+                    'text-yellow-600'
+                  }`}>
+                    {document.classification_status}
+                  </span>
                 </div>
-                <p className="detail-text text-neutral-500">Fields extracted</p>
-                <div className="w-full bg-neutral-200 rounded-full h-1 mt-2">
-                  <div 
-                    className="bg-green-600 h-1 rounded-full transition-all duration-500" 
-                    style={{ width: `${pipelineData?.extraction?.progress || 0}%` }}
-                  ></div>
+                <div>
+                  <span className="text-gray-500">Extraction:</span>
+                  <span className={`ml-1 font-medium ${
+                    document.extraction_status === 'completed' ? 'text-green-600' :
+                    document.extraction_status === 'processing' ? 'text-blue-600' :
+                    document.extraction_status === 'failed' ? 'text-red-600' :
+                    'text-yellow-600'
+                  }`}>
+                    {document.extraction_status}
+                  </span>
                 </div>
-                <p className="detail-text text-neutral-500 mt-1">
-                  {pipelineData?.extraction?.progress || 0}% complete
-                </p>
+                <div>
+                  <span className="text-gray-500">Validation:</span>
+                  <span className={`ml-1 font-medium ${
+                    document.validation_status === 'completed' ? 'text-green-600' :
+                    document.validation_status === 'processing' ? 'text-blue-600' :
+                    document.validation_status === 'failed' ? 'text-red-600' :
+                    'text-yellow-600'
+                  }`}>
+                    {document.validation_status}
+                  </span>
+                </div>
               </div>
+            </CardContent>
+          </Card>
+        ))}
 
-              {/* Validation */}
-              <div className="text-center">
-                <div className="w-16 h-16 bg-yellow-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                  <CheckCircle className="text-yellow-600 w-8 h-8" />
-                </div>
-                <h4 className="section-header text-neutral-800 mb-2">Validation</h4>
-                <div className="metric-large text-yellow-600 mb-1" data-testid="validation-pending">
-                  {pipelineData?.validation?.queue || 0}
-                </div>
-                <p className="detail-text text-neutral-500">Pending review</p>
-                <div className="w-full bg-neutral-200 rounded-full h-1 mt-2">
-                  <div 
-                    className="bg-yellow-600 h-1 rounded-full transition-all duration-500" 
-                    style={{ width: `${pipelineData?.validation?.progress || 0}%` }}
-                  ></div>
-                </div>
-                <p className="detail-text text-neutral-500 mt-1">
-                  {pipelineData?.validation?.progress || 0}% complete
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
+        {!documents.length && (
+          <div className="text-center py-12">
+            <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500">No documents in processing pipeline</p>
+          </div>
+        )}
       </div>
     </div>
   );
