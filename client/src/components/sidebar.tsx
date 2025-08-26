@@ -67,6 +67,15 @@ export default function Sidebar({ isOpen, onClose, collapsed = false }: SidebarP
       <nav className="flex-1 py-2 overflow-y-auto">
         {navigationSections.map((section) => (
           <div key={section.title} className="mb-6">
+            {/* Section Header */}
+            {!collapsed && (
+              <div className="px-4 mb-2">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  {section.title}
+                </h3>
+              </div>
+            )}
+            
             {/* Section Items */}
             <div>
               {section.items.map((item) => {
