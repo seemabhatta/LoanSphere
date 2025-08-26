@@ -242,6 +242,9 @@ export default function DocProcessing() {
                     const nextDoc = docIndex < loanDocs.length - 1 ? loanDocs[docIndex + 1] : null;
                     const isLastChild = isChild && (!nextDoc || !nextDoc.is_split_document || nextDoc.parent_doc_id !== document.parent_doc_id);
                     
+                    // Check if this is the last document under the loan
+                    const isLastInLoan = docIndex === loanDocs.length - 1;
+                    
                     return (
                       <tr key={document.id} className={`border-b border-neutral-100 hover:bg-neutral-50 ${
                         isChild ? 'bg-blue-50/10' : document.split_count ? 'bg-green-50/10' : ''
@@ -249,43 +252,73 @@ export default function DocProcessing() {
                         <td className="p-4 body-text text-neutral-600" data-testid={`loan-${document.id}`}>
                           <div className="flex items-center ml-6">
                             {isChild ? (
-                              <span className="text-blue-400 mr-3 text-xs">{isLastChild ? '└─' : '├─'}</span>
+                              <span className="text-blue-400 mr-3 text-xs">
+                                {`    ${isLastChild ? '└─' : '├─'}`}
+                              </span>
                             ) : (
-                              <span className="text-green-400 mr-3 text-xs">├─</span>
+                              <span className="text-green-500 mr-3 text-xs">
+                                {isLastInLoan ? '└─' : '├─'}
+                              </span>
                             )}
-                            {loanNumber}
+                            <span className="text-xs text-neutral-500">{loanNumber}</span>
                           </div>
                         </td>
                         <td className="p-4 body-text text-neutral-700" data-testid={`type-${document.id}`}>
-                          <div className="flex items-center ml-6">
-                            {isChild ? (
-                              <span className="text-blue-400 mr-3 text-xs">{isLastChild ? '└─' : '├─'}</span>
-                            ) : (
-                              <span className="text-green-400 mr-3 text-xs">├─</span>
-                            )}
+                          <div className="flex items-center">
+                            <div className="ml-6 mr-3">
+                              {isChild ? (
+                                <span className="text-blue-400 text-xs">
+                                  {`    ${isLastChild ? '└─' : '├─'}`}
+                                </span>
+                              ) : (
+                                <span className="text-green-500 text-xs">
+                                  {isLastInLoan ? '└─' : '├─'}
+                                </span>
+                              )}
+                            </div>
                             <div className="flex items-center space-x-2">
-                              {document.document_type}
-                              {isChild && <span className="text-xs text-blue-500 bg-blue-100 px-1 rounded">split</span>}
-                              {document.split_count && <span className="text-xs text-green-500 bg-green-100 px-1 rounded">→{document.split_count}</span>}
+                              <span className={isChild ? 'text-blue-700' : 'text-green-700'}>
+                                {document.document_type}
+                              </span>
+                              {isChild && (
+                                <span className="text-xs text-blue-500 bg-blue-100 px-2 py-1 rounded">
+                                  from {document.parent_doc_id}
+                                </span>
+                              )}
+                              {document.split_count && (
+                                <span className="text-xs text-green-500 bg-green-100 px-2 py-1 rounded">
+                                  splits into {document.split_count} docs
+                                </span>
+                              )}
                             </div>
                           </div>
                         </td>
                         <td className="p-4 code-text text-neutral-600" data-testid={`doc-id-${document.id}`}>
-                          {document.xp_doc_id}
+                          <div className="flex items-center ml-6">
+                            <span className="mr-3 text-xs">
+                              {isChild ? `    ${isLastChild ? '└─' : '├─'}` : (isLastInLoan ? '└─' : '├─')}
+                            </span>
+                            <span className={`font-mono text-sm ${isChild ? 'text-blue-600' : 'text-green-600'}`}>
+                              {document.xp_doc_id}
+                            </span>
+                          </div>
                         </td>
                         <td className="p-4" data-testid={`source-${document.id}`}>
                           {document.parent_doc_id ? (
                             <div className="flex items-center space-x-1">
-                              <FileText className="w-3 h-3 text-blue-500" />
-                              <span className="text-xs text-blue-600">blob</span>
+                              <FileText className="w-4 h-4 text-blue-500" />
+                              <span className="text-xs text-blue-600 font-medium">Split Document</span>
                             </div>
                           ) : document.split_count ? (
                             <div className="flex items-center space-x-1">
-                              <Files className="w-3 h-3 text-green-500" />
-                              <span className="text-xs text-green-600">splits</span>
+                              <Files className="w-4 h-4 text-green-500" />
+                              <span className="text-xs text-green-600 font-medium">PDF Blob</span>
                             </div>
                           ) : (
-                            <span className="text-xs text-neutral-400">single</span>
+                            <div className="flex items-center space-x-1">
+                              <FileText className="w-4 h-4 text-neutral-400" />
+                              <span className="text-xs text-neutral-500">Single Doc</span>
+                            </div>
                           )}
                         </td>
                         <td className="p-4" data-testid={`status-${document.id}`}>
