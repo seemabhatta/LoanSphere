@@ -185,9 +185,35 @@ export default function AIAssistant() {
 
       {/* Content */}
       <div className="flex-1 overflow-hidden p-6">
-        <div className="h-full grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="h-full flex flex-col space-y-6">
+          {/* Quick Actions */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center text-base">
+                <Lightbulb className="w-4 h-4 mr-2" />
+                Quick Actions
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                {quickActions.map((action, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleQuickAction(action)}
+                    className="p-3 rounded-lg border hover:bg-gray-50 transition-colors group text-center"
+                    data-testid={`quick-action-${index}`}
+                  >
+                    <action.icon className="w-5 h-5 mx-auto mb-2 text-gray-600 group-hover:text-blue-600" />
+                    <p className="body-text font-medium text-gray-900 text-sm">{action.label}</p>
+                    <p className="text-xs text-gray-500">{action.category}</p>
+                  </button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+          
           {/* Chat Interface */}
-          <div className="lg:col-span-3 flex flex-col">
+          <div className="flex-1 flex flex-col">
             <Card className="flex-1 flex flex-col">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center">
@@ -283,72 +309,6 @@ export default function AIAssistant() {
                   <Button onClick={handleSendMessage} disabled={!inputValue.trim()} data-testid="send-button">
                     <Send className="w-4 h-4" />
                   </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Quick Actions Sidebar */}
-          <div className="space-y-6">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center text-base">
-                  <Lightbulb className="w-4 h-4 mr-2" />
-                  Quick Actions
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {quickActions.map((action, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleQuickAction(action)}
-                      className="w-full text-left p-3 rounded-lg border hover:bg-gray-50 transition-colors group"
-                      data-testid={`quick-action-${index}`}
-                    >
-                      <div className="flex items-center space-x-3">
-                        <action.icon className="w-4 h-4 text-gray-600 group-hover:text-blue-600" />
-                        <div className="flex-1">
-                          <p className="body-text font-medium text-gray-900">{action.label}</p>
-                          <p className="text-xs text-gray-500">{action.category}</p>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center text-base">
-                  <Brain className="w-4 h-4 mr-2" />
-                  AI Capabilities
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-start space-x-2">
-                    <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
-                    <div>
-                      <p className="body-text font-medium">Real-time Analysis</p>
-                      <p className="text-xs text-gray-500">Live data insights and recommendations</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-2">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-                    <div>
-                      <p className="body-text font-medium">Predictive Intelligence</p>
-                      <p className="text-xs text-gray-500">Forecasting and early warning alerts</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-2">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full mt-2"></div>
-                    <div>
-                      <p className="body-text font-medium">Automated Actions</p>
-                      <p className="text-xs text-gray-500">Smart exception resolution and workflow optimization</p>
-                    </div>
-                  </div>
                 </div>
               </CardContent>
             </Card>
