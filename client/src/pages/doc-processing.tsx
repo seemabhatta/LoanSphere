@@ -1,17 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-  FileText,
-  Eye,
-  Tags, 
-  Database, 
-  CheckCircle,
-  Clock,
-  AlertTriangle,
-  ArrowRight,
-  ChevronRight
-} from "lucide-react";
+import { useState } from "react";
 
 interface DocumentProcessing {
   id: string;
@@ -27,6 +16,9 @@ interface DocumentProcessing {
 }
 
 export default function DocProcessing() {
+  const [sortField, setSortField] = useState<string>('created_at');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+
   const { data: documentsData } = useQuery({
     queryKey: ['/api/documents'],
     queryFn: async () => {
@@ -39,45 +31,53 @@ export default function DocProcessing() {
     refetchInterval: 10000
   });
 
-  const getStageStatusColor = (status: string) => {
+  const getStatusBadge = (status: string) => {
+    const baseClasses = "text-xs px-2 py-1";
     switch (status) {
       case 'completed':
-        return 'text-green-600 bg-green-50 border-green-200';
+        return `${baseClasses} bg-green-100 text-green-800`;
       case 'processing':
-        return 'text-blue-600 bg-blue-50 border-blue-200';
+        return `${baseClasses} bg-blue-100 text-blue-800`;
       case 'failed':
       case 'error':
-        return 'text-red-600 bg-red-50 border-red-200';
-      case 'pending':
-        return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+        return `${baseClasses} bg-red-100 text-red-800`;
       default:
-        return 'text-gray-600 bg-gray-50 border-gray-200';
-    }
-  };
-
-  const getStageIcon = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return <CheckCircle className="w-4 h-4" />;
-      case 'processing':
-        return <Clock className="w-4 h-4 animate-spin" />;
-      case 'failed':
-      case 'error':
-        return <AlertTriangle className="w-4 h-4" />;
-      default:
-        return <Clock className="w-4 h-4" />;
+        return `${baseClasses} bg-yellow-100 text-yellow-800`;
     }
   };
 
   const formatDate = (dateString: string) => {
     try {
-      return new Date(dateString).toLocaleString();
+      return new Date(dateString).toLocaleDateString();
     } catch {
       return dateString;
     }
   };
 
+  const handleSort = (field: string) => {
+    if (field === sortField) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
   const documents = documentsData?.documents || [];
+
+  const sortedDocuments = [...documents].sort((a, b) => {
+    let aVal = a[sortField as keyof DocumentProcessing];
+    let bVal = b[sortField as keyof DocumentProcessing];
+    
+    if (sortField === 'created_at') {
+      aVal = new Date(aVal as string).getTime();
+      bVal = new Date(bVal as string).getTime();
+    }
+    
+    if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+    if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+    return 0;
+  });
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -100,140 +100,133 @@ export default function DocProcessing() {
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2 text-sm text-gray-600">
               <span>Total: {documents.length}</span>
-              <span>•</span>
-              <span>Auto-refresh: 10s</span>
             </div>
           </div>
         </div>
       </header>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4">
-        {documents.map((document: DocumentProcessing) => (
-          <Card key={document.id} className="border-l-4 border-l-blue-500">
-            <CardContent className="p-6">
-              {/* Document Header */}
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  <FileText className="w-5 h-5 text-gray-500" />
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-900">
-                      Loan {document.xp_loan_number}
-                    </h3>
-                    <p className="text-xs text-gray-500">
-                      {document.document_type} • {document.xp_doc_id}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Badge className={`text-xs px-2 py-1 ${
-                    document.status === 'completed' ? 'bg-green-100 text-green-800' :
-                    document.status === 'processing' ? 'bg-blue-100 text-blue-800' :
-                    document.status === 'error' ? 'bg-red-100 text-red-800' :
-                    'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {document.status}
-                  </Badge>
-                  <span className="text-xs text-gray-500">
+      <div className="flex-1 overflow-hidden">
+        <div className="overflow-x-auto h-full">
+          <table className="w-full">
+            <thead className="bg-neutral-50 border-b border-neutral-200 sticky top-0">
+              <tr>
+                <th 
+                  className="text-left p-4 font-medium text-neutral-700 cursor-pointer hover:bg-neutral-100"
+                  onClick={() => handleSort('xp_loan_number')}
+                  data-testid="header-loan-number"
+                >
+                  Loan Number {sortField === 'xp_loan_number' && (sortDirection === 'asc' ? '↑' : '↓')}
+                </th>
+                <th 
+                  className="text-left p-4 font-medium text-neutral-700 cursor-pointer hover:bg-neutral-100"
+                  onClick={() => handleSort('document_type')}
+                  data-testid="header-document-type"
+                >
+                  Document Type {sortField === 'document_type' && (sortDirection === 'asc' ? '↑' : '↓')}
+                </th>
+                <th 
+                  className="text-left p-4 font-medium text-neutral-700 cursor-pointer hover:bg-neutral-100"
+                  onClick={() => handleSort('xp_doc_id')}
+                  data-testid="header-doc-id"
+                >
+                  Document ID {sortField === 'xp_doc_id' && (sortDirection === 'asc' ? '↑' : '↓')}
+                </th>
+                <th 
+                  className="text-left p-4 font-medium text-neutral-700 cursor-pointer hover:bg-neutral-100"
+                  onClick={() => handleSort('status')}
+                  data-testid="header-status"
+                >
+                  Status {sortField === 'status' && (sortDirection === 'asc' ? '↑' : '↓')}
+                </th>
+                <th 
+                  className="text-left p-4 font-medium text-neutral-700 cursor-pointer hover:bg-neutral-100"
+                  onClick={() => handleSort('ocr_status')}
+                  data-testid="header-ocr"
+                >
+                  OCR {sortField === 'ocr_status' && (sortDirection === 'asc' ? '↑' : '↓')}
+                </th>
+                <th 
+                  className="text-left p-4 font-medium text-neutral-700 cursor-pointer hover:bg-neutral-100"
+                  onClick={() => handleSort('classification_status')}
+                  data-testid="header-classification"
+                >
+                  Classification {sortField === 'classification_status' && (sortDirection === 'asc' ? '↑' : '↓')}
+                </th>
+                <th 
+                  className="text-left p-4 font-medium text-neutral-700 cursor-pointer hover:bg-neutral-100"
+                  onClick={() => handleSort('extraction_status')}
+                  data-testid="header-extraction"
+                >
+                  Extraction {sortField === 'extraction_status' && (sortDirection === 'asc' ? '↑' : '↓')}
+                </th>
+                <th 
+                  className="text-left p-4 font-medium text-neutral-700 cursor-pointer hover:bg-neutral-100"
+                  onClick={() => handleSort('validation_status')}
+                  data-testid="header-validation"
+                >
+                  Validation {sortField === 'validation_status' && (sortDirection === 'asc' ? '↑' : '↓')}
+                </th>
+                <th 
+                  className="text-left p-4 font-medium text-neutral-700 cursor-pointer hover:bg-neutral-100"
+                  onClick={() => handleSort('created_at')}
+                  data-testid="header-created"
+                >
+                  Created {sortField === 'created_at' && (sortDirection === 'asc' ? '↑' : '↓')}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedDocuments.map((document: DocumentProcessing) => (
+                <tr key={document.id} className="border-b border-neutral-100 hover:bg-neutral-50">
+                  <td className="p-4 body-text text-neutral-900" data-testid={`loan-${document.id}`}>
+                    {document.xp_loan_number}
+                  </td>
+                  <td className="p-4 body-text text-neutral-700" data-testid={`type-${document.id}`}>
+                    {document.document_type}
+                  </td>
+                  <td className="p-4 code-text text-neutral-600" data-testid={`doc-id-${document.id}`}>
+                    {document.xp_doc_id}
+                  </td>
+                  <td className="p-4" data-testid={`status-${document.id}`}>
+                    <Badge className={getStatusBadge(document.status)}>
+                      {document.status}
+                    </Badge>
+                  </td>
+                  <td className="p-4" data-testid={`ocr-${document.id}`}>
+                    <Badge className={getStatusBadge(document.ocr_status)}>
+                      {document.ocr_status}
+                    </Badge>
+                  </td>
+                  <td className="p-4" data-testid={`classification-${document.id}`}>
+                    <Badge className={getStatusBadge(document.classification_status)}>
+                      {document.classification_status}
+                    </Badge>
+                  </td>
+                  <td className="p-4" data-testid={`extraction-${document.id}`}>
+                    <Badge className={getStatusBadge(document.extraction_status)}>
+                      {document.extraction_status}
+                    </Badge>
+                  </td>
+                  <td className="p-4" data-testid={`validation-${document.id}`}>
+                    <Badge className={getStatusBadge(document.validation_status)}>
+                      {document.validation_status}
+                    </Badge>
+                  </td>
+                  <td className="p-4 detail-text text-neutral-500" data-testid={`created-${document.id}`}>
                     {formatDate(document.created_at)}
-                  </span>
-                </div>
-              </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
 
-              {/* Processing Flow */}
-              <div className="flex items-center justify-between space-x-2">
-                {/* OCR Stage */}
-                <div className={`flex items-center space-x-2 px-3 py-2 rounded-lg border text-xs ${getStageStatusColor(document.ocr_status)}`}>
-                  <Eye className="w-4 h-4" />
-                  <span className="font-medium">OCR</span>
-                  {getStageIcon(document.ocr_status)}
-                </div>
-                
-                <ChevronRight className="w-4 h-4 text-gray-400" />
-                
-                {/* Classification Stage */}
-                <div className={`flex items-center space-x-2 px-3 py-2 rounded-lg border text-xs ${getStageStatusColor(document.classification_status)}`}>
-                  <Tags className="w-4 h-4" />
-                  <span className="font-medium">Classification</span>
-                  {getStageIcon(document.classification_status)}
-                </div>
-                
-                <ChevronRight className="w-4 h-4 text-gray-400" />
-                
-                {/* Extraction Stage */}
-                <div className={`flex items-center space-x-2 px-3 py-2 rounded-lg border text-xs ${getStageStatusColor(document.extraction_status)}`}>
-                  <Database className="w-4 h-4" />
-                  <span className="font-medium">Extraction</span>
-                  {getStageIcon(document.extraction_status)}
-                </div>
-                
-                <ChevronRight className="w-4 h-4 text-gray-400" />
-                
-                {/* Validation Stage */}
-                <div className={`flex items-center space-x-2 px-3 py-2 rounded-lg border text-xs ${getStageStatusColor(document.validation_status)}`}>
-                  <CheckCircle className="w-4 h-4" />
-                  <span className="font-medium">Validation</span>
-                  {getStageIcon(document.validation_status)}
-                </div>
-              </div>
-
-              {/* Processing Details */}
-              <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-                <div>
-                  <span className="text-gray-500">OCR:</span>
-                  <span className={`ml-1 font-medium ${
-                    document.ocr_status === 'completed' ? 'text-green-600' :
-                    document.ocr_status === 'processing' ? 'text-blue-600' :
-                    document.ocr_status === 'failed' ? 'text-red-600' :
-                    'text-yellow-600'
-                  }`}>
-                    {document.ocr_status}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-gray-500">Classification:</span>
-                  <span className={`ml-1 font-medium ${
-                    document.classification_status === 'completed' ? 'text-green-600' :
-                    document.classification_status === 'processing' ? 'text-blue-600' :
-                    document.classification_status === 'failed' ? 'text-red-600' :
-                    'text-yellow-600'
-                  }`}>
-                    {document.classification_status}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-gray-500">Extraction:</span>
-                  <span className={`ml-1 font-medium ${
-                    document.extraction_status === 'completed' ? 'text-green-600' :
-                    document.extraction_status === 'processing' ? 'text-blue-600' :
-                    document.extraction_status === 'failed' ? 'text-red-600' :
-                    'text-yellow-600'
-                  }`}>
-                    {document.extraction_status}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-gray-500">Validation:</span>
-                  <span className={`ml-1 font-medium ${
-                    document.validation_status === 'completed' ? 'text-green-600' :
-                    document.validation_status === 'processing' ? 'text-blue-600' :
-                    document.validation_status === 'failed' ? 'text-red-600' :
-                    'text-yellow-600'
-                  }`}>
-                    {document.validation_status}
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-
-        {!documents.length && (
-          <div className="text-center py-12">
-            <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500">No documents in processing pipeline</p>
-          </div>
-        )}
+          {!documents.length && (
+            <div className="text-center py-12">
+              <p className="text-gray-500">No documents in processing pipeline</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
