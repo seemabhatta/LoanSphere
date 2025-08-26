@@ -353,10 +353,7 @@ export default function Exceptions() {
 
         {/* Exceptions Table */}
         <Card>
-          <CardHeader>
-            <CardTitle className="section-header">Active Exceptions</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <div className="overflow-x-auto">
               <table className="min-w-full">
                 <thead>
