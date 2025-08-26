@@ -356,11 +356,11 @@ export default function DocProcessing() {
                         <td className="p-4 body-text text-neutral-600" data-testid={`loan-${document.id}`}>
                           <div className="flex items-center ml-6">
                             {isChild ? (
-                              <span className="text-blue-400 mr-3 text-xs">
+                              <span className="detail-text text-blue-400 mr-3">
                                 {`    ${isLastChild ? '└─' : '├─'}`}
                               </span>
                             ) : (
-                              <span className="text-green-500 mr-3 text-xs">
+                              <span className="detail-text text-green-500 mr-3">
                                 {isLastInLoan ? '└─' : '├─'}
                               </span>
                             )}
@@ -371,11 +371,11 @@ export default function DocProcessing() {
                           <div className="flex items-center">
                             <div className="ml-6 mr-3">
                               {isChild ? (
-                                <span className="text-blue-400 text-xs">
+                                <span className="detail-text text-blue-400">
                                   {`    ${isLastChild ? '└─' : '├─'}`}
                                 </span>
                               ) : (
-                                <span className="text-green-500 text-xs">
+                                <span className="detail-text text-green-500">
                                   {isLastInLoan ? '└─' : '├─'}
                                 </span>
                               )}
@@ -399,7 +399,7 @@ export default function DocProcessing() {
                         </td>
                         <td className="p-4 code-text text-neutral-600" data-testid={`doc-id-${document.id}`}>
                           <div className="flex items-center ml-6">
-                            <span className="mr-3 text-xs">
+                            <span className="detail-text mr-3">
                               {isChild ? `    ${isLastChild ? '└─' : '├─'}` : (isLastInLoan ? '└─' : '├─')}
                             </span>
                             <span className={`code-text ${isChild ? 'text-blue-600' : 'text-green-600'}`}>
@@ -543,7 +543,7 @@ export default function DocProcessing() {
 
           {!documents.length && (
             <div className="text-center py-12">
-              <p className="text-gray-500">No documents in processing pipeline</p>
+              <p className="body-text text-gray-500">No documents in processing pipeline</p>
             </div>
           )}
         </div>
