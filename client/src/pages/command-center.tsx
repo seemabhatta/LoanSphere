@@ -1,241 +1,289 @@
-import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useDashboardStore } from "@/stores/dashboard-store";
-import { apiRequest } from "@/lib/api";
-import { connectWebSocket } from "@/lib/websocket";
-import MetricCard from "@/components/metric-card";
-import AgentStatus from "@/components/agent-status";
-import PipelineActivity from "@/components/pipeline-activity";
-import ExceptionsList from "@/components/exceptions-list";
-import ComplianceStatus from "@/components/compliance-status";
-import DocumentProcessing from "@/components/document-processing";
-import ExceptionDetailModal from "@/components/exception-detail-modal";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Play, RefreshCw } from "lucide-react";
+import { 
+  AlertTriangle, 
+  CheckCircle, 
+  Clock, 
+  TrendingUp, 
+  TrendingDown,
+  Activity,
+  FileText,
+  Users,
+  Target,
+  Zap,
+  RefreshCw,
+  Play
+} from "lucide-react";
+
+interface SystemStatus {
+  status: 'healthy' | 'warning' | 'critical';
+  uptime: string;
+  activeAgents: number;
+  totalAgents: number;
+}
+
+interface KPI {
+  label: string;
+  value: string;
+  change: string;
+  trend: 'up' | 'down' | 'neutral';
+  target?: string;
+}
+
+interface RecentActivity {
+  id: string;
+  type: 'loan_boarded' | 'exception_resolved' | 'document_processed' | 'compliance_check';
+  message: string;
+  timestamp: string;
+  severity: 'info' | 'success' | 'warning' | 'error';
+}
+
+interface CriticalException {
+  id: string;
+  loanNumber: string;
+  description: string;
+  severity: 'HIGH' | 'MEDIUM' | 'LOW';
+  age: string;
+  autoFix: boolean;
+}
 
 export default function CommandCenter() {
-  const { 
-    metrics, 
-    agents, 
-    recentActivity, 
-    exceptions, 
-    complianceStatus, 
-    documentProcessing,
-    selectedExceptionId,
-    systemStatus,
-    updateMetrics, 
-    updateAgents, 
-    updateRecentActivity,
-    updateExceptions,
-    updateComplianceStatus,
-    updateDocumentProcessing,
-    setSystemStatus
-  } = useDashboardStore();
-
-  // Fetch dashboard data
-  const { data: dashboardData, refetch } = useQuery({
-    queryKey: ['/api/metrics/dashboard'],
-    refetchInterval: 30000 // Refresh every 30 seconds
+  const { data: systemStatus } = useQuery({
+    queryKey: ['/api/system/status'],
+    queryFn: async () => ({
+      status: 'healthy' as const,
+      uptime: '23h 45m',
+      activeAgents: 4,
+      totalAgents: 4
+    }),
+    refetchInterval: 10000
   });
 
-  const { data: agentsData } = useQuery({
-    queryKey: ['/api/agents/status/summary'],
-    refetchInterval: 10000 // Refresh every 10 seconds
+  const { data: kpis } = useQuery({
+    queryKey: ['/api/metrics/kpis'],
+    queryFn: async () => ([
+      { label: 'First-Pass Yield', value: '87.3%', change: '+2.1%', trend: 'up' as const, target: '85%' },
+      { label: 'Time to Board', value: '1.8h', change: '-0.3h', trend: 'up' as const, target: '2h' },
+      { label: 'Exception Auto-Clear', value: '73%', change: '+5%', trend: 'up' as const, target: '70%' },
+      { label: 'Compliance Score', value: '100%', change: '0%', trend: 'neutral' as const, target: '100%' },
+    ]),
+    refetchInterval: 30000
   });
 
-  const { data: exceptionsData } = useQuery({
-    queryKey: ['/api/exceptions', { status: 'open', limit: 5 }],
+  const { data: recentActivity } = useQuery({
+    queryKey: ['/api/activity/recent'],
+    queryFn: async () => ([
+      { id: '1', type: 'loan_boarded' as const, message: 'Loan XP12351 successfully boarded', timestamp: '2 min ago', severity: 'success' as const },
+      { id: '2', type: 'exception_resolved' as const, message: 'Auto-fixed rate mismatch in XP12346', timestamp: '5 min ago', severity: 'success' as const },
+      { id: '3', type: 'document_processed' as const, message: 'W-2 documents processed for XP12345', timestamp: '8 min ago', severity: 'info' as const },
+      { id: '4', type: 'compliance_check' as const, message: 'RESPA compliance verified for batch #247', timestamp: '12 min ago', severity: 'success' as const },
+      { id: '5', type: 'exception_resolved' as const, message: 'Manual review completed for XP12349', timestamp: '15 min ago', severity: 'warning' as const },
+    ]),
     refetchInterval: 15000
   });
 
-  const { data: complianceData } = useQuery({
-    queryKey: ['/api/compliance/dashboard/summary'],
-    refetchInterval: 60000 // Refresh every minute
+  const { data: criticalExceptions } = useQuery({
+    queryKey: ['/api/exceptions/critical'],
+    queryFn: async () => ([
+      { id: '1', loanNumber: 'XP12345', description: 'Missing W-2 Documents', severity: 'HIGH' as const, age: '2 days', autoFix: false },
+      { id: '2', loanNumber: 'XP12347', description: 'DTI Ratio Exceeds Guidelines', severity: 'MEDIUM' as const, age: '1 day', autoFix: false },
+      { id: '3', loanNumber: 'XP12348', description: 'API Connection Failed', severity: 'LOW' as const, age: '4 hours', autoFix: true },
+    ]),
+    refetchInterval: 15000
   });
 
-  // Update store when data changes
-  useEffect(() => {
-    if (dashboardData && dashboardData.loan_metrics) {
-      updateMetrics(dashboardData.loan_metrics);
-      updateRecentActivity(dashboardData.recent_activity || []);
-      updateDocumentProcessing(dashboardData.document_metrics || {});
-    }
-  }, [dashboardData, updateMetrics, updateRecentActivity, updateDocumentProcessing]);
-
-  useEffect(() => {
-    if (agentsData && agentsData.agents) {
-      updateAgents(agentsData.agents);
-    }
-  }, [agentsData, updateAgents]);
-
-  useEffect(() => {
-    if (exceptionsData && exceptionsData.exceptions) {
-      updateExceptions(exceptionsData.exceptions);
-    }
-  }, [exceptionsData, updateExceptions]);
-
-  useEffect(() => {
-    if (complianceData && complianceData.status) {
-      updateComplianceStatus(complianceData.status);
-    }
-  }, [complianceData, updateComplianceStatus]);
-
-  // WebSocket connection for real-time updates
-  useEffect(() => {
-    const ws = connectWebSocket();
-    
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      
-      if (data.type === 'agent_status_update') {
-        // Update specific agent status
-        updateAgents(agents.map(agent => 
-          agent.name === data.agent ? { ...agent, ...data.data } : agent
-        ));
-      } else if (data.type === 'pipeline_activity') {
-        // Add new activity to the list
-        updateRecentActivity([data.data, ...recentActivity.slice(0, 9)]);
-      }
-    };
-
-    return () => ws.close();
-  }, [agents, recentActivity, updateAgents, updateRecentActivity]);
-
-  const handleBoardPackage = async () => {
-    try {
-      // This would trigger a new loan boarding process
-      await apiRequest('POST', '/api/loans/XP12345678/board');
-      refetch();
-    } catch (error) {
-      console.error('Error starting boarding process:', error);
+  const getActivityIcon = (type: RecentActivity['type']) => {
+    switch (type) {
+      case 'loan_boarded': return <CheckCircle className="w-4 h-4 text-green-600" />;
+      case 'exception_resolved': return <CheckCircle className="w-4 h-4 text-blue-600" />;
+      case 'document_processed': return <FileText className="w-4 h-4 text-purple-600" />;
+      case 'compliance_check': return <Target className="w-4 h-4 text-orange-600" />;
+      default: return <Activity className="w-4 h-4 text-gray-600" />;
     }
   };
 
-  const handleRefresh = () => {
-    refetch();
+  const getStatusColor = (status: SystemStatus['status']) => {
+    switch (status) {
+      case 'healthy': return 'text-green-600 bg-green-50';
+      case 'warning': return 'text-yellow-600 bg-yellow-50';
+      case 'critical': return 'text-red-600 bg-red-50';
+    }
+  };
+
+  const getSeverityColor = (severity: CriticalException['severity']) => {
+    switch (severity) {
+      case 'HIGH': return 'bg-red-50 text-red-700 border-red-200';
+      case 'MEDIUM': return 'bg-yellow-50 text-yellow-700 border-yellow-200';
+      case 'LOW': return 'bg-blue-50 text-blue-700 border-blue-200';
+    }
   };
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-white">
-      {/* Header with Search */}
+      {/* Header */}
       <header className="bg-white border-b border-gray-200 px-6 py-4 shrink-0">
         <div className="flex items-center justify-between">
-          {/* Breadcrumb and Title */}
           <div>
             <div className="flex items-center caption-text mb-1">
-              <span>Loan Boarding</span>
-              <span className="mx-2">›</span>
-              <span className="text-gray-900">Command Center</span>
+              <span className="text-gray-500">Command Center</span>
             </div>
-            <h1 className="page-title" data-testid="page-title">
-              Co-Issue Boarding Pipeline
+            <h1 className="page-title text-gray-900" data-testid="page-title">
+              Mission Control
             </h1>
+            <p className="body-text text-gray-500 mt-1">
+              Real-time operational dashboard and system overview
+            </p>
           </div>
-          
-          {/* Search and Actions */}
-          <div className="flex items-center space-x-4">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search loans, documents, and more..."
-                className="w-80 px-3 py-2 border border-gray-300 rounded-md body-text focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={handleRefresh}
-              data-testid="button-refresh"
-              className="border-gray-300 text-gray-700 hover:bg-gray-50"
-            >
+          <div className="flex items-center space-x-3">
+            <Button variant="outline" size="sm" data-testid="button-refresh">
               <RefreshCw className="w-4 h-4 mr-2" />
               Refresh
             </Button>
-            <Button 
-              onClick={handleBoardPackage}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-              data-testid="button-board-package"
-            >
-              Board Package
+            <Button size="sm" data-testid="button-start-boarding">
+              <Play className="w-4 h-4 mr-2" />
+              Start Boarding
             </Button>
           </div>
         </div>
-        
-        {/* Tab Navigation */}
-        <div className="flex items-center space-x-8 mt-4">
-          <a className="text-blue-600 border-b-2 border-blue-600 pb-2 button-text">Overview</a>
-          <a className="text-gray-500 hover:text-gray-700 pb-2 nav-text">Staging</a>
-          <a className="text-gray-500 hover:text-gray-700 pb-2 nav-text">Processing</a>
-          <a className="text-gray-500 hover:text-gray-700 pb-2 nav-text">Compliance</a>
-          <a className="text-gray-500 hover:text-gray-700 pb-2 nav-text">Reports</a>
-        </div>
       </header>
 
-      {/* Content Area */}
-      <main className="flex-1 overflow-y-auto p-6 bg-white">
-        {/* Key Metrics Row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <div className="label-text text-gray-500">First-Pass Yield</div>
-            <div className="metric-large text-gray-900">{metrics.fpy || 0}%</div>
-            <div className="detail-text text-green-600">+2.1% vs last week</div>
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-6">
+        <div className="space-y-6">
+          {/* System Status */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center">
+                <Activity className="w-5 h-5 mr-2" />
+                System Status
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <Badge className={getStatusColor(systemStatus?.status || 'healthy')}>
+                    {systemStatus?.status?.toUpperCase() || 'HEALTHY'}
+                  </Badge>
+                  <span className="detail-text text-gray-600">
+                    Uptime: {systemStatus?.uptime || '0h 0m'}
+                  </span>
+                  <span className="detail-text text-gray-600">
+                    Agents: {systemStatus?.activeAgents || 0}/{systemStatus?.totalAgents || 0} Active
+                  </span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Zap className="w-4 h-4 text-green-600" />
+                  <span className="detail-text text-green-600 font-medium">All Systems Operational</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Key Performance Indicators */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {kpis?.map((kpi, index) => (
+              <Card key={index}>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="detail-text text-gray-600">{kpi.label}</p>
+                      <p className="text-2xl font-bold text-gray-900 mt-1">{kpi.value}</p>
+                      {kpi.target && (
+                        <p className="detail-text text-gray-500 mt-1">Target: {kpi.target}</p>
+                      )}
+                    </div>
+                    <div className="flex flex-col items-end">
+                      {kpi.trend === 'up' ? (
+                        <TrendingUp className="w-4 h-4 text-green-600" />
+                      ) : kpi.trend === 'down' ? (
+                        <TrendingDown className="w-4 h-4 text-red-600" />
+                      ) : (
+                        <div className="w-4 h-4" />
+                      )}
+                      <p className={`detail-text font-medium mt-1 ${
+                        kpi.trend === 'up' ? 'text-green-600' : 
+                        kpi.trend === 'down' ? 'text-red-600' : 
+                        'text-gray-600'
+                      }`}>
+                        {kpi.change}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <div className="label-text text-gray-500">Time-to-Board</div>
-            <div className="metric-large text-gray-900">{metrics.ttb || 0}h</div>
-            <div className="detail-text text-green-600">-0.3h vs target</div>
-          </div>
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <div className="label-text text-gray-500">Auto-Clear Rate</div>
-            <div className="metric-large text-gray-900">{metrics.auto_clear_rate || 0}%</div>
-            <div className="detail-text text-green-600">+5.2% vs last month</div>
-          </div>
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <div className="label-text text-gray-500">Open Exceptions</div>
-            <div className="metric-large text-gray-900">{metrics.open_exceptions || 0}</div>
-            <div className="detail-text text-orange-600">3 high priority</div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Critical Exceptions */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <AlertTriangle className="w-5 h-5 mr-2 text-red-600" />
+                    Critical Exceptions
+                  </div>
+                  <Badge variant="secondary">{criticalExceptions?.length || 0}</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {criticalExceptions?.map((exception) => (
+                    <div key={exception.id} className="flex items-center justify-between p-3 rounded-lg border">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3">
+                          <Badge className={getSeverityColor(exception.severity)}>
+                            {exception.severity}
+                          </Badge>
+                          <span className="nav-text font-medium">{exception.loanNumber}</span>
+                          {exception.autoFix && (
+                            <Badge variant="outline" className="text-blue-600 border-blue-200">
+                              Auto-Fix Available
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="detail-text text-gray-600 mt-1">{exception.description}</p>
+                        <p className="detail-text text-gray-500 mt-1">
+                          <Clock className="w-3 h-3 inline mr-1" />
+                          {exception.age}
+                        </p>
+                      </div>
+                      <Button variant="outline" size="sm" data-testid={`button-view-exception-${exception.id}`}>
+                        View
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Recent Activity */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Activity className="w-5 h-5 mr-2" />
+                  Recent Activity
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {recentActivity?.map((activity) => (
+                    <div key={activity.id} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50">
+                      {getActivityIcon(activity.type)}
+                      <div className="flex-1 min-w-0">
+                        <p className="nav-text text-gray-900">{activity.message}</p>
+                        <p className="detail-text text-gray-500 mt-1">{activity.timestamp}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
-
-        {/* Main Dashboard Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Agent Status Panel */}
-          <div className="lg:col-span-1 bg-white border border-gray-200 rounded-lg">
-            <AgentStatus agents={agents} />
-          </div>
-
-          {/* Pipeline Activity */}
-          <div className="lg:col-span-2 bg-white border border-gray-200 rounded-lg">
-            <PipelineActivity activity={recentActivity} />
-          </div>
-        </div>
-
-        {/* Detailed Panels Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Current Exceptions */}
-          <div className="bg-white border border-gray-200 rounded-lg">
-            <ExceptionsList exceptions={exceptions} />
-          </div>
-
-          {/* Compliance Status */}
-          <div className="bg-white border border-gray-200 rounded-lg">
-            <ComplianceStatus status={complianceStatus} />
-          </div>
-        </div>
-
-        {/* Document Processing Status */}
-        <div className="bg-white border border-gray-200 rounded-lg">
-          <DocumentProcessing status={documentProcessing} />
-        </div>
-      </main>
-
-      {/* Exception Detail Modal */}
-      {selectedExceptionId && (
-        <ExceptionDetailModal 
-          exceptionId={selectedExceptionId}
-          isOpen={!!selectedExceptionId}
-        />
-      )}
+      </div>
     </div>
   );
 }
