@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import PageWithAssistant from "@/components/page-with-assistant";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -128,7 +129,8 @@ export default function PurchaseAdvices() {
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <PageWithAssistant pageName="Purchase Advices">
+      <div className="flex-1 flex flex-col overflow-hidden">
       {/* Header */}
       <header className="px-6 py-4 border-b border-gray-200">
         <div className="flex items-center caption-text mb-1">
@@ -345,5 +347,6 @@ export default function PurchaseAdvices() {
         </DialogContent>
       </Dialog>
     </div>
+    </PageWithAssistant>
   );
 }

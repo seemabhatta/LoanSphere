@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import PageWithAssistant from "@/components/page-with-assistant";
 import { 
   AlertTriangle, 
   CheckCircle, 
@@ -121,7 +122,8 @@ export default function CommandCenter() {
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-white">
+    <PageWithAssistant pageName="Command Center">
+      <div className="flex-1 flex flex-col overflow-hidden bg-white">
       {/* Header */}
       <header className="bg-white border-b border-gray-200 px-6 py-4 shrink-0">
         <div className="flex items-center justify-between">
@@ -284,6 +286,7 @@ export default function CommandCenter() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </PageWithAssistant>
   );
 }

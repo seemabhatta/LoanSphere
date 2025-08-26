@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import PageWithAssistant from "@/components/page-with-assistant";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -56,7 +57,8 @@ export default function Compliance() {
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <PageWithAssistant pageName="Compliance">
+      <div className="flex-1 flex flex-col overflow-hidden">
       {/* Header */}
       <header className="px-6 py-4 border-b border-gray-200">
         <div className="flex items-center caption-text mb-1">
@@ -321,5 +323,6 @@ export default function Compliance() {
         </Tabs>
       </div>
     </div>
+    </PageWithAssistant>
   );
 }

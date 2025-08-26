@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import PageWithAssistant from "@/components/page-with-assistant";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   BarChart3, 
@@ -75,7 +76,8 @@ export default function Analytics() {
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <PageWithAssistant pageName="Analytics">
+      <div className="flex-1 flex flex-col overflow-hidden">
       {/* Header */}
       <header className="px-6 py-4 border-b border-gray-200">
         <div className="flex items-center caption-text mb-1">
@@ -470,6 +472,7 @@ export default function Analytics() {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+      </div>
+    </PageWithAssistant>
   );
 }

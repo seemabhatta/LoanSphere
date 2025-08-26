@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import PageWithAssistant from "@/components/page-with-assistant";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { 
@@ -251,7 +252,8 @@ export default function Exceptions() {
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <PageWithAssistant pageName="Exceptions">
+      <div className="flex-1 flex flex-col overflow-hidden">
       {/* Header */}
       <header className="px-6 py-4">
         <div className="flex items-center caption-text mb-1">
@@ -471,6 +473,7 @@ export default function Exceptions() {
           </CardContent>
         </Card>
       </div>
-    </div>
+      </div>
+    </PageWithAssistant>
   );
 }
