@@ -51,10 +51,7 @@ export default function DocProcessing() {
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
         {/* Processing Pipeline Status */}
         <Card>
-          <CardHeader>
-            <CardTitle className="section-header">Document Processing Pipeline</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               {/* OCR Processing */}
               <div className="text-center">
