@@ -1,11 +1,11 @@
 [phases.setup]
-nixPkgs = ['nodejs_20', 'python3', 'python3Packages.pip']
+nixPkgs = ['nodejs_20', 'python311', 'python311Packages.pip', 'python311Packages.virtualenv']
 
 [phases.install]
 cmds = [
   'npm install',
-  'cd server && python -m pip install --upgrade pip',
-  'cd server && pip install -r ../requirements.txt || pip install authlib itsdangerous httpx python-jose[cryptography] python-dotenv fastapi uvicorn loguru pydantic python-multipart sqlalchemy tinydb'
+  'python -m pip install --user --upgrade pip',
+  'python -m pip install --user -r requirements.txt'
 ]
 
 [phases.build]
