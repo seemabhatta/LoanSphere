@@ -182,24 +182,20 @@ export default function AIAssistant() {
       <div className="flex-1 overflow-hidden p-6">
         <div className="h-full flex flex-col space-y-6">
           {/* Quick Actions */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                {quickActions.map((action, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleQuickAction(action)}
-                    className="p-3 rounded-lg border hover:bg-gray-50 transition-colors group text-center"
-                    data-testid={`quick-action-${index}`}
-                  >
-                    <action.icon className="w-5 h-5 mx-auto mb-2 text-gray-600 group-hover:text-blue-600" />
-                    <p className="label-text text-gray-900">{action.label}</p>
-                    <p className="caption-text">{action.category}</p>
-                  </button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            {quickActions.map((action, index) => (
+              <button
+                key={index}
+                onClick={() => handleQuickAction(action)}
+                className="p-3 rounded-lg border hover:bg-gray-50 transition-colors group text-center"
+                data-testid={`quick-action-${index}`}
+              >
+                <action.icon className="w-5 h-5 mx-auto mb-2 text-gray-600 group-hover:text-blue-600" />
+                <p className="label-text text-gray-900">{action.label}</p>
+                <p className="caption-text">{action.category}</p>
+              </button>
+            ))}
+          </div>
           
           {/* Chat Interface */}
           <div className="flex-1 flex flex-col">
