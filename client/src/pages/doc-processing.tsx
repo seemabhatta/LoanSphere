@@ -111,68 +111,86 @@ export default function DocProcessing() {
           <table className="w-full">
             <thead className="bg-neutral-50 border-b border-neutral-200 sticky top-0">
               <tr>
-                <th 
-                  className="text-left p-4 font-medium text-neutral-700 cursor-pointer hover:bg-neutral-100"
-                  onClick={() => handleSort('xp_loan_number')}
-                  data-testid="header-loan-number"
-                >
-                  Loan Number {sortField === 'xp_loan_number' && (sortDirection === 'asc' ? '↑' : '↓')}
+                <th className="text-left py-2 px-3 text-xs font-bold text-neutral-700">
+                  <button 
+                    onClick={() => handleSort('xp_loan_number')}
+                    className="text-xs font-bold text-neutral-700 hover:text-neutral-900"
+                    data-testid="header-loan-number"
+                  >
+                    Loan Number {sortField === 'xp_loan_number' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </button>
                 </th>
-                <th 
-                  className="text-left p-4 font-medium text-neutral-700 cursor-pointer hover:bg-neutral-100"
-                  onClick={() => handleSort('document_type')}
-                  data-testid="header-document-type"
-                >
-                  Document Type {sortField === 'document_type' && (sortDirection === 'asc' ? '↑' : '↓')}
+                <th className="text-left py-2 px-3 text-xs font-bold text-neutral-700">
+                  <button 
+                    onClick={() => handleSort('document_type')}
+                    className="text-xs font-bold text-neutral-700 hover:text-neutral-900"
+                    data-testid="header-document-type"
+                  >
+                    Document Type {sortField === 'document_type' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </button>
                 </th>
-                <th 
-                  className="text-left p-4 font-medium text-neutral-700 cursor-pointer hover:bg-neutral-100"
-                  onClick={() => handleSort('xp_doc_id')}
-                  data-testid="header-doc-id"
-                >
-                  Document ID {sortField === 'xp_doc_id' && (sortDirection === 'asc' ? '↑' : '↓')}
+                <th className="text-left py-2 px-3 text-xs font-bold text-neutral-700">
+                  <button 
+                    onClick={() => handleSort('xp_doc_id')}
+                    className="text-xs font-bold text-neutral-700 hover:text-neutral-900"
+                    data-testid="header-doc-id"
+                  >
+                    Document ID {sortField === 'xp_doc_id' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </button>
                 </th>
-                <th 
-                  className="text-left p-4 font-medium text-neutral-700 cursor-pointer hover:bg-neutral-100"
-                  onClick={() => handleSort('status')}
-                  data-testid="header-status"
-                >
-                  Status {sortField === 'status' && (sortDirection === 'asc' ? '↑' : '↓')}
+                <th className="text-left py-2 px-3 text-xs font-bold text-neutral-700">
+                  <button 
+                    onClick={() => handleSort('status')}
+                    className="text-xs font-bold text-neutral-700 hover:text-neutral-900"
+                    data-testid="header-status"
+                  >
+                    Status {sortField === 'status' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </button>
                 </th>
-                <th 
-                  className="text-left p-4 font-medium text-neutral-700 cursor-pointer hover:bg-neutral-100"
-                  onClick={() => handleSort('ocr_status')}
-                  data-testid="header-ocr"
-                >
-                  OCR {sortField === 'ocr_status' && (sortDirection === 'asc' ? '↑' : '↓')}
+                <th className="text-left py-2 px-3 text-xs font-bold text-neutral-700">
+                  <button 
+                    onClick={() => handleSort('ocr_status')}
+                    className="text-xs font-bold text-neutral-700 hover:text-neutral-900"
+                    data-testid="header-ocr"
+                  >
+                    OCR {sortField === 'ocr_status' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </button>
                 </th>
-                <th 
-                  className="text-left p-4 font-medium text-neutral-700 cursor-pointer hover:bg-neutral-100"
-                  onClick={() => handleSort('classification_status')}
-                  data-testid="header-classification"
-                >
-                  Classification {sortField === 'classification_status' && (sortDirection === 'asc' ? '↑' : '↓')}
+                <th className="text-left py-2 px-3 text-xs font-bold text-neutral-700">
+                  <button 
+                    onClick={() => handleSort('classification_status')}
+                    className="text-xs font-bold text-neutral-700 hover:text-neutral-900"
+                    data-testid="header-classification"
+                  >
+                    Classification {sortField === 'classification_status' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </button>
                 </th>
-                <th 
-                  className="text-left p-4 font-medium text-neutral-700 cursor-pointer hover:bg-neutral-100"
-                  onClick={() => handleSort('extraction_status')}
-                  data-testid="header-extraction"
-                >
-                  Extraction {sortField === 'extraction_status' && (sortDirection === 'asc' ? '↑' : '↓')}
+                <th className="text-left py-2 px-3 text-xs font-bold text-neutral-700">
+                  <button 
+                    onClick={() => handleSort('extraction_status')}
+                    className="text-xs font-bold text-neutral-700 hover:text-neutral-900"
+                    data-testid="header-extraction"
+                  >
+                    Extraction {sortField === 'extraction_status' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </button>
                 </th>
-                <th 
-                  className="text-left p-4 font-medium text-neutral-700 cursor-pointer hover:bg-neutral-100"
-                  onClick={() => handleSort('validation_status')}
-                  data-testid="header-validation"
-                >
-                  Validation {sortField === 'validation_status' && (sortDirection === 'asc' ? '↑' : '↓')}
+                <th className="text-left py-2 px-3 text-xs font-bold text-neutral-700">
+                  <button 
+                    onClick={() => handleSort('validation_status')}
+                    className="text-xs font-bold text-neutral-700 hover:text-neutral-900"
+                    data-testid="header-validation"
+                  >
+                    Validation {sortField === 'validation_status' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </button>
                 </th>
-                <th 
-                  className="text-left p-4 font-medium text-neutral-700 cursor-pointer hover:bg-neutral-100"
-                  onClick={() => handleSort('created_at')}
-                  data-testid="header-created"
-                >
-                  Created {sortField === 'created_at' && (sortDirection === 'asc' ? '↑' : '↓')}
+                <th className="text-left py-2 px-3 text-xs font-bold text-neutral-700">
+                  <button 
+                    onClick={() => handleSort('created_at')}
+                    className="text-xs font-bold text-neutral-700 hover:text-neutral-900"
+                    data-testid="header-created"
+                  >
+                    Created {sortField === 'created_at' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </button>
                 </th>
               </tr>
             </thead>
