@@ -221,7 +221,7 @@ export default function DocProcessing() {
           )}
 
           <div className="flex items-center space-x-2 text-sm text-gray-600">
-            <span>
+            <span className="caption-text">
               {viewMode === 'hierarchy' ? (
                 <>Showing {Object.keys(groupedDocuments).length} loan(s), {filteredDocuments.length} docs</>
               ) : (
@@ -335,8 +335,8 @@ export default function DocProcessing() {
                     <td colSpan={10} className="p-3">
                       <div className="flex items-center space-x-3">
                         <span className="text-lg">📋</span>
-                        <span className="font-bold text-neutral-800">Loan {loanNumber}</span>
-                        <span className="text-sm text-neutral-500">({loanDocs.length} documents)</span>
+                        <span className="section-header">Loan {loanNumber}</span>
+                        <span className="caption-text">({loanDocs.length} documents)</span>
                       </div>
                     </td>
                   </tr>,
@@ -364,7 +364,7 @@ export default function DocProcessing() {
                                 {isLastInLoan ? '└─' : '├─'}
                               </span>
                             )}
-                            <span className="text-xs text-neutral-500">{loanNumber}</span>
+                            <span className="caption-text">{loanNumber}</span>
                           </div>
                         </td>
                         <td className="p-4 body-text text-neutral-700" data-testid={`type-${document.id}`}>
@@ -381,16 +381,16 @@ export default function DocProcessing() {
                               )}
                             </div>
                             <div className="flex items-center space-x-2">
-                              <span className={isChild ? 'text-blue-700' : 'text-green-700'}>
+                              <span className={`body-text ${isChild ? 'text-blue-700' : 'text-green-700'}`}>
                                 {document.document_type}
                               </span>
                               {isChild && (
-                                <span className="text-xs text-blue-500 bg-blue-100 px-2 py-1 rounded">
+                                <span className="detail-text text-blue-500 bg-blue-100 px-2 py-1 rounded">
                                   from {document.parent_doc_id}
                                 </span>
                               )}
                               {document.split_count && (
-                                <span className="text-xs text-green-500 bg-green-100 px-2 py-1 rounded">
+                                <span className="detail-text text-green-500 bg-green-100 px-2 py-1 rounded">
                                   splits into {document.split_count} docs
                                 </span>
                               )}
@@ -402,7 +402,7 @@ export default function DocProcessing() {
                             <span className="mr-3 text-xs">
                               {isChild ? `    ${isLastChild ? '└─' : '├─'}` : (isLastInLoan ? '└─' : '├─')}
                             </span>
-                            <span className={`font-mono text-sm ${isChild ? 'text-blue-600' : 'text-green-600'}`}>
+                            <span className={`code-text ${isChild ? 'text-blue-600' : 'text-green-600'}`}>
                               {document.xp_doc_id}
                             </span>
                           </div>
@@ -411,17 +411,17 @@ export default function DocProcessing() {
                           {document.parent_doc_id ? (
                             <div className="flex items-center space-x-1">
                               <FileText className="w-4 h-4 text-blue-500" />
-                              <span className="text-xs text-blue-600 font-medium">Split Document</span>
+                              <span className="detail-text text-blue-600 font-medium">Split Document</span>
                             </div>
                           ) : document.split_count ? (
                             <div className="flex items-center space-x-1">
                               <Files className="w-4 h-4 text-green-500" />
-                              <span className="text-xs text-green-600 font-medium">PDF Blob</span>
+                              <span className="detail-text text-green-600 font-medium">PDF Blob</span>
                             </div>
                           ) : (
                             <div className="flex items-center space-x-1">
                               <FileText className="w-4 h-4 text-neutral-400" />
-                              <span className="text-xs text-neutral-500">Single Doc</span>
+                              <span className="detail-text">Single Doc</span>
                             </div>
                           )}
                         </td>
@@ -469,23 +469,23 @@ export default function DocProcessing() {
                     </td>
                     <td className="p-4 body-text text-neutral-700" data-testid={`type-${document.id}`}>
                       <div className="flex items-center space-x-2">
-                        <span className={document.is_split_document ? 'text-blue-700' : 'text-green-700'}>
+                        <span className={`body-text ${document.is_split_document ? 'text-blue-700' : 'text-green-700'}`}>
                           {document.document_type}
                         </span>
                         {document.is_split_document && (
-                          <span className="text-xs text-blue-500 bg-blue-100 px-2 py-1 rounded">
+                          <span className="detail-text text-blue-500 bg-blue-100 px-2 py-1 rounded">
                             from {document.parent_doc_id}
                           </span>
                         )}
                         {document.split_count && (
-                          <span className="text-xs text-green-500 bg-green-100 px-2 py-1 rounded">
+                          <span className="detail-text text-green-500 bg-green-100 px-2 py-1 rounded">
                             splits into {document.split_count} docs
                           </span>
                         )}
                       </div>
                     </td>
                     <td className="p-4 code-text text-neutral-600" data-testid={`doc-id-${document.id}`}>
-                      <span className={`font-mono text-sm ${document.is_split_document ? 'text-blue-600' : 'text-green-600'}`}>
+                      <span className={`code-text ${document.is_split_document ? 'text-blue-600' : 'text-green-600'}`}>
                         {document.xp_doc_id}
                       </span>
                     </td>
@@ -493,17 +493,17 @@ export default function DocProcessing() {
                       {document.parent_doc_id ? (
                         <div className="flex items-center space-x-1">
                           <FileText className="w-4 h-4 text-blue-500" />
-                          <span className="text-xs text-blue-600 font-medium">Split Document</span>
+                          <span className="detail-text text-blue-600 font-medium">Split Document</span>
                         </div>
                       ) : document.split_count ? (
                         <div className="flex items-center space-x-1">
                           <Files className="w-4 h-4 text-green-500" />
-                          <span className="text-xs text-green-600 font-medium">PDF Blob</span>
+                          <span className="detail-text text-green-600 font-medium">PDF Blob</span>
                         </div>
                       ) : (
                         <div className="flex items-center space-x-1">
                           <FileText className="w-4 h-4 text-neutral-400" />
-                          <span className="text-xs text-neutral-500">Single Doc</span>
+                          <span className="detail-text">Single Doc</span>
                         </div>
                       )}
                     </td>
