@@ -114,10 +114,7 @@ export default function PipelineMonitor() {
 
           <TabsContent value="loans" className="space-y-6">
             <Card>
-              <CardHeader>
-                <CardTitle className="section-header">Loans in Pipeline</CardTitle>
-              </CardHeader>
-              <CardContent>
+              <CardContent className="pt-6">
                 <div className="space-y-4">
                   {loansData?.records?.map((record: any) => (
                     <div 
