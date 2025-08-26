@@ -13,7 +13,8 @@ nixPkgs = [
 
 [phases.install]
 cmds = [
-  'npm install'
+  'npm install',
+  'python -m pip install --user uvicorn fastapi python-dotenv tinydb'
 ]
 
 [phases.build]
