@@ -187,7 +187,7 @@ export default function AIAssistant() {
               Assistant
             </h1>
             <p className="body-text text-gray-500 mt-1">
-              Natural language interface for intelligent loan boarding assistance
+              Welcome back{user?.firstName ? `, ${user.firstName}` : ''}! Manage your loan boarding operations from your central dashboard.
             </p>
           </div>
           <div className="flex items-center space-x-2">
