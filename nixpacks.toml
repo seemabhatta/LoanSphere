@@ -10,7 +10,6 @@ nixPkgs = [
   'python311Packages.python-dotenv',
   'python311Packages.tinydb'
 ]
-nixLibs = ['uvicorn']
 
 [phases.install]
 cmds = [
