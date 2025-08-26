@@ -159,12 +159,12 @@ export default function AIAssistant() {
         <div className="flex items-center caption-text mb-1">
           <span>Command Center</span>
           <span className="mx-2">›</span>
-          <span className="text-gray-900">AI Assistant</span>
+          <span className="text-gray-900">Assistant</span>
         </div>
         <div className="flex items-center justify-between">
           <div>
             <h1 className="page-title text-gray-900" data-testid="page-title">
-              AI Assistant
+              Assistant
             </h1>
             <p className="body-text text-gray-500 mt-1">
               Natural language interface for intelligent loan boarding assistance
