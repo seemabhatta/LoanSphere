@@ -105,12 +105,6 @@ export default function SyntheticData() {
                 Generate realistic synthetic loan data for testing and development
               </p>
             </div>
-            <div className="flex items-center gap-3">
-              <Badge variant="outline" className="text-xs">
-                <Database className="w-3 h-3 mr-1" />
-                AI-Powered
-              </Badge>
-            </div>
           </div>
         </header>
 
