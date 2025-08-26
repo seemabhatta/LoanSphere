@@ -180,27 +180,7 @@ export default function AIAssistant() {
 
       {/* Content */}
       <div className="flex-1 overflow-hidden p-6">
-        <div className="h-full flex flex-col space-y-6">
-          {/* Quick Actions */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                {quickActions.map((action, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleQuickAction(action)}
-                    className="p-3 rounded-lg border hover:bg-gray-50 transition-colors group text-center"
-                    data-testid={`quick-action-${index}`}
-                  >
-                    <action.icon className="w-5 h-5 mx-auto mb-2 text-gray-600 group-hover:text-blue-600" />
-                    <p className="body-text font-medium text-gray-900 text-sm">{action.label}</p>
-                    <p className="text-xs text-gray-500">{action.category}</p>
-                  </button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-          
+        <div className="h-full flex flex-col">
           {/* Chat Interface */}
           <div className="flex-1 flex flex-col">
             <Card className="flex-1 flex flex-col">
@@ -264,6 +244,22 @@ export default function AIAssistant() {
                     </div>
                   )}
                   <div ref={messagesEndRef} />
+                </div>
+                
+                {/* Quick Actions */}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 mb-4">
+                  {quickActions.map((action, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleQuickAction(action)}
+                      className="p-2 rounded-lg border hover:bg-gray-50 transition-colors group text-center"
+                      data-testid={`quick-action-${index}`}
+                    >
+                      <action.icon className="w-4 h-4 mx-auto mb-1 text-gray-600 group-hover:text-blue-600" />
+                      <p className="body-text font-medium text-gray-900 text-xs">{action.label}</p>
+                      <p className="text-xs text-gray-500">{action.category}</p>
+                    </button>
+                  ))}
                 </div>
                 
                 {/* Input Area */}
