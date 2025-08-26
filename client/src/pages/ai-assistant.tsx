@@ -39,10 +39,7 @@ export default function AIAssistant() {
   const { user } = useAuth();
   
   const getWelcomeMessage = () => {
-    const firstName = user?.firstName;
-    const welcomeName = firstName ? `, ${firstName}` : '';
-    
-    return `Welcome back${welcomeName}! I'm your AI Assistant for Xpanse Loan Xchange. I can help you manage your loan boarding operations from your central dashboard with exception management, analytics, and system operations. What would you like to know?`;
+    return `Hello! I'm your AI Assistant for Xpanse Loan Xchange. I can help you with loan boarding, exception management, analytics, and system operations. What would you like to know?`;
   };
 
   const [messages, setMessages] = useState<Message[]>([
@@ -81,15 +78,6 @@ export default function AIAssistant() {
     scrollToBottom();
   }, [messages]);
 
-  // Update welcome message when user data loads
-  useEffect(() => {
-    if (user && messages.length === 1 && messages[0].id === '1') {
-      setMessages([{
-        ...messages[0],
-        content: getWelcomeMessage()
-      }]);
-    }
-  }, [user]);
 
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
