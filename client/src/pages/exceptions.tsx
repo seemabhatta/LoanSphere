@@ -1,39 +1,109 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import ExceptionDetailModal from "@/components/exception-detail-modal";
-import { AlertTriangle, CheckCircle, XCircle, Clock, Filter } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { 
+  AlertTriangle, 
+  CheckCircle, 
+  XCircle, 
+  Clock, 
+  Filter,
+  Search,
+  FileText,
+  AlertCircle,
+  Users,
+  Wrench,
+  ArrowRight,
+  UserCheck
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+interface Exception {
+  id: string;
+  xp_loan_number: string;
+  rule_name: string;
+  severity: 'HIGH' | 'MEDIUM' | 'LOW';
+  status: 'open' | 'resolved' | 'dismissed';
+  description: string;
+  detected_at: string;
+  confidence?: number;
+  auto_fix_suggestion?: any;
+  category: string;
+  days_old: number;
+  assigned_to?: string;
+}
+
+interface ExceptionStats {
+  total_open: number;
+  total_resolved: number;
+  by_severity: {
+    high: number;
+    medium: number;
+    low: number;
+  };
+  by_category: {
+    documentation: number;
+    data_validation: number;
+    investor_compliance: number;
+    manual_review: number;
+    system_processing: number;
+  };
+  by_age: {
+    under_24h: number;
+    one_to_three_days: number;
+    over_three_days: number;
+  };
+}
+
 export default function Exceptions() {
-  const [selectedExceptionId, setSelectedExceptionId] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string>('');
-  const [severityFilter, setSeverityFilter] = useState<string>('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [severityFilter, setSeverityFilter] = useState<string>('all');
+  const [ageFilter, setAgeFilter] = useState<string>('all');
+  const [selectedExceptions, setSelectedExceptions] = useState<string[]>([]);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const { data: exceptionsData, refetch } = useQuery({
-    queryKey: ['/api/exceptions', { status: statusFilter, severity: severityFilter }],
+  const { data: exceptionsData } = useQuery({
+    queryKey: ['/api/exceptions'],
+    queryFn: async () => {
+      const response = await fetch('/api/exceptions/');
+      if (!response.ok) {
+        throw new Error('Failed to fetch exceptions');
+      }
+      return response.json();
+    },
     refetchInterval: 15000
   });
 
   const { data: statsData } = useQuery({
     queryKey: ['/api/exceptions/stats/summary'],
+    queryFn: async () => {
+      const response = await fetch('/api/exceptions/stats/summary');
+      if (!response.ok) {
+        throw new Error('Failed to fetch exception stats');
+      }
+      return response.json();
+    },
     refetchInterval: 30000
   });
 
   const resolveExceptionMutation = useMutation({
-    mutationFn: async ({ exceptionId, resolutionType, notes }: any) => {
-      return await apiRequest('POST', `/api/exceptions/${exceptionId}/resolve`, {
-        resolution_type: resolutionType,
-        resolved_by: 'user',
-        notes
+    mutationFn: async ({ exceptionId, notes }: { exceptionId: string; notes?: string }) => {
+      const response = await fetch(`/api/exceptions/${exceptionId}/resolve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          resolution_type: 'manual',
+          resolved_by: 'user',
+          notes
+        })
       });
+      if (!response.ok) throw new Error('Failed to resolve exception');
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/exceptions'] });
@@ -42,75 +112,142 @@ export default function Exceptions() {
         title: "Exception Resolved",
         description: "Exception has been successfully resolved."
       });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to resolve exception.",
-        variant: "destructive"
-      });
     }
   });
 
-  const applyAutoFixMutation = useMutation({
-    mutationFn: async (exceptionId: string) => {
-      return await apiRequest('POST', `/api/exceptions/${exceptionId}/auto-fix`, {
-        applied_by: 'user'
-      });
+  const bulkResolveMutation = useMutation({
+    mutationFn: async (exceptionIds: string[]) => {
+      const promises = exceptionIds.map(id => 
+        fetch(`/api/exceptions/${id}/resolve`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            resolution_type: 'bulk',
+            resolved_by: 'user',
+            notes: 'Bulk resolved'
+          })
+        })
+      );
+      await Promise.all(promises);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/exceptions'] });
       queryClient.invalidateQueries({ queryKey: ['/api/exceptions/stats/summary'] });
+      setSelectedExceptions([]);
       toast({
-        title: "Auto-Fix Applied",
-        description: "Auto-fix has been successfully applied."
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to apply auto-fix.",
-        variant: "destructive"
+        title: "Exceptions Resolved",
+        description: `${selectedExceptions.length} exceptions have been resolved.`
       });
     }
   });
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'HIGH':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 'MEDIUM':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'LOW':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
+  // Mock transformation of exceptions data to include our operational categories
+  const transformExceptions = (exceptions: any[]): Exception[] => {
+    if (!exceptions) return [];
+    
+    return exceptions.map(exception => {
+      // Categorize based on rule_name or description
+      let category = 'system_processing';
+      if (exception.rule_name?.toLowerCase().includes('document') || exception.rule_name?.toLowerCase().includes('missing')) {
+        category = 'documentation';
+      } else if (exception.rule_name?.toLowerCase().includes('validation') || exception.rule_name?.toLowerCase().includes('field')) {
+        category = 'data_validation';
+      } else if (exception.rule_name?.toLowerCase().includes('compliance') || exception.rule_name?.toLowerCase().includes('investor')) {
+        category = 'investor_compliance';
+      } else if (exception.rule_name?.toLowerCase().includes('review') || exception.rule_name?.toLowerCase().includes('manual')) {
+        category = 'manual_review';
+      }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'open':
-        return 'bg-red-100 text-red-800';
-      case 'resolved':
-        return 'bg-green-100 text-green-800';
-      case 'dismissed':
-        return 'bg-gray-100 text-gray-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
+      const detectedDate = new Date(exception.detected_at);
+      const daysOld = Math.floor((Date.now() - detectedDate.getTime()) / (1000 * 60 * 60 * 24));
 
-  const handleResolveException = async (exceptionId: string, resolutionType: string) => {
-    resolveExceptionMutation.mutate({ 
-      exceptionId, 
-      resolutionType, 
-      notes: `Resolved via ${resolutionType}` 
+      return {
+        ...exception,
+        category,
+        days_old: daysOld
+      };
     });
   };
 
-  const handleApplyAutoFix = async (exceptionId: string) => {
-    applyAutoFixMutation.mutate(exceptionId);
+  const exceptions = transformExceptions(exceptionsData?.exceptions || []);
+
+  // Filter exceptions
+  const filteredExceptions = exceptions.filter(exception => {
+    const matchesSearch = searchTerm === '' || 
+      exception.xp_loan_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      exception.rule_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      exception.description.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesCategory = categoryFilter === 'all' || exception.category === categoryFilter;
+    const matchesSeverity = severityFilter === 'all' || exception.severity === severityFilter;
+    
+    let matchesAge = true;
+    if (ageFilter === 'under_24h') matchesAge = exception.days_old === 0;
+    else if (ageFilter === 'one_to_three_days') matchesAge = exception.days_old >= 1 && exception.days_old <= 3;
+    else if (ageFilter === 'over_three_days') matchesAge = exception.days_old > 3;
+    
+    return matchesSearch && matchesCategory && matchesSeverity && matchesAge;
+  });
+
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'documentation': return FileText;
+      case 'data_validation': return AlertCircle;
+      case 'investor_compliance': return CheckCircle;
+      case 'manual_review': return Users;
+      case 'system_processing': return Wrench;
+      default: return AlertTriangle;
+    }
+  };
+
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'documentation': return 'bg-blue-100 text-blue-800';
+      case 'data_validation': return 'bg-yellow-100 text-yellow-800';
+      case 'investor_compliance': return 'bg-purple-100 text-purple-800';
+      case 'manual_review': return 'bg-orange-100 text-orange-800';
+      case 'system_processing': return 'bg-gray-100 text-gray-800';
+      default: return 'bg-red-100 text-red-800';
+    }
+  };
+
+  const getCategoryLabel = (category: string) => {
+    switch (category) {
+      case 'documentation': return 'Documentation Required';
+      case 'data_validation': return 'Data Validation Needed';
+      case 'investor_compliance': return 'Investor Compliance';
+      case 'manual_review': return 'Manual Review';
+      case 'system_processing': return 'System/Processing';
+      default: return 'Other';
+    }
+  };
+
+  const getSeverityColor = (severity: string) => {
+    switch (severity) {
+      case 'HIGH': return 'bg-red-100 text-red-800';
+      case 'MEDIUM': return 'bg-yellow-100 text-yellow-800';
+      case 'LOW': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getAgeColor = (daysOld: number) => {
+    if (daysOld === 0) return 'text-green-600';
+    if (daysOld <= 3) return 'text-yellow-600';
+    return 'text-red-600';
+  };
+
+  const handleBulkResolve = () => {
+    if (selectedExceptions.length === 0) return;
+    bulkResolveMutation.mutate(selectedExceptions);
+  };
+
+  const toggleException = (exceptionId: string) => {
+    setSelectedExceptions(prev => 
+      prev.includes(exceptionId) 
+        ? prev.filter(id => id !== exceptionId)
+        : [...prev, exceptionId]
+    );
   };
 
   return (
@@ -125,30 +262,138 @@ export default function Exceptions() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="page-title" data-testid="page-title">
-              Exceptions
+              Exception Management
             </h1>
-            <p className="text-gray-500 mt-1">
-              Manage and resolve loan boarding exceptions
+            <p className="body-text text-gray-500 mt-1">
+              Operational exception tracking and resolution
             </p>
           </div>
           
-          <div className="flex items-center space-x-4">
+          {selectedExceptions.length > 0 && (
             <div className="flex items-center space-x-2">
-              <Filter className="w-4 h-4 text-gray-500" />
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[120px]" data-testid="filter-status">
-                  <SelectValue placeholder="Status" />
+              <span className="detail-text text-gray-600">
+                {selectedExceptions.length} selected
+              </span>
+              <Button 
+                onClick={handleBulkResolve}
+                disabled={bulkResolveMutation.isPending}
+                className="bg-green-600 hover:bg-green-700 text-white"
+                data-testid="bulk-resolve-btn"
+              >
+                <UserCheck className="w-4 h-4 mr-2" />
+                Bulk Resolve
+              </Button>
+            </div>
+          )}
+        </div>
+      </header>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-6">
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="detail-text text-neutral-500">Total Open</p>
+                  <p className="section-header text-neutral-800 mt-1" data-testid="stat-total-open">
+                    {statsData?.total_open || 0}
+                  </p>
+                </div>
+                <AlertTriangle className="w-8 h-8 text-red-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="detail-text text-neutral-500">High Priority</p>
+                  <p className="section-header text-red-600 mt-1" data-testid="stat-high-priority">
+                    {statsData?.by_severity?.high || 0}
+                  </p>
+                </div>
+                <XCircle className="w-8 h-8 text-red-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="detail-text text-neutral-500">Over 3 Days</p>
+                  <p className="section-header text-orange-600 mt-1">
+                    {filteredExceptions.filter(e => e.days_old > 3).length}
+                  </p>
+                </div>
+                <Clock className="w-8 h-8 text-orange-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="detail-text text-neutral-500">Auto-Fix Available</p>
+                  <p className="section-header text-blue-600 mt-1">
+                    {filteredExceptions.filter(e => e.auto_fix_suggestion).length}
+                  </p>
+                </div>
+                <Wrench className="w-8 h-8 text-blue-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="detail-text text-neutral-500">Resolved Today</p>
+                  <p className="section-header text-green-600 mt-1" data-testid="stat-resolved">
+                    {statsData?.total_resolved || 0}
+                  </p>
+                </div>
+                <CheckCircle className="w-8 h-8 text-green-500" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Filters */}
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center space-x-2">
+                <Search className="w-4 h-4 text-gray-500" />
+                <Input
+                  placeholder="Search loans, rules, descriptions..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-64"
+                  data-testid="search-input"
+                />
+              </div>
+
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-48" data-testid="filter-category">
+                  <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="open">Open</SelectItem>
-                  <SelectItem value="resolved">Resolved</SelectItem>
-                  <SelectItem value="dismissed">Dismissed</SelectItem>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  <SelectItem value="documentation">📋 Documentation Required</SelectItem>
+                  <SelectItem value="data_validation">⚠️ Data Validation</SelectItem>
+                  <SelectItem value="investor_compliance">🏦 Investor Compliance</SelectItem>
+                  <SelectItem value="manual_review">👤 Manual Review</SelectItem>
+                  <SelectItem value="system_processing">🔄 System/Processing</SelectItem>
                 </SelectContent>
               </Select>
-              
+
               <Select value={severityFilter} onValueChange={setSeverityFilter}>
-                <SelectTrigger className="w-[120px]" data-testid="filter-severity">
+                <SelectTrigger className="w-32" data-testid="filter-severity">
                   <SelectValue placeholder="Severity" />
                 </SelectTrigger>
                 <SelectContent>
@@ -158,186 +403,149 @@ export default function Exceptions() {
                   <SelectItem value="LOW">Low</SelectItem>
                 </SelectContent>
               </Select>
+
+              <Select value={ageFilter} onValueChange={setAgeFilter}>
+                <SelectTrigger className="w-40" data-testid="filter-age">
+                  <SelectValue placeholder="Age" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Ages</SelectItem>
+                  <SelectItem value="under_24h">Under 24h</SelectItem>
+                  <SelectItem value="one_to_three_days">1-3 Days</SelectItem>
+                  <SelectItem value="over_three_days">Over 3 Days</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <span className="detail-text text-gray-500">
+                {filteredExceptions.length} of {exceptions.length} exceptions
+              </span>
             </div>
-          </div>
-        </div>
-      </header>
+          </CardContent>
+        </Card>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6">
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="label-text text-neutral-500">Total Open</p>
-                  <p className="metric-large text-neutral-800 mt-2" data-testid="stat-total-open">
-                    {statsData?.total_open || 0}
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                  <AlertTriangle className="w-6 h-6 text-red-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="label-text text-neutral-500">High Priority</p>
-                  <p className="metric-large text-neutral-800 mt-2" data-testid="stat-high-priority">
-                    {statsData?.by_severity?.high || 0}
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                  <XCircle className="w-6 h-6 text-red-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="label-text text-neutral-500">Resolved</p>
-                  <p className="metric-large text-neutral-800 mt-2" data-testid="stat-resolved">
-                    {statsData?.total_resolved || 0}
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <CheckCircle className="w-6 h-6 text-green-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="label-text text-neutral-500">Avg Resolution Time</p>
-                  <p className="metric-large text-neutral-800 mt-2">2.4h</p>
-                </div>
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Clock className="w-6 h-6 text-blue-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Exceptions List */}
+        {/* Exceptions Table */}
         <Card>
           <CardHeader>
-            <CardTitle className="section-header">Exception Details</CardTitle>
+            <CardTitle className="section-header">Active Exceptions</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {exceptionsData?.exceptions?.map((exception: any) => (
-                <div 
-                  key={exception.id}
-                  className="border border-neutral-200 rounded-lg p-4 hover:bg-neutral-50 transition-colors cursor-pointer"
-                  onClick={() => setSelectedExceptionId(exception.id)}
-                  data-testid={`exception-${exception.xp_loan_number}`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <Badge className={getSeverityColor(exception.severity)}>
-                          {exception.severity}
-                        </Badge>
-                        <span className="code-text text-neutral-600">
-                          {exception.xp_loan_number}
-                        </span>
-                        <Badge className={getStatusColor(exception.status)} variant="outline">
-                          {exception.status}
-                        </Badge>
-                      </div>
-                      
-                      <p className="label-text text-neutral-800 mb-1">
-                        {exception.rule_name}
-                      </p>
-                      <p className="detail-text text-neutral-500">
-                        {exception.description}
-                      </p>
-                      
-                      <div className="flex items-center space-x-4 mt-3 detail-text text-neutral-500">
-                        <span>
-                          <Clock className="w-3 h-3 inline mr-1" />
-                          {new Date(exception.detected_at).toLocaleString()}
-                        </span>
-                        <span>Confidence: {exception.confidence ? `${(exception.confidence * 100).toFixed(0)}%` : 'N/A'}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex flex-col space-y-2">
-                      {exception.auto_fix_suggestion && exception.status === 'open' && (
-                        <Button
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleApplyAutoFix(exception.id);
-                          }}
-                          disabled={applyAutoFixMutation.isPending}
-                          className="bg-green-600 hover:bg-green-700 text-white"
-                          data-testid={`button-auto-fix-${exception.xp_loan_number}`}
-                        >
-                          Apply Auto-Fix
-                        </Button>
-                      )}
-                      
-                      {exception.status === 'open' && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleResolveException(exception.id, 'manual');
-                          }}
-                          disabled={resolveExceptionMutation.isPending}
-                          data-testid={`button-resolve-${exception.xp_loan_number}`}
-                        >
-                          Resolve
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {exception.auto_fix_suggestion && (
-                    <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                      <p className="detail-text text-blue-600 mb-1">
-                        Auto-Fix Available
-                      </p>
-                      <p className="detail-text text-blue-800">
-                        {exception.auto_fix_suggestion.description}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              ))}
+            <div className="overflow-x-auto">
+              <table className="min-w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-2 px-3 w-8">
+                      <input
+                        type="checkbox"
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedExceptions(filteredExceptions.map(e => e.id));
+                          } else {
+                            setSelectedExceptions([]);
+                          }
+                        }}
+                        checked={selectedExceptions.length === filteredExceptions.length && filteredExceptions.length > 0}
+                      />
+                    </th>
+                    <th className="text-left py-2 px-3 text-xs font-bold text-gray-700">Loan #</th>
+                    <th className="text-left py-2 px-3 text-xs font-bold text-gray-700">Category</th>
+                    <th className="text-left py-2 px-3 text-xs font-bold text-gray-700">Exception</th>
+                    <th className="text-left py-2 px-3 text-xs font-bold text-gray-700">Severity</th>
+                    <th className="text-left py-2 px-3 text-xs font-bold text-gray-700">Age</th>
+                    <th className="text-left py-2 px-3 text-xs font-bold text-gray-700">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredExceptions.map((exception) => {
+                    const CategoryIcon = getCategoryIcon(exception.category);
+                    return (
+                      <tr 
+                        key={exception.id} 
+                        className="border-b border-gray-100 hover:bg-gray-50"
+                        data-testid={`exception-row-${exception.xp_loan_number}`}
+                      >
+                        <td className="py-3 px-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedExceptions.includes(exception.id)}
+                            onChange={() => toggleException(exception.id)}
+                          />
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className="code-text text-blue-600 font-medium">
+                            {exception.xp_loan_number}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3">
+                          <div className="flex items-center space-x-2">
+                            <CategoryIcon className="w-4 h-4" />
+                            <Badge className={`${getCategoryColor(exception.category)} text-xs`}>
+                              {getCategoryLabel(exception.category)}
+                            </Badge>
+                          </div>
+                        </td>
+                        <td className="py-3 px-3">
+                          <div>
+                            <p className="body-text text-gray-900 font-medium">{exception.rule_name}</p>
+                            <p className="detail-text text-gray-600">{exception.description}</p>
+                          </div>
+                        </td>
+                        <td className="py-3 px-3">
+                          <Badge className={`${getSeverityColor(exception.severity)} text-xs`}>
+                            {exception.severity}
+                          </Badge>
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className={`detail-text font-medium ${getAgeColor(exception.days_old)}`}>
+                            {exception.days_old === 0 ? 'Today' : `${exception.days_old}d`}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3">
+                          <div className="flex items-center space-x-2">
+                            {exception.auto_fix_suggestion && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-xs bg-blue-50 text-blue-600 hover:bg-blue-100"
+                                data-testid={`auto-fix-${exception.xp_loan_number}`}
+                              >
+                                <Wrench className="w-3 h-3 mr-1" />
+                                Auto-Fix
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => resolveExceptionMutation.mutate({ exceptionId: exception.id })}
+                              disabled={resolveExceptionMutation.isPending}
+                              className="text-xs"
+                              data-testid={`resolve-${exception.xp_loan_number}`}
+                            >
+                              <CheckCircle className="w-3 h-3 mr-1" />
+                              Resolve
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
               
-              {!exceptionsData?.exceptions?.length && (
-                <div className="text-center py-8 text-neutral-500" data-testid="no-exceptions">
-                  No exceptions found matching the current filters
+              {filteredExceptions.length === 0 && (
+                <div className="text-center py-8" data-testid="no-exceptions">
+                  <AlertTriangle className="h-12 w-12 mx-auto text-gray-300 mb-4" />
+                  <p className="body-text text-gray-500">
+                    {exceptions.length === 0 
+                      ? "No exceptions found" 
+                      : "No exceptions match the current filters"
+                    }
+                  </p>
                 </div>
               )}
             </div>
           </CardContent>
         </Card>
       </div>
-
-      {/* Exception Detail Modal */}
-      {selectedExceptionId && (
-        <ExceptionDetailModal 
-          exceptionId={selectedExceptionId}
-          isOpen={!!selectedExceptionId}
-          onClose={() => setSelectedExceptionId(null)}
-        />
-      )}
     </div>
   );
 }
