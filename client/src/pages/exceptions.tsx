@@ -253,7 +253,7 @@ export default function Exceptions() {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="px-6 py-4 border-b border-gray-200">
+      <header className="px-6 py-4">
         <div className="flex items-center caption-text mb-1">
           <span>Loan Boarding</span>
           <span className="mx-2">›</span>
