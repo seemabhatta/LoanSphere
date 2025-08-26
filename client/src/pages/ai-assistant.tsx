@@ -212,41 +212,6 @@ export default function AIAssistant() {
             </CardContent>
           </Card>
           
-          {/* AI Capabilities */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center text-base">
-                <Brain className="w-4 h-4 mr-2" />
-                AI Capabilities
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="flex items-start space-x-3">
-                  <div className="w-3 h-3 bg-green-500 rounded-full mt-1 flex-shrink-0"></div>
-                  <div>
-                    <p className="body-text font-medium">Real-time Analysis</p>
-                    <p className="text-xs text-gray-500">Live data insights and recommendations</p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <div className="w-3 h-3 bg-blue-500 rounded-full mt-1 flex-shrink-0"></div>
-                  <div>
-                    <p className="body-text font-medium">Predictive Intelligence</p>
-                    <p className="text-xs text-gray-500">Forecasting and early warning alerts</p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <div className="w-3 h-3 bg-purple-500 rounded-full mt-1 flex-shrink-0"></div>
-                  <div>
-                    <p className="body-text font-medium">Automated Actions</p>
-                    <p className="text-xs text-gray-500">Smart exception resolution and workflow optimization</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
           {/* Chat Interface */}
           <div className="flex-1 flex flex-col">
             <Card className="flex-1 flex flex-col">
