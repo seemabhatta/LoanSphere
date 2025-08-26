@@ -1,0 +1,15 @@
+[phases.setup]
+nixPkgs = ['nodejs_20', 'python3', 'python3Packages.pip']
+
+[phases.install]
+cmds = [
+  'npm install',
+  'cd server && python -m pip install --upgrade pip',
+  'cd server && pip install -r ../requirements.txt || pip install authlib itsdangerous httpx python-jose[cryptography] python-dotenv fastapi uvicorn loguru pydantic python-multipart sqlalchemy tinydb'
+]
+
+[phases.build]
+cmds = ['npm run build']
+
+[start]
+cmd = 'npm run start'
