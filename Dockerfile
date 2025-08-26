@@ -31,8 +31,10 @@ COPY --from=builder /app/package*.json ./
 COPY server ./server
 COPY requirements.txt ./
 
-# Install Python dependencies
-RUN pip3 install -r requirements.txt
+# Create virtual environment and install Python dependencies
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+RUN pip install -r requirements.txt
 
 EXPOSE 8080
 
