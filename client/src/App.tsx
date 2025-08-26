@@ -51,8 +51,8 @@ function Router() {
         <div className="flex-1 p-4 transition-all duration-300 overflow-hidden">
           <div className="bg-white rounded-lg shadow-sm h-full overflow-y-auto">
             <Switch>
-              <Route path="/" component={CommandCenter} />
-              <Route path="/ai-assistant" component={AIAssistant} />
+              <Route path="/" component={AIAssistant} />
+              <Route path="/command-center" component={CommandCenter} />
               <Route path="/pipeline" component={PipelineMonitor} />
               <Route path="/doc-processing" component={DocProcessing} />
               <Route path="/exceptions" component={Exceptions} />
