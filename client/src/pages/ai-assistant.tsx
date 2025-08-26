@@ -188,13 +188,7 @@ export default function AIAssistant() {
         <div className="h-full flex flex-col space-y-6">
           {/* Quick Actions */}
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center text-base">
-                <Lightbulb className="w-4 h-4 mr-2" />
-                Quick Actions
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                 {quickActions.map((action, index) => (
                   <button
