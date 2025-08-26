@@ -13,6 +13,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      
+      // Return mock user for local development
+      if (process.env.NODE_ENV === 'development' && userId === 'local-dev-user') {
+        return res.json({
+          id: 'local-dev-user',
+          email: 'dev@localhost',
+          firstName: 'Local',
+          lastName: 'Developer',
+          profileImageUrl: null
+        });
+      }
+      
       const user = await storage.getUser(userId);
       res.json(user);
     } catch (error) {

@@ -8,7 +8,10 @@ import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
 
-if (!process.env.REPLIT_DOMAINS) {
+// Check if we're in local development mode
+const isLocalDevelopment = process.env.NODE_ENV === 'development' && !process.env.REPLIT_DOMAINS;
+
+if (!process.env.REPLIT_DOMAINS && !isLocalDevelopment) {
   throw new Error("Environment variable REPLIT_DOMAINS not provided");
 }
 
@@ -67,6 +70,12 @@ async function upsertUser(
 }
 
 export async function setupAuth(app: Express) {
+  // Skip auth setup in local development mode
+  if (isLocalDevelopment) {
+    console.log("🚧 Running in local development mode - authentication disabled");
+    return;
+  }
+
   app.set("trust proxy", 1);
   app.use(getSession());
   app.use(passport.initialize());
@@ -128,6 +137,15 @@ export async function setupAuth(app: Express) {
 }
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
+  // Skip authentication in local development mode
+  if (isLocalDevelopment) {
+    // Provide a mock user for local development
+    (req as any).user = {
+      claims: { sub: 'local-dev-user' }
+    };
+    return next();
+  }
+
   const user = req.user as any;
 
   if (!req.isAuthenticated() || !user.expires_at) {
