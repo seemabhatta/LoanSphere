@@ -14,6 +14,9 @@ export type GraphSpec = {
 export default function AssistantGraphInteractive({ spec, onNodeClick }: { spec: GraphSpec, onNodeClick?: (id: string, label?: string) => void }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const networkRef = useRef<any>(null);
+  // Track expansions: nodeId -> { nodes: string[], edges: string[] }
+  const expansionsRef = useRef<Record<string, { nodes: string[]; edges: string[] }>>({});
+  const expandedRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -26,7 +29,7 @@ export default function AssistantGraphInteractive({ spec, onNodeClick }: { spec:
           (spec.nodes || []).map((n) => ({ id: n.id, label: n.label || n.id }))
         );
         const edges = new vis.DataSet(
-          (spec.edges || []).map((e) => ({ from: e.source, to: e.target, label: e.label }))
+          (spec.edges || []).map((e) => ({ id: `${e.source}->${e.target}:${e.label || ''}` , from: e.source, to: e.target, label: e.label }))
         );
 
         const data = { nodes, edges };
@@ -51,6 +54,52 @@ export default function AssistantGraphInteractive({ spec, onNodeClick }: { spec:
             }
           });
         }
+
+        // Double-click to expand/collapse neighbors via API
+        networkRef.current.on('doubleClick', async (params: any) => {
+          if (!params?.nodes?.length) return;
+          const nodeId = params.nodes[0];
+          // Collapse if already expanded
+          if (expandedRef.current.has(nodeId)) {
+            const exp = expansionsRef.current[nodeId];
+            if (exp) {
+              try { edges.remove(exp.edges); } catch {}
+              try { nodes.remove(exp.nodes); } catch {}
+            }
+            delete expansionsRef.current[nodeId];
+            expandedRef.current.delete(nodeId);
+            return;
+          }
+          // Expand: fetch neighbors
+          try {
+            const res = await fetch('/api/graph/neighbors', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ node_id: nodeId })
+            });
+            if (!res.ok) return;
+            const payload = await res.json();
+            const addedNodes: string[] = [];
+            const addedEdges: string[] = [];
+            (payload.nodes || []).forEach((n: any) => {
+              if (!nodes.get(n.id)) {
+                nodes.add({ id: n.id, label: n.label || n.id });
+                addedNodes.push(n.id);
+              }
+            });
+            (payload.edges || []).forEach((e: any) => {
+              const eid = e.id || `${e.source}->${e.target}:${e.label || ''}`;
+              if (!edges.get(eid)) {
+                edges.add({ id: eid, from: e.source, to: e.target, label: e.label });
+                addedEdges.push(eid);
+              }
+            });
+            expansionsRef.current[nodeId] = { nodes: addedNodes, edges: addedEdges };
+            expandedRef.current.add(nodeId);
+          } catch {
+            // ignore
+          }
+        });
       } catch (e) {
         // Fallback: do nothing if library load fails
       }

@@ -16,6 +16,7 @@ load_dotenv(dotenv_path="../.env")
 
 # from database import init_db, get_db  # Using TinyDB instead
 from routers import loans, exceptions, compliance, documents, metrics, staging, purchase_advices, commitments, auth, loan_data, ai_agent
+from routers import graph as graph_router
 from services.loan_service import LoanService
 
 # WebSocket connection manager
@@ -95,6 +96,7 @@ app.include_router(purchase_advices.router, prefix="/api/purchase-advices", tags
 app.include_router(commitments.router, prefix="/api/commitments", tags=["commitments"])
 app.include_router(loan_data.router, prefix="/api/loan-data", tags=["loan-data"])
 app.include_router(ai_agent.router, prefix="/api/ai-agent", tags=["ai-agent"])
+app.include_router(graph_router.router, prefix="/api/graph", tags=["graph"])
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
