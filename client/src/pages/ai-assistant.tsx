@@ -343,7 +343,7 @@ export default function AIAssistant() {
             </div>
 
             {/* Input Area - At the bottom of chat */}
-            <div className="border-t border-gray-200 bg-white p-4">
+            <div className="bg-white p-4">
               <div className="flex items-center space-x-2">
                 <div className="flex-1 relative">
                   <Input
