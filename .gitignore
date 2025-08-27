@@ -179,3 +179,11 @@ server/public
 vite.config.ts.*
 *.tar.gz
 server/__pycache__/main.cpython-312.pyc
+server/data/commitments.json
+server/data/documents_metadata.json
+server/data/exceptions.json
+server/data/loan_data.json
+server/data/loan_sphere.json
+server/data/loan_tracking.json
+server/data/purchase_advice.json
+server/data/stage.json

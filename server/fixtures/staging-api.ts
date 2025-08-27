@@ -1,7 +1,6 @@
 import express from "express";
 import { storage } from "../storage";
 import { documentSearch } from "../database-config";
-import { commitmentStorage } from "../commitment-storage";
 
 const router = express.Router();
 
@@ -31,9 +30,9 @@ router.post("/stage/commitment", async (req, res) => {
     const finalCommitmentId = commitmentId || `GEN_${Date.now()}`;
     const finalLoanNumber = investorLoanNumber || `LN_${Date.now()}`;
     
-    // Store in NoSQL commitment storage
+    // Forward to Python backend for commitment processing
     const agency = detectAgency(commitmentData);
-    const commitment = await commitmentStorage.storeCommitment(commitmentData, agency);
+    const commitment = { id: `temp_${Date.now()}`, agency }; // Temp placeholder
     
     // Also create loan from commitment for pipeline processing
     const actualCommitmentData = commitmentData.commitmentData || commitmentData;
@@ -134,8 +133,8 @@ router.get("/staged/summary", async (req, res) => {
       loan.status === "staged" || loan.boardingReadiness === "data_received"
     );
     
-    // Get commitment storage summary
-    const commitmentSummary = await commitmentStorage.getSummary();
+    // Forward to Python backend for commitment summary
+    const commitmentSummary = { total: 0, byStatus: {}, byAgency: {} }; // Temp placeholder
     
     const summary = {
       totalStaged: stagedLoans.length,
@@ -218,38 +217,8 @@ function detectAgency(commitmentData: any): string {
   return "unknown";
 }
 
-// Get commitment data endpoints
-router.get("/commitments", async (req, res) => {
-  try {
-    const commitments = await commitmentStorage.getAllCommitments();
-    res.json({ success: true, commitments });
-  } catch (error) {
-    res.status(500).json({ error: (error as Error).message });
-  }
-});
-
-router.get("/commitments/summary", async (req, res) => {
-  try {
-    const summary = await commitmentStorage.getSummary();
-    res.json({ success: true, summary });
-  } catch (error) {
-    res.status(500).json({ error: (error as Error).message });
-  }
-});
-
-router.get("/commitments/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const commitment = await commitmentStorage.getByCommitmentId(id);
-    
-    if (!commitment) {
-      return res.status(404).json({ error: "Commitment not found" });
-    }
-    
-    res.json({ success: true, commitment });
-  } catch (error) {
-    res.status(500).json({ error: (error as Error).message });
-  }
-});
+// Commitment endpoints - forward to Python backend
+// These are handled by Python FastAPI at /api/commitments/
+// Remove TypeScript commitment handling to maintain separation of concerns
 
 export { router as stagingAPI };

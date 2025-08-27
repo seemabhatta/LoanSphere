@@ -212,11 +212,7 @@ class LoanService:
             "servicer_number": commitment_data.get("servicerNumber"),
             "status": commitment_data.get("status", "pending").lower(),
             "product": commitment_data.get("product"),
-            "commitment_id": commitment_data.get("commitmentId"),
-            "current_commitment_amount": commitment_data.get("currentCommitmentAmount"),
-            "purchased_amount": commitment_data.get("purchasedAmount", 0),
-            "remaining_balance": commitment_data.get("remainingBalance"),
-            "min_ptr": commitment_data.get("minPTR"),
+            # Commitment fields removed - commitments handled separately in TinyDB
             "metadata": {
                 "source": "commitment",
                 "raw_data": commitment_data
@@ -234,7 +230,7 @@ class LoanService:
             "seller_number": pa_data.get("sellerNumber"),
             "servicer_number": pa_data.get("servicerNumber"),
             "status": "purchased",
-            "commitment_id": pa_data.get("commitmentNo"),
+            # Commitment ID removed - handled separately in TinyDB
             "note_amount": pa_data.get("prinPurchased"),
             "interest_rate": pa_data.get("interestRate"),
             "pass_thru_rate": pa_data.get("passThruRate"),

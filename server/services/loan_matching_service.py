@@ -40,10 +40,10 @@ class LoanMatchingService:
         # Search for loans with matching identifiers
         query_conditions = []
         
-        # Check commitment IDs
-        commitment_ids = identifiers.get('commitment_ids', [])
-        if commitment_ids:
-            query_conditions.append(LoanModel.commitment_id.in_(commitment_ids))
+        # Commitment matching removed - commitments handled separately in TinyDB
+        # commitment_ids = identifiers.get('commitment_ids', [])
+        # if commitment_ids:
+        #     query_conditions.append(LoanModel.commitment_id.in_(commitment_ids))
         
         # Check loan numbers (xp_loan_number and metadata)
         loan_numbers = identifiers.get('loan_numbers', [])
@@ -225,20 +225,17 @@ class LoanMatchingService:
         update_data = {}
         
         if source_type == 'commitment':
+            # Commitment fields removed - handled separately in TinyDB
             update_data.update({
-                'commitment_id': new_data.get('commitmentId'),
                 'seller_name': new_data.get('sellerName'),
                 'seller_number': new_data.get('sellerNumber'),
                 'servicer_number': new_data.get('servicerNumber'),
                 'product': new_data.get('product'),
-                'commitment_date': datetime.fromisoformat(new_data['commitmentDate']) if new_data.get('commitmentDate') else None,
-                'expiration_date': datetime.fromisoformat(new_data['expirationDate']) if new_data.get('expirationDate') else None,
-                'current_commitment_amount': new_data.get('currentCommitmentAmount'),
             })
             
         elif source_type == 'purchase_advice':
             update_data.update({
-                'purchased_amount': new_data.get('prinPurchased'),
+                # Purchased amount removed - commitment data handled separately
                 'interest_rate': new_data.get('interestRate', 0) / 100 if new_data.get('interestRate') else None,
                 'pass_thru_rate': new_data.get('passThruRate', 0) / 100 if new_data.get('passThruRate') else None,
                 'servicer_number': new_data.get('servicerNumber'),
@@ -297,20 +294,17 @@ class LoanMatchingService:
         
         # Add source-specific data
         if source_type == 'commitment':
+            # Commitment fields removed - handled separately in TinyDB
             new_loan_data.update({
-                'commitment_id': loan_data.get('commitmentId'),
                 'seller_name': loan_data.get('sellerName'),
                 'seller_number': loan_data.get('sellerNumber'),
                 'servicer_number': loan_data.get('servicerNumber'),
                 'product': loan_data.get('product'),
-                'commitment_date': datetime.fromisoformat(loan_data['commitmentDate']) if loan_data.get('commitmentDate') else None,
-                'expiration_date': datetime.fromisoformat(loan_data['expirationDate']) if loan_data.get('expirationDate') else None,
-                'current_commitment_amount': loan_data.get('currentCommitmentAmount'),
             })
             
         elif source_type == 'purchase_advice':
             new_loan_data.update({
-                'purchased_amount': loan_data.get('prinPurchased'),
+                # Purchased amount removed - commitment data handled separately
                 'interest_rate': loan_data.get('interestRate', 0) / 100 if loan_data.get('interestRate') else None,
                 'pass_thru_rate': loan_data.get('passThruRate', 0) / 100 if loan_data.get('passThruRate') else None,
                 'servicer_number': loan_data.get('servicerNumber'),
