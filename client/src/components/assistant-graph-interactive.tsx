@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
 type GraphNode = { id: string; label?: string };
 type GraphEdge = { source: string; target: string; label?: string };
@@ -14,19 +14,18 @@ export type GraphSpec = {
 export default function AssistantGraphInteractive({ spec, onNodeClick }: { spec: GraphSpec, onNodeClick?: (id: string, label?: string) => void }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const networkRef = useRef<any>(null);
+  const nodesRef = useRef<any>(null);
+  const edgesRef = useRef<any>(null);
   // Track expansions: nodeId -> { nodes: string[], edges: string[] }
   const expansionsRef = useRef<Record<string, { nodes: string[]; edges: string[] }>>({});
   const expandedRef = useRef<Set<string>>(new Set());
-  const [selected, setSelected] = useState<{ id: string; label?: string } | null>(null);
-  const [details, setDetails] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const vis: any = await import('vis-network/standalone');
+        // Use ESM standalone build path for vis-network
+        const vis: any = await import('vis-network/standalone/esm/vis-network');
         if (cancelled || !containerRef.current) return;
 
         const nodes = new vis.DataSet(
@@ -37,6 +36,8 @@ export default function AssistantGraphInteractive({ spec, onNodeClick }: { spec:
         );
 
         const data = { nodes, edges };
+        nodesRef.current = nodes;
+        edgesRef.current = edges;
         const options: any = {
           interaction: { hover: true },
           physics: spec.layout !== 'hierarchical',
@@ -46,45 +47,10 @@ export default function AssistantGraphInteractive({ spec, onNodeClick }: { spec:
         };
 
         networkRef.current = new vis.Network(containerRef.current, data, options);
-        // Single-click: show details inline (no chat message)
+        // Single-click: expand/collapse neighbors (graph-centric UX)
         networkRef.current.on('selectNode', async (params: any) => {
           if (!params?.nodes?.length) return;
-          const id = params.nodes[0] as string;
-          let label: string | undefined;
-          try { label = (nodes.get(id) as any)?.label; } catch {}
-          setSelected({ id, label });
-          setError(null);
-          setDetails(null);
-          setLoading(true);
-          // Parse prefix:id
-          let prefix = 'loan';
-          let rawId = id;
-          if (id.includes(':')) {
-            const parts = id.split(':');
-            prefix = parts[0];
-            rawId = parts.slice(1).join(':');
-          }
-          try {
-            if (prefix === 'loan') {
-              const res = await fetch(`/api/loan-data/${encodeURIComponent(rawId)}`);
-              if (!res.ok) throw new Error(`${res.status}`);
-              const payload = await res.json();
-              setDetails(payload?.loan_data || payload);
-            } else {
-              // For other node types, just show the id/label for now
-              setDetails({ id, label });
-            }
-          } catch (e: any) {
-            setError(e?.message || 'Failed to load details');
-          } finally {
-            setLoading(false);
-          }
-        });
-
-        // Double-click to expand/collapse neighbors via API
-        networkRef.current.on('doubleClick', async (params: any) => {
-          if (!params?.nodes?.length) return;
-          const nodeId = params.nodes[0];
+          const nodeId = params.nodes[0] as string;
           // Collapse if already expanded
           if (expandedRef.current.has(nodeId)) {
             const exp = expansionsRef.current[nodeId];
@@ -126,6 +92,8 @@ export default function AssistantGraphInteractive({ spec, onNodeClick }: { spec:
             // ignore
           }
         });
+
+        // Double-click disabled: single click already toggles expansion/collapse
       } catch (e) {
         // Fallback: do nothing if library load fails
       }
@@ -143,20 +111,44 @@ export default function AssistantGraphInteractive({ spec, onNodeClick }: { spec:
 
   return (
     <div className="mt-3 p-2 bg-white border rounded-md">
+      <div className="flex items-center justify-end gap-2 mb-2">
+        <button
+          type="button"
+          className="text-xs px-2 py-1 rounded border border-neutral-200 hover:bg-neutral-50 text-neutral-700"
+          onClick={() => {
+            const nodes = nodesRef.current;
+            const edges = edgesRef.current;
+            if (!nodes || !edges) return;
+            try {
+              nodes.clear();
+              edges.clear();
+              const baseNodes = (spec.nodes || []).map((n) => ({ id: n.id, label: n.label || n.id }));
+              const baseEdges = (spec.edges || []).map((e) => ({ id: `${e.source}->${e.target}:${e.label || ''}`, from: e.source, to: e.target, label: e.label }));
+              nodes.add(baseNodes);
+              edges.add(baseEdges);
+              expansionsRef.current = {};
+              expandedRef.current = new Set();
+              networkRef.current?.fit({ animation: { duration: 300, easingFunction: 'easeInOutQuad' } });
+            } catch {}
+          }}
+        >
+          Collapse all
+        </button>
+        <button
+          type="button"
+          className="text-xs px-2 py-1 rounded border border-neutral-200 hover:bg-neutral-50 text-neutral-700"
+          onClick={() => {
+            try { networkRef.current?.fit({ animation: { duration: 300, easingFunction: 'easeInOutQuad' } }); } catch {}
+          }}
+        >
+          Fit to view
+        </button>
+      </div>
       {spec.title && (
         <div className="text-sm font-medium mb-2 text-neutral-800">{spec.title}</div>
       )}
       <div ref={containerRef} style={{ width: '100%', height: 280 }} />
-      {selected && (
-        <div className="mt-3 p-3 bg-neutral-50 border rounded-md text-sm">
-          <div className="font-medium text-neutral-800 mb-1">Selected: {selected.label || selected.id}</div>
-          {loading && <div className="text-neutral-600">Loading details…</div>}
-          {error && <div className="text-red-600">{error}</div>}
-          {!loading && !error && details && (
-            <pre className="whitespace-pre-wrap break-words text-[12px] text-neutral-800 max-h-48 overflow-auto">{JSON.stringify(details, null, 2)}</pre>
-          )}
-        </div>
-      )}
+      {/* No JSON detail dump; graph is navigated by expanding/collapsing nodes */}
     </div>
   );
 }
