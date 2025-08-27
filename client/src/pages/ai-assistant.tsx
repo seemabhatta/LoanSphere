@@ -235,9 +235,7 @@ export default function AIAssistant() {
             
             
             {/* Subtitle */}
-            <p className="text-gray-500 mb-2">
-              By Xpanse Loan Xchange
-            </p>
+            <p className="text-gray-500 mb-2">XLX Assistant</p>
             
             {/* Description */}
             <p className="text-gray-600 text-center mb-8 max-w-lg">
@@ -336,7 +334,6 @@ export default function AIAssistant() {
           </div>
         )}
       </div>
-
       {/* Input Area - Fixed at content bottom */}
       <div className="absolute bottom-0 left-0 right-0 bg-white p-6">
         <div className="flex items-center space-x-2">
