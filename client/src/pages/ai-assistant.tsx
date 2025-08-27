@@ -54,12 +54,18 @@ export default function AIAssistant() {
   const { toast } = useToast();
 
   const quickActions: QuickAction[] = [
-    { label: 'Critical Exceptions', query: 'Show me all critical exceptions requiring immediate attention', icon: AlertTriangle, category: 'Operations' },
-    { label: 'System Status', query: 'What is the current system status and performance?', icon: Zap, category: 'Monitoring' },
-    { label: 'FPY Analysis', query: 'Analyze first-pass yield trends and suggest improvements', icon: TrendingUp, category: 'Analytics' },
-    { label: 'Loan Pipeline', query: 'Show me the current loan boarding pipeline status', icon: FileText, category: 'Pipeline' },
-    { label: 'SLA Alerts', query: 'Which loans are at risk of missing SLA targets?', icon: Clock, category: 'Alerts' },
-    { label: 'Auto-Fix Options', query: 'What exceptions can be auto-resolved right now?', icon: Lightbulb, category: 'Automation' },
+    // Loans
+    { label: 'Recent Loans', query: 'List recent loans and summarize statuses', icon: FileText, category: 'Loans' },
+    { label: 'Graph Latest Loan', query: 'Show the latest loan data and visualize it as a knowledge graph', icon: TrendingUp, category: 'Loans' },
+    // Commitments
+    { label: 'Commitments', query: 'List commitments with IDs, then show details for the latest', icon: FileText, category: 'Commitments' },
+    { label: 'Commitment (Raw)', query: 'Show raw commitment JSON for the latest commitment', icon: Lightbulb, category: 'Commitments' },
+    // Purchase Advice
+    { label: 'Purchase Advices', query: 'List purchase advices and show a concise summary of the latest', icon: FileText, category: 'Purchase Advice' },
+    { label: 'PA (Raw)', query: 'Show raw purchase advice JSON for the latest purchase advice', icon: Lightbulb, category: 'Purchase Advice' },
+    // Loan Tracking
+    { label: 'Tracking Status', query: 'Show loan tracking status summary', icon: Clock, category: 'Loan Tracking' },
+    { label: 'SLA Risks', query: 'Which loans are at risk of missing SLA targets?', icon: AlertTriangle, category: 'Loan Tracking' },
   ];
 
   const scrollToBottom = () => {
@@ -204,7 +210,7 @@ export default function AIAssistant() {
           <div className="flex items-center space-x-2">
             <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
               <Brain className="w-3 h-3 mr-1" />
-              GPT-5 Powered
+              {`${(import.meta.env.VITE_ASSISTANT_MODEL_LABEL || import.meta.env.VITE_OPENAI_MODEL || 'gpt-4o-mini').toUpperCase()} Powered`}
             </Badge>
             <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
               <Zap className="w-3 h-3 mr-1" />
