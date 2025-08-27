@@ -1,11 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, HTTPException, Query
 from typing import List, Optional
-from datetime import datetime
-
-from database import get_db
-from services.loan_service import LoanService
-from models import LoanModel
+from services.loan_data_service import get_loan_data_service
 
 router = APIRouter()
 
@@ -15,18 +10,34 @@ async def get_loans(
     limit: int = Query(100, le=1000),
     status: Optional[str] = None
 ):
-    """Get paginated list of loans - Using TinyDB now"""
+    """Get paginated list of loans from loan data service"""
     try:
-        # Return empty loans list since we're using TinyDB staging system
-        loans = []
+        loan_data_service = get_loan_data_service()
+        all_loan_data = loan_data_service.get_all_loan_data()
         
-        # Filter by status if provided
-        if status:
-            loans = [loan for loan in loans if loan.status == status]
+        # Convert loan data records to loan format for UI
+        loans = []
+        for loan_data_record in all_loan_data:
+            loan = {
+                "id": loan_data_record.get('id'),
+                "xp_loan_number": loan_data_record.get('id'),
+                "tenant_id": "loan_data",
+                "status": "loan_data",
+                "boarding_readiness": "data_received",
+                "boarding_status": "staged",
+                "first_pass_yield": False,
+                "created_at": loan_data_record.get('processed_at'),
+                "metadata": str(loan_data_record.get('loan_data', {}))
+            }
+            loans.append(loan)
+        
+        # Apply pagination
+        total = len(loans)
+        paginated_loans = loans[skip:skip + limit]
         
         return {
-            "loans": [],
-            "total": 0,
+            "loans": paginated_loans,
+            "total": total,
             "skip": skip,
             "limit": limit
         }
@@ -34,38 +45,25 @@ async def get_loans(
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/{xp_loan_number}")
-async def get_loan(xp_loan_number: str, db: Session = Depends(get_db)):
+async def get_loan(xp_loan_number: str):
     """Get loan by XP loan number"""
     try:
-        loan_service = LoanService(db)
-        loan = await loan_service.get_loan_by_xp_number(xp_loan_number)
+        loan_data_service = get_loan_data_service()
+        loan_data = loan_data_service.get_loan_data(xp_loan_number)
         
-        if not loan:
+        if not loan_data:
             raise HTTPException(status_code=404, detail="Loan not found")
         
         return {
-            "id": loan.id,
-            "xp_loan_number": loan.xp_loan_number,
-            "tenant_id": loan.tenant_id,
-            "seller_name": loan.seller_name,
-            "seller_number": loan.seller_number,
-            "servicer_number": loan.servicer_number,
-            "status": loan.status,
-            "product": loan.product,
-            "commitment_id": loan.commitment_id,
-            "note_amount": float(loan.note_amount) if loan.note_amount else None,
-            "interest_rate": float(loan.interest_rate) if loan.interest_rate else None,
-            "pass_thru_rate": float(loan.pass_thru_rate) if loan.pass_thru_rate else None,
-            "property_value": float(loan.property_value) if loan.property_value else None,
-            "ltv_ratio": float(loan.ltv_ratio) if loan.ltv_ratio else None,
-            "credit_score": loan.credit_score,
-            "boarding_readiness": loan.boarding_readiness,
-            "boarding_status": loan.boarding_status,
-            "first_pass_yield": loan.first_pass_yield,
-            "time_to_board": loan.time_to_board,
-            "metadata": loan.metadata,
-            "created_at": loan.created_at.isoformat() if loan.created_at else None,
-            "updated_at": loan.updated_at.isoformat() if loan.updated_at else None
+            "id": loan_data.get('id'),
+            "xp_loan_number": loan_data.get('id'),
+            "tenant_id": "loan_data",
+            "status": "loan_data",
+            "boarding_readiness": "data_received",
+            "boarding_status": "staged",
+            "first_pass_yield": False,
+            "created_at": loan_data.get('processed_at'),
+            "loan_data": loan_data.get('loan_data', {})
         }
     except HTTPException:
         raise
