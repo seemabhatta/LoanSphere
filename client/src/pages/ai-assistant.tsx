@@ -230,10 +230,7 @@ export default function AIAssistant() {
         {/* Welcome Section */}
         {messages.length === 0 && (
           <div className="flex-1 flex flex-col items-center justify-center p-8 max-w-4xl mx-auto">
-            {/* Avatar */}
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mb-6">
-              <Bot className="w-8 h-8 text-white" />
-            </div>
+            
             
             {/* Title */}
             <h1 className="text-3xl font-semibold text-gray-900 mb-2">
