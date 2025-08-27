@@ -157,6 +157,109 @@ def tool_get_loan_data_graph_by_id(loan_id: str) -> str:
         loan_node_id = f"loan:{loan_id}"
         add_node(loan_node_id, f"Loan {loan_id}")
 
+        # Hierarchical ULDD nodes: DEAL -> COLLATERALS -> COLLATERAL -> PROPERTY
+        deal = data.get('DEAL') if isinstance(data, dict) else None
+        if isinstance(deal, dict):
+            deal_id = f"deal:{loan_id}"
+            add_node(deal_id, "DEAL")
+            add_edge(loan_node_id, deal_id, "")
+
+            # COLLATERALS
+            if isinstance(deal.get('COLLATERALS'), dict):
+                colls_id = f"collaterals:{loan_id}"
+                add_node(colls_id, "COLLATERALS")
+                add_edge(deal_id, colls_id, "")
+                coll = deal['COLLATERALS'].get('COLLATERAL')
+                if coll is not None:
+                    coll_list = coll if isinstance(coll, list) else [coll]
+                    for i, c in enumerate(coll_list):
+                        c_id = f"collateral:{loan_id}:{i}"
+                        add_node(c_id, f"COLLATERAL {i+1}")
+                        add_edge(colls_id, c_id, "")
+
+                        # PROPERTIES under COLLATERAL
+                        props = c.get('PROPERTIES') if isinstance(c, dict) else None
+                        if isinstance(props, dict):
+                            pr = props.get('PROPERTY')
+                            if pr is not None:
+                                pr_list = pr if isinstance(pr, list) else [pr]
+                                for j, prop in enumerate(pr_list):
+                                    # Build a readable property label from ADDRESS if present
+                                    label = f"PROPERTY {j+1}"
+                                    if isinstance(prop, dict) and isinstance(prop.get('ADDRESS'), dict):
+                                        addr = prop['ADDRESS']
+                                        street = addr.get('AddressLineText') or addr.get('StreetAddress') or addr.get('AddressLine1Text')
+                                        city = addr.get('CityName') or addr.get('City')
+                                        state = addr.get('StateCode') or addr.get('StateName') or addr.get('State')
+                                        postal = addr.get('PostalCode') or addr.get('ZipCode')
+                                        parts = [p for p in [street, city, state, postal] if p]
+                                        if parts:
+                                            label = " ".join(parts)
+                                    p_id = f"property:{loan_id}:{i}:{j}"
+                                    add_node(p_id, label)
+                                    add_edge(c_id, p_id, "PROPERTY")
+
+            # LOANS
+            if isinstance(deal.get('LOANS'), dict):
+                loans_container_id = f"loans:{loan_id}"
+                add_node(loans_container_id, "LOANS")
+                add_edge(deal_id, loans_container_id, "")
+                loan_items = deal['LOANS'].get('LOAN')
+                if loan_items is not None:
+                    loan_list = loan_items if isinstance(loan_items, list) else [loan_items]
+                    for i, lo in enumerate(loan_list):
+                        role = ""
+                        if isinstance(lo, dict):
+                            role = lo.get('@LoanRoleType') or ""
+                        loan_sub_id = f"deal_loan:{loan_id}:{i}"
+                        title = f"LOAN {i+1}{f' ({role})' if role else ''}"
+                        add_node(loan_sub_id, title)
+                        add_edge(loans_container_id, loan_sub_id, "")
+
+                        # Common sub-sections under LOAN
+                        def add_sub(section_key: str, label: str):
+                            if isinstance(lo, dict) and lo.get(section_key) is not None:
+                                sid = f"{section_key.lower()}:{loan_id}:{i}"
+                                add_node(sid, label)
+                                add_edge(loan_sub_id, sid, section_key)
+
+                        add_sub('LOAN_DETAIL', 'LOAN_DETAIL')
+                        add_sub('PAYMENT', 'PAYMENT')
+                        add_sub('ESCROW', 'ESCROW')
+                        add_sub('LOAN_IDENTIFIERS', 'LOAN_IDENTIFIERS')
+                        add_sub('MI_DATA', 'MI_DATA')
+                        add_sub('SERVICING', 'SERVICING')
+                        add_sub('INVESTOR_LOAN_INFORMATION', 'INVESTOR_LOAN_INFORMATION')
+
+            # PARTIES
+            if isinstance(deal.get('PARTIES'), dict):
+                parties_id = f"parties:{loan_id}"
+                add_node(parties_id, "PARTIES")
+                add_edge(deal_id, parties_id, "")
+                party_items = deal['PARTIES'].get('PARTY')
+                if party_items is not None:
+                    party_list = party_items if isinstance(party_items, list) else [party_items]
+                    for i, party in enumerate(party_list):
+                        # Try to derive a label from INDIVIDUAL/NAME or ORGANIZATION
+                        label = f"PARTY {i+1}"
+                        if isinstance(party, dict):
+                            indiv = party.get('INDIVIDUAL')
+                            org = party.get('ORGANIZATION')
+                            if isinstance(indiv, dict):
+                                name = indiv.get('NAME') or {}
+                                first = name.get('FirstName') or name.get('FirstNameText')
+                                last = name.get('LastName') or name.get('LastNameText')
+                                nm = " ".join([p for p in [first, last] if p])
+                                if nm:
+                                    label = nm
+                            elif isinstance(org, dict):
+                                on = org.get('Name') or org.get('OrganizationName')
+                                if on:
+                                    label = on
+                        pid = f"party:{loan_id}:{i}"
+                        add_node(pid, label)
+                        add_edge(parties_id, pid, "PARTY")
+
         # Heuristics: borrower
         borrower_name = None
         # Try some common fields quickly
@@ -226,7 +329,7 @@ def tool_get_loan_data_graph_by_id(loan_id: str) -> str:
             "title": f"Loan {loan_id} — Knowledge Graph",
             "nodes": nodes,
             "edges": edges,
-            "layout": "circular",
+            "layout": "hierarchical",
         }
 
         import json as _json

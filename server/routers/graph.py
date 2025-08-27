@@ -145,8 +145,125 @@ async def get_neighbors(req: NeighborRequest):
                     if count >= 10:
                         break
         else:
-            # Unsupported type: return empty
-            pass
+            # Dynamic ULDD expansions for known prefixes
+            # Expect formats: deal:<loanId> | collaterals:<loanId> | collateral:<loanId>:<i>
+            # loans:<loanId> | deal_loan:<loanId>:<i> | parties:<loanId> | party:<loanId>:<i>
+            try:
+                if prefix in {"deal", "collaterals", "collateral", "loans", "deal_loan", "parties", "party"}:
+                    # parse loan id and optional indices
+                    parts = raw_id.split(":")
+                    loan_id = parts[0]
+                    raw = lds.tinydb.get_loan_data(loan_id)
+                    if not raw:
+                        raise HTTPException(status_code=404, detail=f"Loan not found: {loan_id}")
+                    data = raw.get('loan_data', raw)
+                    deal = data.get('DEAL') if isinstance(data, dict) else None
+
+                    def add_simple(id_, label, parent, edge_label=""):
+                        add_node(id_, label)
+                        add_edge(parent, id_, edge_label)
+
+                    if prefix == "deal":
+                        deal_id = f"deal:{loan_id}"
+                        add_simple(deal_id, "DEAL", f"loan:{loan_id}")
+                        add_simple(f"collaterals:{loan_id}", "COLLATERALS", deal_id)
+                        add_simple(f"loans:{loan_id}", "LOANS", deal_id)
+                        add_simple(f"parties:{loan_id}", "PARTIES", deal_id)
+
+                    elif prefix == "collaterals" and isinstance(deal, dict) and isinstance(deal.get('COLLATERALS'), dict):
+                        coll = deal['COLLATERALS'].get('COLLATERAL')
+                        if coll is not None:
+                            coll_list = coll if isinstance(coll, list) else [coll]
+                            parent_id = f"collaterals:{loan_id}"
+                            for i, _ in enumerate(coll_list):
+                                add_simple(f"collateral:{loan_id}:{i}", f"COLLATERAL {i+1}", parent_id)
+
+                    elif prefix == "collateral" and len(parts) >= 2 and isinstance(deal, dict):
+                        try:
+                            idx = int(parts[1])
+                        except Exception:
+                            idx = 0
+                        coll = deal.get('COLLATERALS', {}).get('COLLATERAL')
+                        if coll is not None:
+                            coll_list = coll if isinstance(coll, list) else [coll]
+                            if 0 <= idx < len(coll_list):
+                                c = coll_list[idx]
+                                props = c.get('PROPERTIES') if isinstance(c, dict) else None
+                                if isinstance(props, dict):
+                                    pr = props.get('PROPERTY')
+                                    pr_list = pr if isinstance(pr, list) else ([pr] if pr is not None else [])
+                                    parent_id = f"collateral:{loan_id}:{idx}"
+                                    for j, prop in enumerate(pr_list):
+                                        label = f"PROPERTY {j+1}"
+                                        if isinstance(prop, dict) and isinstance(prop.get('ADDRESS'), dict):
+                                            addr = prop['ADDRESS']
+                                            street = addr.get('AddressLineText') or addr.get('StreetAddress') or addr.get('AddressLine1Text')
+                                            city = addr.get('CityName') or addr.get('City')
+                                            state = addr.get('StateCode') or addr.get('StateName') or addr.get('State')
+                                            postal = addr.get('PostalCode') or addr.get('ZipCode')
+                                            parts2 = [p for p in [street, city, state, postal] if p]
+                                            if parts2:
+                                                label = " ".join(parts2)
+                                        add_simple(f"property:{loan_id}:{idx}:{j}", label, parent_id, "PROPERTY")
+
+                    elif prefix == "loans" and isinstance(deal, dict) and isinstance(deal.get('LOANS'), dict):
+                        loan_items = deal['LOANS'].get('LOAN')
+                        loan_list = loan_items if isinstance(loan_items, list) else ([loan_items] if loan_items is not None else [])
+                        parent_id = f"loans:{loan_id}"
+                        for i, lo in enumerate(loan_list):
+                            role = lo.get('@LoanRoleType') if isinstance(lo, dict) else ""
+                            title = f"LOAN {i+1}{f' ({role})' if role else ''}"
+                            add_simple(f"deal_loan:{loan_id}:{i}", title, parent_id)
+
+                    elif prefix == "deal_loan" and len(parts) >= 2 and isinstance(deal, dict) and isinstance(deal.get('LOANS'), dict):
+                        try:
+                            idx = int(parts[1])
+                        except Exception:
+                            idx = 0
+                        loan_items = deal['LOANS'].get('LOAN')
+                        loan_list = loan_items if isinstance(loan_items, list) else ([loan_items] if loan_items is not None else [])
+                        if 0 <= idx < len(loan_list):
+                            lo = loan_list[idx]
+                            parent_id = f"deal_loan:{loan_id}:{idx}"
+                            def add_section(key, label):
+                                if isinstance(lo, dict) and lo.get(key) is not None:
+                                    add_simple(f"{key.lower()}:{loan_id}:{idx}", label, parent_id, key)
+                            for key,label in [
+                                ('LOAN_DETAIL','LOAN_DETAIL'),
+                                ('PAYMENT','PAYMENT'),
+                                ('ESCROW','ESCROW'),
+                                ('LOAN_IDENTIFIERS','LOAN_IDENTIFIERS'),
+                                ('MI_DATA','MI_DATA'),
+                                ('SERVICING','SERVICING'),
+                                ('INVESTOR_LOAN_INFORMATION','INVESTOR_LOAN_INFORMATION'),
+                            ]:
+                                add_section(key,label)
+
+                    elif prefix == "parties" and isinstance(deal, dict) and isinstance(deal.get('PARTIES'), dict):
+                        party_items = deal['PARTIES'].get('PARTY')
+                        party_list = party_items if isinstance(party_items, list) else ([party_items] if party_items is not None else [])
+                        parent_id = f"parties:{loan_id}"
+                        for i, party in enumerate(party_list):
+                            label = f"PARTY {i+1}"
+                            if isinstance(party, dict):
+                                indiv = party.get('INDIVIDUAL')
+                                org = party.get('ORGANIZATION')
+                                if isinstance(indiv, dict):
+                                    name = indiv.get('NAME') or {}
+                                    first = name.get('FirstName') or name.get('FirstNameText')
+                                    last = name.get('LastName') or name.get('LastNameText')
+                                    nm = " ".join([p for p in [first, last] if p])
+                                    if nm:
+                                        label = nm
+                                elif isinstance(org, dict):
+                                    on = org.get('Name') or org.get('OrganizationName')
+                                    if on:
+                                        label = on
+                            add_simple(f"party:{loan_id}:{i}", label, parent_id, "PARTY")
+            except HTTPException:
+                raise
+            except Exception as e:
+                logger.error(f"Dynamic expand failed: {e}")
 
         # De-duplicate nodes by id
         unique_nodes = {}
@@ -166,4 +283,3 @@ async def get_neighbors(req: NeighborRequest):
     except Exception as e:
         logger.error(f"Graph neighbors error: {e}")
         raise HTTPException(status_code=500, detail=f"Graph error: {str(e)}")
-
