@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import AssistantChart from "@/components/assistant-chart";
 import AssistantGraph from "@/components/assistant-graph";
+import AssistantGraphInteractive from "@/components/assistant-graph-interactive";
 
 interface Message {
   id: string;
@@ -52,6 +53,39 @@ export default function AIAssistant() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  // Helper to send a direct query (used by graph node clicks)
+  const sendAgentQuery = async (query: string) => {
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      type: 'user',
+      content: query,
+      timestamp: new Date()
+    };
+    setMessages(prev => [...prev, userMessage]);
+    setIsTyping(true);
+    try {
+      const result = await apiRequest('POST', '/api/ai-agent/chat', {
+        message: query,
+        session_id: sessionId ?? undefined,
+      });
+      if (result?.session_id && result.session_id !== sessionId) {
+        setSessionId(result.session_id);
+      }
+      const aiMessage: Message = {
+        id: `${Date.now()}-assistant`,
+        type: 'assistant',
+        content: result?.response ?? 'No response received.',
+        timestamp: new Date(),
+        data: result?.visualization ? { visualization: result.visualization } : undefined,
+      };
+      setMessages(prev => [...prev, aiMessage]);
+    } catch (err: any) {
+      toast({ title: 'AI Assistant Error', description: err?.message || 'Failed to contact AI service.', variant: 'destructive' });
+    } finally {
+      setIsTyping(false);
+    }
+  };
 
   const quickActions: QuickAction[] = [
     // Loans
@@ -259,11 +293,18 @@ export default function AIAssistant() {
                       )}
                       <div className="flex-1">
                         <p className="body-text whitespace-pre-line">{message.content}</p>
-                        {message.type === 'assistant' && message.data?.visualization && (
-                          message.data.visualization.type === 'graph' ? (
-                            <AssistantGraph spec={message.data.visualization} />
+                        {message.type === 'assistant' && (message as any).data?.visualization && (
+                          (message as any).data.visualization.type === 'graph' ? (
+                            <AssistantGraphInteractive
+                              spec={(message as any).data.visualization}
+                              onNodeClick={(nodeId: string, label?: string) => {
+                                const pretty = label ? `${nodeId} (${label})` : nodeId;
+                                const q = `Show details for graph node ${pretty}. If this is a loan node, show loan data summary and graph related entities.`;
+                                sendAgentQuery(q);
+                              }}
+                            />
                           ) : (
-                            <AssistantChart spec={message.data.visualization} />
+                            <AssistantChart spec={(message as any).data.visualization} />
                           )
                         )}
                         <p className={`caption-text mt-2 ${message.type === 'user' ? 'text-blue-200' : 'text-gray-500'}`}>
