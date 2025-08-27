@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/api";
-import { 
+import {
   Bot,
   Send,
   Mic,
@@ -41,7 +41,7 @@ interface QuickAction {
 
 export default function AIAssistant() {
   const { user } = useAuth();
-  
+
   const getWelcomeMessage = () => {
     return `Hello! I'm your AI Assistant for Xpanse Loan Xchange. I can help you with loan boarding, exception management, analytics, and system operations. What would you like to know?`;
   };
@@ -166,7 +166,7 @@ export default function AIAssistant() {
 
   const generateAIResponse = (query: string): Message => {
     const lowerQuery = query.toLowerCase();
-    
+
     if (lowerQuery.includes('exception') || lowerQuery.includes('critical')) {
       return {
         id: Date.now().toString(),
@@ -177,7 +177,7 @@ export default function AIAssistant() {
         data: { exceptions: 5, autoFixAvailable: 2, highPriority: 2 }
       };
     }
-    
+
     if (lowerQuery.includes('status') || lowerQuery.includes('system')) {
       return {
         id: Date.now().toString(),
@@ -254,8 +254,8 @@ export default function AIAssistant() {
         </div>
       </header>
 
-      {/* Content */}
-      <div className="flex-1 overflow-hidden p-6">
+      {/* Content - with bottom padding for fixed input */}
+      <div className="flex-1 overflow-hidden p-6 pb-24">
         <div className="h-full flex flex-col space-y-6">
           {/* Quick Actions */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -272,7 +272,7 @@ export default function AIAssistant() {
               </button>
             ))}
           </div>
-          
+
           {/* Chat Interface */}
           <div className="flex-1 flex flex-col">
             {/* Messages */}
@@ -280,8 +280,8 @@ export default function AIAssistant() {
               {messages.map((message) => (
                 <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[80%] rounded-lg p-3 ${
-                    message.type === 'user' 
-                      ? 'bg-blue-600 text-white' 
+                    message.type === 'user'
+                      ? 'bg-blue-600 text-white'
                       : 'bg-gray-100 text-gray-900'
                   }`}>
                     <div className="flex items-start space-x-2">
@@ -305,7 +305,7 @@ export default function AIAssistant() {
                         </p>
                       </div>
                     </div>
-                    
+
                     {/* Suggestions */}
                     {message.suggestions && (
                       <div className="flex flex-wrap gap-2 mt-3">
@@ -324,7 +324,7 @@ export default function AIAssistant() {
                   </div>
                 </div>
               ))}
-              
+
               {/* Typing indicator */}
               {isTyping && (
                 <div className="flex justify-start">
@@ -345,9 +345,9 @@ export default function AIAssistant() {
           </div>
         </div>
       </div>
-        
+
       {/* Input Area - Fixed at bottom */}
-      <div className="px-6 pb-6">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-4 z-10">
         <div className="flex items-center space-x-2">
           <div className="flex-1 relative">
             <Input
