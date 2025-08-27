@@ -235,10 +235,10 @@ export default function AIAssistant() {
             
             
             {/* Subtitle */}
-            <p className="text-gray-500 mb-2">XLX Assistant</p>
+            <p className="caption-text mb-2">XLX Assistant</p>
             
             {/* Description */}
-            <p className="text-gray-600 text-center mb-8 max-w-lg">
+            <p className="body-text text-gray-600 text-center mb-8 max-w-lg">
               Your AI-powered assistant for loan boarding, exception management, and analytics operations.
             </p>
             
@@ -252,8 +252,8 @@ export default function AIAssistant() {
                   data-testid={`suggestion-${index}`}
                 >
                   <action.icon className="w-5 h-5 text-gray-500 mb-3 group-hover:text-blue-600" />
-                  <p className="text-sm text-gray-900 font-medium mb-1">{action.label}</p>
-                  <p className="text-xs text-gray-500">{action.query}</p>
+                  <p className="label-text text-gray-900 mb-1">{action.label}</p>
+                  <p className="caption-text">{action.query}</p>
                 </button>
               ))}
             </div>
@@ -279,7 +279,7 @@ export default function AIAssistant() {
                         </div>
                       )}
                       <div className="flex-1">
-                        <p className="whitespace-pre-line">{message.content}</p>
+                        <p className="body-text whitespace-pre-line">{message.content}</p>
                         {message.type === 'assistant' && (message as any).data?.visualization && (
                           (message as any).data.visualization.type === 'graph' ? (
                             <AssistantGraphInteractive spec={(message as any).data.visualization} />
@@ -287,7 +287,7 @@ export default function AIAssistant() {
                             <AssistantChart spec={(message as any).data.visualization} />
                           )
                         )}
-                        <p className={`text-xs mt-2 ${message.type === 'user' ? 'text-blue-200' : 'text-gray-500'}`}>
+                        <p className={`caption-text mt-2 ${message.type === 'user' ? 'text-blue-200' : 'text-gray-500'}`}>
                           {message.timestamp.toLocaleTimeString()}
                         </p>
                       </div>
@@ -300,7 +300,7 @@ export default function AIAssistant() {
                           <button
                             key={index}
                             onClick={() => handleSuggestionClick(suggestion)}
-                            className="text-xs px-3 py-1 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+                            className="caption-text px-3 py-1 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
                             data-testid={`suggestion-${index}`}
                           >
                             {suggestion}
