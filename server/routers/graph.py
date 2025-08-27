@@ -67,28 +67,46 @@ async def get_neighbors(req: NeighborRequest):
             edges: List[Dict[str, Any]] = []
 
             parent_id = node_id
-            def add_node(nid: str, label: str):
-                nodes.append({"id": nid, "label": label})
+            def add_node(nid: str, label: str, title: Optional[str] = None):
+                n = {"id": nid, "label": label}
+                if title:
+                    n["title"] = title
+                nodes.append(n)
             def add_edge(src: str, tgt: str, label: str = ""):
                 edges.append({"id": _edge_id(src, tgt, label), "source": src, "target": tgt, "label": label})
 
             if isinstance(cur, dict):
                 for k, v in list(cur.items())[:200]:
                     child_path = jpath.rstrip('/') + '/' + k if jpath != '/' else '/' + k
-                    label = k
-                    # For readability, append a hint type
-                    t = 'obj' if isinstance(v, dict) else ('arr' if isinstance(v, list) else 'val')
-                    disp = f"{label} [{t}]"
                     nid = f"json:{loan_id}:{child_path}"
-                    add_node(nid, disp)
+                    # Determine label and tooltip
+                    if isinstance(v, dict):
+                        disp = f"{k} [obj:{len(v)}]"
+                        add_node(nid, disp, title=f"object with {len(v)} keys")
+                    elif isinstance(v, list):
+                        disp = f"{k} [arr:{len(v)}]"
+                        add_node(nid, disp, title=f"array with {len(v)} items")
+                    else:
+                        pv = str(v)
+                        preview = (pv if len(pv) <= 80 else pv[:77] + '...')
+                        disp = f"{k}: {preview}"
+                        add_node(nid, disp, title=pv)
                     add_edge(parent_id, nid)
             elif isinstance(cur, list):
                 for i, v in enumerate(cur[:200]):
                     child_path = jpath.rstrip('/') + f'/{i}' if jpath != '/' else f'/{i}'
-                    t = 'obj' if isinstance(v, dict) else ('arr' if isinstance(v, list) else 'val')
-                    disp = f"[{i}] [{t}]"
                     nid = f"json:{loan_id}:{child_path}"
-                    add_node(nid, disp)
+                    if isinstance(v, dict):
+                        disp = f"[{i}] [obj:{len(v)}]"
+                        add_node(nid, disp, title=f"object with {len(v)} keys")
+                    elif isinstance(v, list):
+                        disp = f"[{i}] [arr:{len(v)}]"
+                        add_node(nid, disp, title=f"array with {len(v)} items")
+                    else:
+                        pv = str(v)
+                        preview = (pv if len(pv) <= 80 else pv[:77] + '...')
+                        disp = f"[{i}]: {preview}"
+                        add_node(nid, disp, title=pv)
                     add_edge(parent_id, nid)
             # primitives: no children
             return NeighborResponse(nodes=nodes, edges=edges)

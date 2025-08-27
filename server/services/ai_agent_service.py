@@ -391,13 +391,11 @@ def tool_get_latest_loan_data_json_graph() -> str:
         tdb = get_loan_data_service().tinydb
         items = tdb.get_all_loan_data()
         if not items:
-            # Fallback generic: use sample marker
-            loan_id = "sample"
-        else:
-            def key_fn(it):
-                return it.get('processed_at') or it.get('stored_at') or ''
-            latest = sorted(items, key=key_fn, reverse=True)[0]
-            loan_id = latest.get('id') or latest.get('loan_data_id') or 'unknown'
+            return "No loan data available for JSON exploration. Please stage or load loan data first."
+        def key_fn(it):
+            return it.get('processed_at') or it.get('stored_at') or ''
+        latest = sorted(items, key=key_fn, reverse=True)[0]
+        loan_id = latest.get('id') or latest.get('loan_data_id') or 'unknown'
         return tool_get_loan_data_json_graph_by_id(loan_id)
     except Exception as e:
         logger.error(f"Error building latest JSON explorer graph: {e}")

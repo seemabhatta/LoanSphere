@@ -77,7 +77,7 @@ export default function AssistantGraphInteractive({ spec, onNodeClick }: { spec:
             const addedEdges: string[] = [];
             (payload.nodes || []).forEach((n: any) => {
               if (!nodes.get(n.id)) {
-                nodes.add({ id: n.id, label: n.label || n.id });
+                nodes.add({ id: n.id, label: n.label || n.id, title: n.title || undefined });
                 addedNodes.push(n.id);
               }
             });
