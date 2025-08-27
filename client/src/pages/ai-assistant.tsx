@@ -344,8 +344,8 @@ export default function AIAssistant() {
           </div>
         </div>
 
-      {/* Input Area - Fixed at bottom */}
-      <div className="absolute bottom-0 left-0 right-0 bg-white p-6">
+      {/* Input Area - Fixed at viewport bottom */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white p-6 z-50">
         <div className="flex items-center space-x-2">
           <div className="flex-1 relative">
             <Input
