@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 load_dotenv(dotenv_path="../.env")
 
 # from database import init_db, get_db  # Using TinyDB instead
-from routers import loans, exceptions, agents, compliance, documents, metrics, staging, purchase_advices, commitments, auth
+from routers import loans, exceptions, agents, compliance, documents, metrics, staging, purchase_advices, commitments, auth, loan_data
 from services.loan_service import LoanService
 from agents.planner_agent import PlannerAgent
 from agents.tool_agent import ToolAgent
@@ -111,6 +111,7 @@ app.include_router(staging.router, prefix="/api/simple", tags=["staging"])
 app.include_router(staging.router, prefix="/api/staging", tags=["staging"])
 app.include_router(purchase_advices.router, prefix="/api/purchase-advices", tags=["purchase-advices"])
 app.include_router(commitments.router, prefix="/api/commitments", tags=["commitments"])
+app.include_router(loan_data.router, prefix="/api/loan-data", tags=["loan-data"])
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
