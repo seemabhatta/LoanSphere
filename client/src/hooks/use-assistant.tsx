@@ -4,9 +4,10 @@ import RightPanelAssistant from "@/components/right-panel-assistant";
 interface UseAssistantOptions {
   pageName: string;
   enabled?: boolean;
+  context?: Record<string, any>;
 }
 
-export function useAssistant({ pageName, enabled = true }: UseAssistantOptions) {
+export function useAssistant({ pageName, enabled = true, context = {} }: UseAssistantOptions) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const toggleAssistant = () => {
@@ -18,6 +19,7 @@ export function useAssistant({ pageName, enabled = true }: UseAssistantOptions) 
       currentPage={pageName}
       isExpanded={isExpanded}
       onToggle={toggleAssistant}
+      context={context}
     />
   ) : null;
 

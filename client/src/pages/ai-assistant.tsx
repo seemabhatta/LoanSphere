@@ -19,6 +19,7 @@ import {
   Lightbulb,
   Brain
 } from "lucide-react";
+import AssistantChart from "@/components/assistant-chart";
 
 interface Message {
   id: string;
@@ -99,7 +100,8 @@ export default function AIAssistant() {
         id: `${Date.now()}-assistant`,
         type: 'assistant',
         content: result?.response ?? 'No response received.',
-        timestamp: new Date()
+        timestamp: new Date(),
+        data: result?.visualization ? { visualization: result.visualization } : undefined,
       };
       setMessages(prev => [...prev, aiMessage]);
     } catch (err: any) {
@@ -250,6 +252,9 @@ export default function AIAssistant() {
                       )}
                       <div className="flex-1">
                         <p className="body-text whitespace-pre-line">{message.content}</p>
+                        {message.type === 'assistant' && message.data?.visualization && (
+                          <AssistantChart spec={message.data.visualization} />
+                        )}
                         <p className={`caption-text mt-2 ${message.type === 'user' ? 'text-blue-200' : 'text-gray-500'}`}>
                           {message.timestamp.toLocaleTimeString()}
                         </p>

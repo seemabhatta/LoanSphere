@@ -153,8 +153,16 @@ export default function Loans() {
     return `${(rate * 100).toFixed(3)}%`;
   };
 
+  // Build lightweight assistant context for this page
+  const assistantContext = {
+    selectedLoanNumber: selectedLoan?.xp_loan_number || null,
+    totalLoans: loansData?.loans?.length || 0,
+    sort: { field: sortField, direction: sortDirection },
+    detailsOpen: isDetailsOpen,
+  };
+
   return (
-    <PageWithAssistant pageName="Loans">
+    <PageWithAssistant pageName="Loans" assistantContext={assistantContext}>
       <div className="flex-1 flex flex-col overflow-hidden">
       {/* Header */}
       <header className="px-6 py-4 border-b border-gray-200">

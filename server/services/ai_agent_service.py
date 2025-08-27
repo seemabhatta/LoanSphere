@@ -566,6 +566,11 @@ class LoanSphereAgent:
             
             When users ask vague questions, help them by suggesting specific queries they might want to make.
 
+            Visualization responses:
+            - If the user asks for a chart/graph/visualization, include a code block starting with ```chart containing a JSON object with keys:
+              {"type": "bar|line|pie", "title": "...", "data": [{"label": "A", "value": 1}, ...], "xKey": "label", "yKey": "value"}
+            - Also include a short textual summary before the code block.
+
             For follow-ups like "details" or "details for the last X shown", use the following behavior:
             - If no ID is provided and the user doesn't ask for raw, return the latest SUMMARY for that type.
             - If the user explicitly asks for "raw" details, return the latest RAW JSON payload for that type, or the specific record's raw JSON if an ID is provided.
@@ -895,7 +900,13 @@ class LoanSphereAgent:
             self.context.add_message("assistant", error_msg)
             return error_msg
 
-    async def chat_async(self, user_message: str, session_id: Optional[str] = None) -> str:
+    async def chat_async(
+        self,
+        user_message: str,
+        session_id: Optional[str] = None,
+        page: Optional[str] = None,
+        page_context: Optional[Dict[str, Any]] = None,
+    ) -> str:
         """Async chat interface that works within FastAPI's running event loop."""
         try:
             self.context.add_message("user", user_message)
@@ -918,8 +929,32 @@ class LoanSphereAgent:
                     logger.warning("Could not set custom session path, using default location")
                     session = SQLiteSession(session_id)
 
+            # If UI context is provided, prefix the user's message with a compact context block
+            prefixed_message = user_message
+            try:
+                if page or page_context:
+                    ctx_lines = ["[UI Context]"]
+                    if page:
+                        ctx_lines.append(f"page: {page}")
+                    if isinstance(page_context, dict) and page_context:
+                        # Only include a compact subset to keep tokens low
+                        compact = {}
+                        for k, v in list(page_context.items())[:8]:
+                            # stringify primitives/short strings only
+                            s = v
+                            if isinstance(v, (dict, list)):
+                                s = "(omitted complex data)"
+                            compact[k] = s
+                        import json as _json
+                        ctx_lines.append(f"context: {_json.dumps(compact)}")
+                    ctx_text = "\n".join(ctx_lines)
+                    prefixed_message = f"{ctx_text}\n\n{user_message}"
+            except Exception:
+                # If context formatting fails, fall back to raw message
+                prefixed_message = user_message
+
             # Use async Runner API to avoid nested event loop issues
-            result = await Runner.run(self.agent, user_message, session=session)
+            result = await Runner.run(self.agent, prefixed_message, session=session)
 
             # Reuse the same extraction logic
             response_content = None

@@ -5,14 +5,16 @@ interface PageWithAssistantProps {
   children: ReactNode;
   pageName: string;
   className?: string;
+  assistantContext?: Record<string, any>;
 }
 
 export default function PageWithAssistant({ 
   children, 
   pageName, 
-  className = "" 
+  className = "",
+  assistantContext = {}
 }: PageWithAssistantProps) {
-  const { AssistantComponent, isExpanded } = useAssistant({ pageName });
+  const { AssistantComponent, isExpanded } = useAssistant({ pageName, context: assistantContext });
 
   return (
     <div className={`relative ${className}`}>

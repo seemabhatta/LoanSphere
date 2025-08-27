@@ -17,6 +17,7 @@ import {
   Minimize2,
   Maximize2
 } from "lucide-react";
+import AssistantChart from "@/components/assistant-chart";
 
 interface Message {
   id: string;
@@ -30,12 +31,14 @@ interface RightPanelAssistantProps {
   currentPage?: string;
   isExpanded: boolean;
   onToggle: () => void;
+  context?: Record<string, any>;
 }
 
 export default function RightPanelAssistant({ 
   currentPage = "", 
   isExpanded, 
-  onToggle 
+  onToggle,
+  context = {}
 }: RightPanelAssistantProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -125,7 +128,9 @@ export default function RightPanelAssistant({
     try {
       const result = await apiRequest('POST', '/api/ai-agent/chat', {
         message: outgoing,
-        session_id: sessionId ?? undefined
+        session_id: sessionId ?? undefined,
+        page: currentPage || undefined,
+        context: context && Object.keys(context).length ? context : undefined,
       });
 
       if (result?.session_id && result.session_id !== sessionId) {
@@ -276,9 +281,12 @@ export default function RightPanelAssistant({
                     {message.type === 'user' && (
                       <User className="w-3 h-3 mt-0.5 flex-shrink-0" />
                     )}
-                    <div className="flex-1 min-w-0">
-                      <p className="whitespace-pre-line text-xs leading-relaxed">{message.content}</p>
-                    </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="whitespace-pre-line text-xs leading-relaxed">{message.content}</p>
+                        {message.type === 'assistant' && message.data?.visualization && (
+                          <AssistantChart spec={message.data.visualization} />
+                        )}
+                      </div>
                   </div>
                   
                   {/* Suggestions */}
