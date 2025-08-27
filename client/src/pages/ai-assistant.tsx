@@ -224,7 +224,7 @@ export default function AIAssistant() {
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-white">
+    <div className="flex-1 flex flex-col overflow-hidden bg-white relative">
       {/* Header */}
       <header className="px-6 py-4">
         <div className="flex items-center caption-text mb-1">
@@ -255,7 +255,7 @@ export default function AIAssistant() {
       </header>
 
       {/* Content - Main content area */}
-      <div className="flex-1 overflow-hidden flex flex-col p-6 pb-0">
+      <div className="flex-1 overflow-hidden flex flex-col p-6 pb-20">
         {/* Quick Actions */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
             {quickActions.map((action, index) => (
@@ -345,7 +345,7 @@ export default function AIAssistant() {
         </div>
 
       {/* Input Area - Fixed at bottom */}
-      <div className="bg-white p-6 border-t border-gray-100">
+      <div className="absolute bottom-0 left-0 right-0 bg-white p-6">
         <div className="flex items-center space-x-2">
           <div className="flex-1 relative">
             <Input
