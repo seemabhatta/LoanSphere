@@ -813,6 +813,8 @@ class LoanSphereAgent:
             tools=[
                 tool_get_all_loan_data,
                 tool_get_loan_data_by_id,
+                tool_get_loan_data_json_graph_by_id,
+                tool_get_latest_loan_data_json_graph,
                 tool_get_loan_data_graph_by_id,
                 tool_get_latest_loan_data_graph,
                 tool_get_all_purchase_advices,

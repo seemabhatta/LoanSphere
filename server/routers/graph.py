@@ -4,6 +4,7 @@ from typing import List, Dict, Any, Optional
 from loguru import logger
 
 from services.loan_data_service import get_loan_data_service
+import glob, json, os
 
 router = APIRouter()
 
@@ -25,6 +26,80 @@ def _edge_id(source: str, target: str, label: Optional[str] = None) -> str:
 async def get_neighbors(req: NeighborRequest):
     try:
         node_id = req.node_id or ""
+        # Special handling for generic JSON explorer nodes: json:<loanId>:<path>
+        if node_id.startswith("json:"):
+            rem = node_id[len("json:"):]
+            if ":" in rem:
+                loan_id, jpath = rem.split(":", 1)
+            else:
+                loan_id, jpath = rem, "/"
+
+            def load_json_for_loan(loan_id: str):
+                lds = get_loan_data_service()
+                raw = lds.tinydb.get_loan_data(loan_id)
+                if raw and isinstance(raw, dict):
+                    return raw.get('loan_data', raw)
+                # Fallback: first sample in attached_assets
+                try:
+                    samples = sorted(glob.glob(os.path.join('attached_assets', '*loan-data*.json')))
+                    if samples:
+                        with open(samples[0], 'r') as f:
+                            return json.load(f)
+                except Exception as e:
+                    logger.error(f"JSON explorer fallback load failed: {e}")
+                return None
+
+            data = load_json_for_loan(loan_id)
+            if data is None:
+                return NeighborResponse(nodes=[], edges=[])
+
+            # Traverse jpath like /A/B/0
+            cur = data
+            if jpath and jpath != "/":
+                parts = [p for p in jpath.split('/') if p != '']
+                try:
+                    for p in parts:
+                        if isinstance(cur, list):
+                            idx = int(p)
+                            cur = cur[idx]
+                        elif isinstance(cur, dict):
+                            cur = cur.get(p)
+                        else:
+                            cur = None
+                            break
+                except Exception:
+                    cur = None
+            nodes: List[Dict[str, Any]] = []
+            edges: List[Dict[str, Any]] = []
+
+            parent_id = node_id
+            def add_node(nid: str, label: str):
+                nodes.append({"id": nid, "label": label})
+            def add_edge(src: str, tgt: str, label: str = ""):
+                edges.append({"id": _edge_id(src, tgt, label), "source": src, "target": tgt, "label": label})
+
+            if isinstance(cur, dict):
+                for k, v in list(cur.items())[:200]:
+                    child_path = jpath.rstrip('/') + '/' + k if jpath != '/' else '/' + k
+                    label = k
+                    # For readability, append a hint type
+                    t = 'obj' if isinstance(v, dict) else ('arr' if isinstance(v, list) else 'val')
+                    disp = f"{label} [{t}]"
+                    nid = f"json:{loan_id}:{child_path}"
+                    add_node(nid, disp)
+                    add_edge(parent_id, nid)
+            elif isinstance(cur, list):
+                for i, v in enumerate(cur[:200]):
+                    child_path = jpath.rstrip('/') + f'/{i}' if jpath != '/' else f'/{i}'
+                    t = 'obj' if isinstance(v, dict) else ('arr' if isinstance(v, list) else 'val')
+                    disp = f"[{i}] [{t}]"
+                    nid = f"json:{loan_id}:{child_path}"
+                    add_node(nid, disp)
+                    add_edge(parent_id, nid)
+            # primitives: no children
+            return NeighborResponse(nodes=nodes, edges=edges)
+
+        # Default typed prefixes
         if ":" in node_id:
             prefix, raw_id = node_id.split(":", 1)
         else:
@@ -51,7 +126,8 @@ async def get_neighbors(req: NeighborRequest):
             # Expand from a specific loan
             raw = lds.tinydb.get_loan_data(raw_id)
             if not raw:
-                raise HTTPException(status_code=404, detail=f"Loan not found: {raw_id}")
+                logger.info(f"Graph neighbors: loan not found for id={raw_id}; returning empty neighbors")
+                return NeighborResponse(nodes=[], edges=[])
             data = raw.get('loan_data', raw)
 
             loan_node_id = f"loan:{raw_id}"
@@ -155,7 +231,8 @@ async def get_neighbors(req: NeighborRequest):
                     loan_id = parts[0]
                     raw = lds.tinydb.get_loan_data(loan_id)
                     if not raw:
-                        raise HTTPException(status_code=404, detail=f"Loan not found: {loan_id}")
+                        logger.info(f"Graph neighbors: loan not found for id={loan_id} (prefix={prefix}); returning empty neighbors")
+                        return NeighborResponse(nodes=[], edges=[])
                     data = raw.get('loan_data', raw)
                     deal = data.get('DEAL') if isinstance(data, dict) else None
 
