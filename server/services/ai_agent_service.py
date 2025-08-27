@@ -11,7 +11,16 @@ from loguru import logger
 from dataclasses import dataclass
 
 # OpenAI Agent SDK imports (following DataMind pattern)
-from agents import Agent, Runner, function_tool, SQLiteSession
+AGENTS_AVAILABLE = True
+try:
+    from agents import Agent, Runner, function_tool, SQLiteSession
+except Exception as _e:  # ImportError or other
+    AGENTS_AVAILABLE = False
+    # Define a no-op decorator so module import doesn't fail where used
+    def function_tool(func=None, *args, **kwargs):
+        def wrapper(f):
+            return f
+        return wrapper(func) if callable(func) else wrapper
 
 from services.loan_data_service import get_loan_data_service
 from services.purchase_advice_service import get_purchase_advice_service
@@ -47,18 +56,116 @@ def tool_get_loan_data_by_id(loan_id: str) -> str:
         result = loan_data_service.get_loan_data(loan_id)
         if not result:
             return f"No loan data found for ID: {loan_id}"
+        stored = result.get('processed_at') or result.get('stored_at') or 'N/A'
         summary = f"Loan Data for ID: {loan_id}\n"
-        summary += f"- Document ID: {result.get('doc_id', 'N/A')}\n"
-        summary += f"- Stored At: {result.get('stored_at', 'N/A')}\n"
-        # Try to detect type hints in payload
-        data = result.get('data') or result.get('loan_data')
+        summary += f"- Stored/Processed At: {stored}\n"
+        # Try to detect type hints and identifiers in payload
+        data = result.get('data') or result.get('loan_data') or {}
         if isinstance(data, dict):
-            if 'ULDD' in data or 'MISMO' in data:
+            if 'ULDD' in data or 'MISMO' in data or 'DEAL' in data:
                 summary += "- Contains ULDD/MISMO formatted loan data\n"
+            xp = None
+            if isinstance(data.get('eventMetadata'), dict):
+                xp = data['eventMetadata'].get('xpLoanNumber')
+            if xp:
+                summary += f"- XP Loan Number: {xp}\n"
         return summary
     except Exception as e:
         logger.error(f"Error getting loan data by ID: {e}")
         return f"Error retrieving loan data for {loan_id}: {str(e)}"
+
+@function_tool
+def tool_get_loan_data_raw_by_id(loan_id: str) -> str:
+    """Get raw loan data JSON by ID"""
+    try:
+        lds = get_loan_data_service()
+        raw = lds.tinydb.get_loan_data(loan_id)
+        if not raw:
+            return f"No raw loan data found for ID: {loan_id}"
+        data = raw.get('loan_data', raw)
+        return json.dumps(data, indent=2, ensure_ascii=False)
+    except Exception as e:
+        logger.error(f"Error getting raw loan data by ID: {e}")
+        return f"Error retrieving raw loan data for {loan_id}: {str(e)}"
+
+@function_tool
+def tool_get_latest_loan_data_raw() -> str:
+    """Get raw JSON for the most recently processed loan data"""
+    try:
+        tdb = get_loan_data_service().tinydb
+        items = tdb.get_all_loan_data()
+        if not items:
+            return "No loan data documents found."
+        def key_fn(it):
+            return it.get('processed_at') or it.get('stored_at') or ''
+        latest = sorted(items, key=key_fn, reverse=True)[0]
+        data = latest.get('loan_data', latest)
+        return json.dumps(data, indent=2, ensure_ascii=False)
+    except Exception as e:
+        logger.error(f"Error getting latest raw loan data: {e}")
+        return f"Error retrieving latest raw loan data: {str(e)}"
+
+@function_tool
+def tool_get_latest_loan_data_summary() -> str:
+    """Get a concise summary of the most recently processed loan data"""
+    try:
+        tdb = get_loan_data_service().tinydb
+        items = tdb.get_all_loan_data()
+        if not items:
+            return "No loan data documents found."
+        def key_fn(it):
+            return it.get('processed_at') or it.get('stored_at') or ''
+        latest = sorted(items, key=key_fn, reverse=True)[0]
+        data = latest.get('loan_data') or {}
+        xp = None
+        if isinstance(data.get('eventMetadata'), dict):
+            xp = data['eventMetadata'].get('xpLoanNumber')
+        return (
+            f"Latest Loan Data\n"
+            f"- ID: {latest.get('id') or latest.get('loan_data_id')}\n"
+            f"- XP Loan Number: {xp or 'N/A'}\n"
+            f"- ULDD/MISMO: {'yes' if ('DEAL' in data or 'ULDD' in data or 'MISMO' in data) else 'unknown'}\n"
+            f"- Timestamp: {latest.get('processed_at') or latest.get('stored_at') or 'N/A'}"
+        )
+    except Exception as e:
+        logger.error(f"Error getting latest loan data summary: {e}")
+        return f"Error retrieving latest loan data summary: {str(e)}"
+
+@function_tool
+def tool_get_loan_data_full_by_id(loan_id: str) -> str:
+    """Get full details for loan data: transformed fields (if any) + raw JSON"""
+    try:
+        lds = get_loan_data_service()
+        transformed = lds.get_loan_data(loan_id)
+        raw = lds.tinydb.get_loan_data(loan_id)
+        if not raw and not transformed:
+            return f"No loan data found for ID: {loan_id}"
+        payload = {
+            'transformed': transformed,
+            'raw': (raw or {}).get('loan_data', raw)
+        }
+        return json.dumps(payload, indent=2, ensure_ascii=False)
+    except Exception as e:
+        logger.error(f"Error getting full loan data by ID: {e}")
+        return f"Error retrieving full loan data for {loan_id}: {str(e)}"
+
+@function_tool
+def tool_list_loan_data_json() -> str:
+    """List loan data docs as JSON array with id and timestamps"""
+    try:
+        lds = get_loan_data_service()
+        items = lds.get_all_loan_data()
+        out = []
+        for it in items:
+            out.append({
+                'id': it.get('id') or it.get('loan_data_id'),
+                'stored_at': it.get('stored_at'),
+                'status': it.get('status'),
+            })
+        return json.dumps(out, indent=2, ensure_ascii=False)
+    except Exception as e:
+        logger.error(f"Error listing loan data json: {e}")
+        return f"Error listing loan data json: {str(e)}"
 
 @function_tool
 def tool_get_all_purchase_advices() -> str:
@@ -88,13 +195,114 @@ def tool_get_purchase_advice_by_id(pa_id: str) -> str:
         result = pa_service.get_purchase_advice(pa_id)
         if not result:
             return f"No purchase advice found for ID: {pa_id}"
+        stored = result.get('processed_at') or result.get('stored_at') or 'N/A'
+        data = result.get('purchase_data') or {}
+        seller = data.get('sellerNumber') or (data.get('purchaseAdviceData') or {}).get('sellerNumber')
+        servicer = data.get('servicerNumber') or (data.get('purchaseAdviceData') or {}).get('servicerNumber')
+        prin = data.get('prinPurchased') or (data.get('purchaseAdviceData') or {}).get('prinPurchased')
         summary = f"Purchase Advice for ID: {pa_id}\n"
-        summary += f"- Document ID: {result.get('doc_id', 'N/A')}\n"
-        summary += f"- Stored At: {result.get('stored_at', 'N/A')}\n"
+        summary += f"- Seller Number: {seller or 'N/A'}\n"
+        summary += f"- Servicer Number: {servicer or 'N/A'}\n"
+        summary += f"- Principal Purchased: {prin or 'N/A'}\n"
+        summary += f"- Stored/Processed At: {stored}\n"
         return summary
     except Exception as e:
         logger.error(f"Error getting purchase advice by ID: {e}")
         return f"Error retrieving purchase advice for {pa_id}: {str(e)}"
+
+@function_tool
+def tool_get_purchase_advice_raw_by_id(pa_id: str) -> str:
+    """Get raw purchase advice JSON by ID"""
+    try:
+        pas = get_purchase_advice_service()
+        raw = pas.tinydb.get_purchase_advice(pa_id)
+        if not raw:
+            return f"No raw purchase advice found for ID: {pa_id}"
+        data = raw.get('purchase_data', raw)
+        return json.dumps(data, indent=2, ensure_ascii=False)
+    except Exception as e:
+        logger.error(f"Error getting raw purchase advice by ID: {e}")
+        return f"Error retrieving raw purchase advice for {pa_id}: {str(e)}"
+
+@function_tool
+def tool_get_latest_purchase_advice_raw() -> str:
+    """Get raw JSON for the most recently processed purchase advice"""
+    try:
+        tdb = get_purchase_advice_service().tinydb
+        items = tdb.get_all_purchase_advice()
+        if not items:
+            return "No purchase advice documents found."
+        def key_fn(it):
+            return it.get('processed_at') or it.get('stored_at') or ''
+        latest = sorted(items, key=key_fn, reverse=True)[0]
+        data = latest.get('purchase_data', latest)
+        return json.dumps(data, indent=2, ensure_ascii=False)
+    except Exception as e:
+        logger.error(f"Error getting latest raw purchase advice: {e}")
+        return f"Error retrieving latest raw purchase advice: {str(e)}"
+
+@function_tool
+def tool_list_purchase_advices_json() -> str:
+    """List purchase advices as JSON array with id and timestamps"""
+    try:
+        pas = get_purchase_advice_service()
+        items = pas.get_all_purchase_advices()
+        out = []
+        for it in items:
+            out.append({
+                'id': it.get('id') or it.get('purchase_advice_id'),
+                'stored_at': it.get('stored_at'),
+                'status': it.get('status'),
+            })
+        return json.dumps(out, indent=2, ensure_ascii=False)
+    except Exception as e:
+        logger.error(f"Error listing purchase advices json: {e}")
+        return f"Error listing purchase advices json: {str(e)}"
+
+@function_tool
+def tool_get_latest_purchase_advice_summary() -> str:
+    """Get a concise summary of the most recently processed purchase advice"""
+    try:
+        tdb = get_purchase_advice_service().tinydb
+        items = tdb.get_all_purchase_advice()
+        if not items:
+            return "No purchase advice documents found."
+        def key_fn(it):
+            return it.get('processed_at') or it.get('stored_at') or ''
+        latest = sorted(items, key=key_fn, reverse=True)[0]
+        data = latest.get('purchase_data') or {}
+        seller = data.get('sellerNumber') or (data.get('purchaseAdviceData') or {}).get('sellerNumber')
+        servicer = data.get('servicerNumber') or (data.get('purchaseAdviceData') or {}).get('servicerNumber')
+        prin = data.get('prinPurchased') or (data.get('purchaseAdviceData') or {}).get('prinPurchased')
+        return (
+            f"Latest Purchase Advice\n"
+            f"- ID: {latest.get('id') or latest.get('purchase_advice_id')}\n"
+            f"- Seller Number: {seller or 'N/A'}\n"
+            f"- Servicer Number: {servicer or 'N/A'}\n"
+            f"- Principal Purchased: {prin or 'N/A'}\n"
+            f"- Timestamp: {latest.get('processed_at') or latest.get('stored_at') or 'N/A'}"
+        )
+    except Exception as e:
+        logger.error(f"Error getting latest purchase advice summary: {e}")
+        return f"Error retrieving latest purchase advice summary: {str(e)}"
+
+@function_tool
+def tool_get_purchase_advice_full_by_id(pa_id: str) -> str:
+    """Get full details for purchase advice: transformed (minimal) + raw JSON"""
+    try:
+        pas = get_purchase_advice_service()
+        transformed = pas.get_purchase_advice(pa_id)
+        raw = pas.tinydb.get_purchase_advice(pa_id)
+        if not raw and not transformed:
+            return f"No purchase advice found for ID: {pa_id}"
+        payload = {
+            'transformed': transformed,
+            'raw': (raw or {}).get('purchase_data', raw)
+        }
+        return json.dumps(payload, indent=2, ensure_ascii=False)
+    except Exception as e:
+        logger.error(f"Error getting full purchase advice by ID: {e}")
+        return f"Error retrieving full purchase advice for {pa_id}: {str(e)}"
 
 @function_tool
 def tool_get_all_commitments() -> str:
@@ -166,6 +374,47 @@ def tool_get_latest_commitment_raw() -> str:
     except Exception as e:
         logger.error(f"Error getting latest raw commitment: {e}")
         return f"Error retrieving latest raw commitment: {str(e)}"
+
+@function_tool
+def tool_get_latest_commitment_summary() -> str:
+    """Get a concise summary of the most recently processed commitment"""
+    try:
+        cs = get_commitment_service()
+        items = cs.get_all_commitments()
+        if not items:
+            return "No commitment documents found."
+        def key_fn(it):
+            return it.get('updatedAt') or it.get('createdAt') or ''
+        latest = sorted(items, key=key_fn, reverse=True)[0]
+        return (
+            f"Latest Commitment\n"
+            f"- ID: {latest.get('id')} (alias: {latest.get('commitmentId')} )\n"
+            f"- Agency: {latest.get('agency','unknown')}\n"
+            f"- Investor Loan Number: {latest.get('investorLoanNumber','N/A')}\n"
+            f"- Status: {latest.get('status','N/A')}\n"
+            f"- Timestamp: {latest.get('updatedAt') or latest.get('createdAt') or 'N/A'}"
+        )
+    except Exception as e:
+        logger.error(f"Error getting latest commitment summary: {e}")
+        return f"Error retrieving latest commitment summary: {str(e)}"
+
+@function_tool
+def tool_get_commitment_full_by_id(commitment_id: str) -> str:
+    """Get full details for a commitment: transformed fields + raw JSON"""
+    try:
+        cs = get_commitment_service()
+        transformed = cs.get_commitment(commitment_id)
+        raw = cs.tinydb.get_commitment(commitment_id)
+        if not raw and not transformed:
+            return f"No commitment found for ID: {commitment_id}"
+        payload = {
+            'transformed': transformed,
+            'raw': (raw or {}).get('commitment_data', raw)
+        }
+        return json.dumps(payload, indent=2, ensure_ascii=False)
+    except Exception as e:
+        logger.error(f"Error getting full commitment by ID: {e}")
+        return f"Error retrieving full commitment for {commitment_id}: {str(e)}"
 
 @function_tool
 def tool_list_commitments_json() -> str:
@@ -269,6 +518,8 @@ class LoanSphereAgent:
     """AI Agent for LoanSphere loan data queries using OpenAI Agent SDK"""
     
     def __init__(self):
+        if not AGENTS_AVAILABLE:
+            raise ImportError("The 'agents' package is not installed. Install openai-agents to enable AI features.")
         self.loan_data_service = get_loan_data_service()
         self.purchase_advice_service = get_purchase_advice_service()
         self.commitment_service = get_commitment_service()
@@ -311,9 +562,11 @@ class LoanSphereAgent:
             
             When users ask vague questions, help them by suggesting specific queries they might want to make.
 
-            For follow-ups like "details" or "details for the last commitments shown", use the following behavior:
-            - If no ID is provided, treat "last" as the most recently processed commitment and call the latest-commitment tool.
-            - You can also return raw JSON for commitments when the user explicitly asks for "raw" details.
+            For follow-ups like "details" or "details for the last X shown", use the following behavior:
+            - If no ID is provided and the user doesn't ask for raw, return the latest SUMMARY for that type.
+            - If the user explicitly asks for "raw" details, return the latest RAW JSON payload for that type, or the specific record's raw JSON if an ID is provided.
+            - When listing, present IDs clearly (e.g., "ID: <id>") and then prefer that ID in subsequent detail calls.
+            - If the user says "show me everything" or "current details is not good", respond with the FULL DETAILS tool for that type (combined transformed + raw JSON) for the last-listed or latest record.
         """,
             tools=[
                 tool_get_all_loan_data,
@@ -324,7 +577,19 @@ class LoanSphereAgent:
                 tool_get_commitment_by_id,
                 tool_get_commitment_raw_by_id,
                 tool_get_latest_commitment_raw,
+                tool_get_latest_commitment_summary,
+                tool_get_commitment_full_by_id,
                 tool_list_commitments_json,
+                tool_get_loan_data_raw_by_id,
+                tool_get_latest_loan_data_raw,
+                tool_get_latest_loan_data_summary,
+                tool_get_loan_data_full_by_id,
+                tool_list_loan_data_json,
+                tool_get_purchase_advice_raw_by_id,
+                tool_get_latest_purchase_advice_raw,
+                tool_get_latest_purchase_advice_summary,
+                tool_get_purchase_advice_full_by_id,
+                tool_list_purchase_advices_json,
                 tool_get_loan_tracking_records,
                 tool_search_by_loan_number,
             ]

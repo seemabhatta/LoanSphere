@@ -28,7 +28,11 @@ async def chat_with_agent(chat_request: ChatMessage):
     Chat with the AI agent to query loan data, purchase advice, and commitments
     """
     try:
-        agent = get_ai_agent()
+        try:
+            agent = get_ai_agent()
+        except ImportError as ie:
+            # AI not available in this deployment
+            raise HTTPException(status_code=503, detail=str(ie))
         
         # Generate session_id if not provided
         session_id = chat_request.session_id
