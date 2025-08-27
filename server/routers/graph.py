@@ -39,14 +39,8 @@ async def get_neighbors(req: NeighborRequest):
                 raw = lds.tinydb.get_loan_data(loan_id)
                 if raw and isinstance(raw, dict):
                     return raw.get('loan_data', raw)
-                # Fallback: first sample in attached_assets
-                try:
-                    samples = sorted(glob.glob(os.path.join('attached_assets', '*loan-data*.json')))
-                    if samples:
-                        with open(samples[0], 'r') as f:
-                            return json.load(f)
-                except Exception as e:
-                    logger.error(f"JSON explorer fallback load failed: {e}")
+                # No fallback: if not found, return None (no expansion)
+                logger.info(f"JSON explorer: loan not found in DB id={loan_id}; returning empty neighbors")
                 return None
 
             data = load_json_for_loan(loan_id)

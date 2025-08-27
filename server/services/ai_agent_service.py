@@ -363,6 +363,47 @@ def tool_get_latest_loan_data_graph() -> str:
         return f"Error building latest loan data graph: {str(e)}"
 
 @function_tool
+def tool_get_loan_data_json_graph_by_id(loan_id: str) -> str:
+    """Return a JSON explorer root node graph for a specific loan's data using generic json:/ paths."""
+    try:
+        graph = {
+            "type": "graph",
+            "title": f"JSON Explorer: Loan {loan_id}",
+            "nodes": [
+                {"id": f"json:{loan_id}:/", "label": "JSON /"}
+            ],
+            "edges": [],
+            "layout": "hierarchical",
+        }
+        import json as _json
+        return (
+            f"Generic JSON explorer for loan ID {loan_id}. Click to expand nodes.\n"
+            + "```graph\n" + _json.dumps(graph) + "\n```"
+        )
+    except Exception as e:
+        logger.error(f"Error building JSON explorer graph: {e}")
+        return f"Error building JSON explorer graph for {loan_id}: {str(e)}"
+
+@function_tool
+def tool_get_latest_loan_data_json_graph() -> str:
+    """Return a JSON explorer root node graph for the most recent loan data."""
+    try:
+        tdb = get_loan_data_service().tinydb
+        items = tdb.get_all_loan_data()
+        if not items:
+            # Fallback generic: use sample marker
+            loan_id = "sample"
+        else:
+            def key_fn(it):
+                return it.get('processed_at') or it.get('stored_at') or ''
+            latest = sorted(items, key=key_fn, reverse=True)[0]
+            loan_id = latest.get('id') or latest.get('loan_data_id') or 'unknown'
+        return tool_get_loan_data_json_graph_by_id(loan_id)
+    except Exception as e:
+        logger.error(f"Error building latest JSON explorer graph: {e}")
+        return f"Error building latest JSON explorer graph: {str(e)}"
+
+@function_tool
 def tool_get_loan_data_full_by_id(loan_id: str) -> str:
     """Get full details for loan data: transformed fields (if any) + raw JSON"""
     try:
