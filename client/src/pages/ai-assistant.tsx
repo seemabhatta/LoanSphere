@@ -231,39 +231,55 @@ export default function AIAssistant() {
         {messages.length === 0 && (
           <div className="flex-1 flex flex-col items-center justify-center p-8 max-w-4xl mx-auto">
             {/* Avatar */}
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mb-6">
-              <Bot className="w-8 h-8 text-white" />
+            <div className="w-20 h-20 bg-blue-600 rounded-2xl flex items-center justify-center mb-8">
+              <Bot className="w-10 h-10 text-white" />
             </div>
             
             {/* Title */}
-            <h1 className="text-3xl font-semibold text-gray-900 mb-2">
+            <h1 className="text-4xl font-medium text-gray-900 mb-3">
               Loan Assistant
             </h1>
             
             {/* Subtitle */}
-            <p className="text-gray-500 mb-2">
+            <p className="text-gray-500 mb-3 text-lg">
               By Xpanse Loan Xchange
             </p>
             
             {/* Description */}
-            <p className="text-gray-600 text-center mb-8 max-w-lg">
-              Your AI-powered assistant for loan boarding, exception management, and analytics operations.
+            <p className="text-gray-600 text-center mb-12 text-base">
+              AI-powered assistant for loan boarding operations.
             </p>
             
             {/* Suggestion Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full max-w-5xl">
-              {quickActions.slice(0, 4).map((action, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleQuickAction(action)}
-                  className="p-4 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors text-left group"
-                  data-testid={`suggestion-${index}`}
-                >
-                  <action.icon className="w-5 h-5 text-gray-500 mb-3 group-hover:text-blue-600" />
-                  <p className="text-sm text-gray-900 font-medium mb-1">{action.label}</p>
-                  <p className="text-xs text-gray-500">{action.query}</p>
-                </button>
-              ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full max-w-6xl">
+              <button
+                onClick={() => handleQuickAction(quickActions[0])}
+                className="p-6 rounded-xl border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors text-left"
+                data-testid="suggestion-0"
+              >
+                <p className="text-gray-900 font-normal text-base mb-2">Show me recent loans and their current status summary</p>
+              </button>
+              <button
+                onClick={() => handleQuickAction(quickActions[1])}
+                className="p-6 rounded-xl border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors text-left"
+                data-testid="suggestion-1"
+              >
+                <p className="text-gray-900 font-normal text-base mb-2">Create a visual graph of the latest loan data</p>
+              </button>
+              <button
+                onClick={() => handleQuickAction(quickActions[4])}
+                className="p-6 rounded-xl border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors text-left"
+                data-testid="suggestion-2"
+              >
+                <p className="text-gray-900 font-normal text-base mb-2">Check for loans at risk of missing SLA targets</p>
+              </button>
+              <button
+                onClick={() => handleQuickAction(quickActions[2])}
+                className="p-6 rounded-xl border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors text-left"
+                data-testid="suggestion-3"
+              >
+                <p className="text-gray-900 font-normal text-base mb-2">List all commitments with detailed information</p>
+              </button>
             </div>
           </div>
         )}
