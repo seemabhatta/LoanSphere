@@ -73,10 +73,12 @@ class CommitmentService:
             
             if commitment:
                 logger.debug(f"Retrieved commitment: {commitment_id}")
+                # Transform to UI format
+                return self._transform_commitment_for_ui(commitment)
             else:
                 logger.debug(f"Commitment not found: {commitment_id}")
             
-            return commitment
+            return None
             
         except Exception as e:
             logger.error(f"Error retrieving commitment {commitment_id}: {e}")
@@ -92,7 +94,15 @@ class CommitmentService:
         try:
             commitments = self.tinydb.get_all_commitments()
             logger.debug(f"Retrieved {len(commitments)} commitments")
-            return commitments
+            
+            # Transform all commitments to UI format
+            transformed_commitments = []
+            for commitment in commitments:
+                transformed = self._transform_commitment_for_ui(commitment)
+                if transformed:
+                    transformed_commitments.append(transformed)
+            
+            return transformed_commitments
             
         except Exception as e:
             logger.error(f"Error retrieving all commitments: {e}")
@@ -154,6 +164,55 @@ class CommitmentService:
         
         if not actual_data.get('sellerNumber'):
             logger.warning(f"Missing sellerNumber for commitment {commitment_id}")
+    
+    def _transform_commitment_for_ui(self, commitment: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """
+        Transform TinyDB commitment format to UI-expected format
+        
+        Args:
+            commitment: Raw TinyDB commitment record
+            
+        Returns:
+            Transformed commitment for UI consumption
+        """
+        try:
+            if not commitment:
+                return None
+            
+            # Extract commitment data
+            commitment_data = commitment.get('commitment_data', {})
+            
+            return {
+                "id": commitment.get('id'),
+                "commitmentId": commitment_data.get('commitmentId') or commitment.get('id'),
+                "investorLoanNumber": commitment_data.get('investorLoanNumber'),
+                "agency": self._detect_agency_from_data(commitment_data),
+                "status": commitment_data.get('status', 'staged').lower(),
+                "data": commitment_data,  # UI expects 'data' field
+                "createdAt": commitment.get('processed_at'),  # UI expects 'createdAt'
+                "updatedAt": commitment.get('processed_at'),
+                "metadata": {
+                    "source": "commitment_upload",  # UI expects 'metadata.source'
+                    "stagedAt": commitment.get('processed_at'),
+                    "sourceFileId": commitment.get('source_file_id')
+                }
+            }
+        except Exception as e:
+            logger.error(f"Error transforming commitment for UI: {e}")
+            return None
+    
+    def _detect_agency_from_data(self, commitment_data: Dict[str, Any]) -> str:
+        """Detect agency from commitment data"""
+        commitment_id = commitment_data.get('commitmentId', '')
+        
+        if commitment_id.startswith('FNMA'):
+            return 'fannie_mae'
+        elif commitment_id.startswith('FHLMC'):
+            return 'freddie_mac' 
+        elif commitment_id.startswith('GNMA'):
+            return 'ginnie_mae'
+        
+        return 'unknown'
 
 
 # Singleton instance
