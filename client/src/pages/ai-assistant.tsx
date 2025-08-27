@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/api";
 import { 
   Bot,
   Send,
@@ -45,7 +47,9 @@ export default function AIAssistant() {
   const [inputValue, setInputValue] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   const quickActions: QuickAction[] = [
     { label: 'Critical Exceptions', query: 'Show me all critical exceptions requiring immediate attention', icon: AlertTriangle, category: 'Operations' },
@@ -76,15 +80,45 @@ export default function AIAssistant() {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const outgoing = inputValue;
     setInputValue('');
     setIsTyping(true);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const aiResponse = generateAIResponse(inputValue);
-      setMessages(prev => [...prev, aiResponse]);
+    try {
+      const result = await apiRequest('POST', '/api/ai-agent/chat', {
+        message: outgoing,
+        session_id: sessionId ?? undefined
+      });
+
+      // result: { response: string, session_id: string }
+      if (result?.session_id && result.session_id !== sessionId) {
+        setSessionId(result.session_id);
+      }
+
+      const aiMessage: Message = {
+        id: `${Date.now()}-assistant`,
+        type: 'assistant',
+        content: result?.response ?? 'No response received.',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, aiMessage]);
+    } catch (err: any) {
+      console.error('AI chat error:', err);
+      toast({
+        title: 'AI Assistant Error',
+        description: err?.message || 'Failed to contact AI service.',
+        variant: 'destructive'
+      });
+      const errMessage: Message = {
+        id: `${Date.now()}-assistant-error`,
+        type: 'assistant',
+        content: 'Sorry, I could not reach the AI service right now.',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errMessage]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
   const generateAIResponse = (query: string): Message => {

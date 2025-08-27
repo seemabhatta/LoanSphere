@@ -36,7 +36,8 @@ async def chat_with_agent(chat_request: ChatMessage):
             import time
             session_id = f"loansphere_session_{int(time.time())}"
         
-        response = agent.chat(chat_request.message, session_id=session_id)
+        # Use async chat to avoid nested event loop issues
+        response = await agent.chat_async(chat_request.message, session_id=session_id)
         
         return ChatResponse(response=response, session_id=session_id)
         
