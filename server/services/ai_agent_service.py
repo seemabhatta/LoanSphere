@@ -46,6 +46,11 @@ class LoanSphereAgent:
         self.loan_tracking_service = LoanTrackingService()
         self.context = AgentContext(conversation_history=[])
         
+        # Get OpenAI API key from environment
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise ValueError("OPENAI_API_KEY environment variable is required")
+        
         # Create agent with instructions (following DataMind pattern)
         self.agent = Agent(
             model="gpt-4o",
