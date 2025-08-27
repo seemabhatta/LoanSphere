@@ -132,6 +132,134 @@ def tool_get_latest_loan_data_summary() -> str:
         return f"Error retrieving latest loan data summary: {str(e)}"
 
 @function_tool
+def tool_get_loan_data_graph_by_id(loan_id: str) -> str:
+    """Build a knowledge graph for a specific loan's data and return as a graph spec JSON in a code block."""
+    try:
+        lds = get_loan_data_service()
+        raw = lds.tinydb.get_loan_data(loan_id)
+        if not raw:
+            return f"No loan data found for ID: {loan_id}"
+        data = raw.get('loan_data', raw)
+
+        nodes = []
+        edges = []
+        node_ids = set()
+
+        def add_node(nid: str, label: str):
+            if nid in node_ids:
+                return
+            node_ids.add(nid)
+            nodes.append({"id": nid, "label": label})
+
+        def add_edge(src: str, tgt: str, label: str):
+            edges.append({"source": src, "target": tgt, "label": label})
+
+        loan_node_id = f"loan:{loan_id}"
+        add_node(loan_node_id, f"Loan {loan_id}")
+
+        # Heuristics: borrower
+        borrower_name = None
+        # Try some common fields quickly
+        for key in ["BorrowerName", "Borrower", "BORROWER_NAME", "borrowerName"]:
+            if isinstance(data.get(key), str):
+                borrower_name = data.get(key)
+                break
+
+        # eventMetadata xpLoanNumber (already the id, but can show explicitly)
+        xp = None
+        evm = data.get('eventMetadata') if isinstance(data, dict) else None
+        if isinstance(evm, dict):
+            xp = evm.get('xpLoanNumber')
+
+        # Seller/Servicer numbers (top-level or within nested purchase/commitment blobs)
+        def find_values(obj, keys):
+            vals = []
+            if isinstance(obj, dict):
+                for k, v in obj.items():
+                    if k in keys and isinstance(v, (str, int)):
+                        vals.append(str(v))
+                    vals.extend(find_values(v, keys))
+            elif isinstance(obj, list):
+                for it in obj:
+                    vals.extend(find_values(it, keys))
+            return vals
+
+        sellers = find_values(data, {"sellerNumber", "SellerNumber"})
+        servicers = find_values(data, {"servicerNumber", "ServicerNumber"})
+
+        # Property address heuristic
+        streets = find_values(data, {"PropertyStreetAddress", "StreetAddress", "PropertyAddress"})
+        cities = find_values(data, {"PropertyCity", "City"})
+        states = find_values(data, {"PropertyState", "State"})
+        zips = find_values(data, {"PropertyPostalCode", "PostalCode", "Zip", "ZipCode"})
+        prop_label = None
+        if streets:
+            city = cities[0] if cities else ""
+            state = states[0] if states else ""
+            z = zips[0] if zips else ""
+            prop_label = f"{streets[0]} {city} {state} {z}".strip()
+
+        # Add nodes/edges based on found values
+        if borrower_name:
+            bid = f"borrower:{borrower_name}"
+            add_node(bid, f"Borrower {borrower_name}")
+            add_edge(loan_node_id, bid, "borrower")
+        if xp:
+            xid = f"xpn:{xp}"
+            add_node(xid, f"XP {xp}")
+            add_edge(loan_node_id, xid, "identifier")
+        if prop_label:
+            pid = f"property:{prop_label}"
+            add_node(pid, f"Property\n{prop_label}")
+            add_edge(loan_node_id, pid, "secured_by")
+        for s in sellers[:2]:
+            sid = f"seller:{s}"
+            add_node(sid, f"Seller {s}")
+            add_edge(loan_node_id, sid, "seller")
+        for s in servicers[:2]:
+            sid = f"servicer:{s}"
+            add_node(sid, f"Servicer {s}")
+            add_edge(loan_node_id, sid, "servicer")
+
+        graph = {
+            "type": "graph",
+            "title": f"Loan {loan_id} — Knowledge Graph",
+            "nodes": nodes,
+            "edges": edges,
+            "layout": "circular",
+        }
+
+        import json as _json
+        return (
+            f"Knowledge graph for loan ID {loan_id} (nodes: {len(nodes)}, edges: {len(edges)})\n"
+            + "```graph\n"
+            + _json.dumps(graph)
+            + "\n```"
+        )
+    except Exception as e:
+        logger.error(f"Error building loan data graph: {e}")
+        return f"Error building loan data graph for {loan_id}: {str(e)}"
+
+@function_tool
+def tool_get_latest_loan_data_graph() -> str:
+    """Build a knowledge graph for the most recently processed loan data."""
+    try:
+        tdb = get_loan_data_service().tinydb
+        items = tdb.get_all_loan_data()
+        if not items:
+            return "No loan data documents found."
+        def key_fn(it):
+            return it.get('processed_at') or it.get('stored_at') or ''
+        latest = sorted(items, key=key_fn, reverse=True)[0]
+        loan_id = latest.get('id') or latest.get('loan_data_id')
+        if not loan_id:
+            loan_id = "unknown"
+        return tool_get_loan_data_graph_by_id(loan_id)
+    except Exception as e:
+        logger.error(f"Error building latest loan data graph: {e}")
+        return f"Error building latest loan data graph: {str(e)}"
+
+@function_tool
 def tool_get_loan_data_full_by_id(loan_id: str) -> str:
     """Get full details for loan data: transformed fields (if any) + raw JSON"""
     try:
@@ -570,6 +698,8 @@ class LoanSphereAgent:
             - If the user asks for a chart/graph/visualization, include a code block starting with ```chart containing a JSON object with keys:
               {"type": "bar|line|pie", "title": "...", "data": [{"label": "A", "value": 1}, ...], "xKey": "label", "yKey": "value"}
             - Also include a short textual summary before the code block.
+            - For knowledge graphs, return a ```graph code block with JSON:
+              {"type":"graph","title":"...","nodes":[{"id":"A","label":"Loan A"},...],"edges":[{"source":"A","target":"B","label":"committed_to"},...],"layout":"circular|hierarchical"}
 
             For follow-ups like "details" or "details for the last X shown", use the following behavior:
             - If no ID is provided and the user doesn't ask for raw, return the latest SUMMARY for that type.
@@ -580,6 +710,8 @@ class LoanSphereAgent:
             tools=[
                 tool_get_all_loan_data,
                 tool_get_loan_data_by_id,
+                tool_get_loan_data_graph_by_id,
+                tool_get_latest_loan_data_graph,
                 tool_get_all_purchase_advices,
                 tool_get_purchase_advice_by_id,
                 tool_get_all_commitments,

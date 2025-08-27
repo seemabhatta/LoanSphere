@@ -18,6 +18,7 @@ import {
   Maximize2
 } from "lucide-react";
 import AssistantChart from "@/components/assistant-chart";
+import AssistantGraph from "@/components/assistant-graph";
 
 interface Message {
   id: string;
@@ -284,7 +285,11 @@ export default function RightPanelAssistant({
                       <div className="flex-1 min-w-0">
                         <p className="whitespace-pre-line text-xs leading-relaxed">{message.content}</p>
                         {message.type === 'assistant' && message.data?.visualization && (
-                          <AssistantChart spec={message.data.visualization} />
+                          message.data.visualization.type === 'graph' ? (
+                            <AssistantGraph spec={message.data.visualization} />
+                          ) : (
+                            <AssistantChart spec={message.data.visualization} />
+                          )
                         )}
                       </div>
                   </div>

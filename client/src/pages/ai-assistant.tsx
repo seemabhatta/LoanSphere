@@ -20,6 +20,7 @@ import {
   Brain
 } from "lucide-react";
 import AssistantChart from "@/components/assistant-chart";
+import AssistantGraph from "@/components/assistant-graph";
 
 interface Message {
   id: string;
@@ -253,7 +254,11 @@ export default function AIAssistant() {
                       <div className="flex-1">
                         <p className="body-text whitespace-pre-line">{message.content}</p>
                         {message.type === 'assistant' && message.data?.visualization && (
-                          <AssistantChart spec={message.data.visualization} />
+                          message.data.visualization.type === 'graph' ? (
+                            <AssistantGraph spec={message.data.visualization} />
+                          ) : (
+                            <AssistantChart spec={message.data.visualization} />
+                          )
                         )}
                         <p className={`caption-text mt-2 ${message.type === 'user' ? 'text-blue-200' : 'text-gray-500'}`}>
                           {message.timestamp.toLocaleTimeString()}

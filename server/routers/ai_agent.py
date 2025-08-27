@@ -57,6 +57,12 @@ async def chat_with_agent(chat_request: ChatMessage):
             m = re.search(r"```chart\s*(\{[\s\S]*?\})\s*```", response_text)
             if m:
                 viz = json.loads(m.group(1))
+            else:
+                g = re.search(r"```graph\s*(\{[\s\S]*?\})\s*```", response_text)
+                if g:
+                    viz = json.loads(g.group(1))
+                    if isinstance(viz, dict) and 'type' not in viz:
+                        viz['type'] = 'graph'
         except Exception:
             viz = None
 
