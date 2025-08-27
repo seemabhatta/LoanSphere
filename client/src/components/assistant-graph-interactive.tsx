@@ -35,6 +35,8 @@ export default function AssistantGraphInteractive({ spec, onNodeClick }: { spec:
           (spec.edges || []).map((e) => ({ id: `${e.source}->${e.target}:${e.label || ''}` , from: e.source, to: e.target, label: e.label }))
         );
 
+        nodesRef.current = nodes;
+        edgesRef.current = edges;
         const data = { nodes, edges };
         nodesRef.current = nodes;
         edgesRef.current = edges;
@@ -142,6 +144,50 @@ export default function AssistantGraphInteractive({ spec, onNodeClick }: { spec:
           }}
         >
           Fit to view
+        </button>
+        <button
+          type="button"
+          className="text-xs px-2 py-1 rounded border border-neutral-200 hover:bg-neutral-50 text-neutral-700"
+          onClick={async () => {
+            const nodes = nodesRef.current;
+            const edges = edgesRef.current;
+            if (!nodes || !edges) return;
+            const ids: string[] = nodes.getIds ? nodes.getIds() : [];
+            for (const nodeId of ids) {
+              if (expandedRef.current.has(nodeId)) continue;
+              try {
+                const res = await fetch('/api/graph/neighbors', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ node_id: nodeId })
+                });
+                if (!res.ok) continue;
+                const payload = await res.json();
+                const addedNodes: string[] = [];
+                const addedEdges: string[] = [];
+                (payload.nodes || []).forEach((n: any) => {
+                  if (!nodes.get(n.id)) {
+                    nodes.add({ id: n.id, label: n.label || n.id });
+                    addedNodes.push(n.id);
+                  }
+                });
+                (payload.edges || []).forEach((e: any) => {
+                  const eid = e.id || `${e.source}->${e.target}:${e.label || ''}`;
+                  if (!edges.get(eid)) {
+                    edges.add({ id: eid, from: e.source, to: e.target, label: e.label });
+                    addedEdges.push(eid);
+                  }
+                });
+                if (addedNodes.length || addedEdges.length) {
+                  expansionsRef.current[nodeId] = { nodes: addedNodes, edges: addedEdges };
+                  expandedRef.current.add(nodeId);
+                }
+              } catch {}
+            }
+            try { networkRef.current?.fit({ animation: { duration: 300, easingFunction: 'easeInOutQuad' } }); } catch {}
+          }}
+        >
+          Expand all
         </button>
       </div>
       {spec.title && (
