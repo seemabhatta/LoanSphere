@@ -238,7 +238,7 @@ export default function AIAssistant() {
               Assistant
             </h1>
             <p className="body-text text-gray-500 mt-1">
-              Welcome back{user?.firstName ? `, ${user.firstName}` : ''}! Manage your loan boarding operations from your central dashboard.
+              Welcome back{user?.first_name ? `, ${user.first_name}` : ''}! Manage your loan boarding operations from your central dashboard.
             </p>
           </div>
           <div className="flex items-center space-x-2">
@@ -374,6 +374,5 @@ export default function AIAssistant() {
           </div>
         </div>
       </div>
-    </div>
   );
 }
