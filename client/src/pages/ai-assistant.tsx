@@ -235,7 +235,7 @@ export default function AIAssistant() {
             
             
             {/* Subtitle */}
-            <p className="caption-text mb-2">XLX Assistant</p>
+            <p className="caption-text mb-2 text-[14px]">XLX Assistant</p>
             
             {/* Description */}
             <p className="body-text text-gray-600 text-center mb-8 max-w-lg">
