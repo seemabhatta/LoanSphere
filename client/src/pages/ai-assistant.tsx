@@ -273,7 +273,7 @@ export default function AIAssistant() {
           </div>
 
           {/* Chat Interface */}
-          <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 flex flex-col">
             {/* Messages */}
             <div className="flex-1 overflow-y-auto space-y-4 mb-4">
               {messages.map((message) => (
@@ -342,7 +342,7 @@ export default function AIAssistant() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input Area - At the bottom of chat container */}
+            {/* Input Area - At the bottom of chat */}
             <div className="border-t border-gray-200 bg-white p-4">
               <div className="flex items-center space-x-2">
                 <div className="flex-1 relative">
