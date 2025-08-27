@@ -8,29 +8,19 @@ from datetime import datetime
 from loguru import logger
 
 from services.tinydb_service import get_tinydb_service
-from services.loan_matching_service import LoanMatchingService
 
 
 class LoanTrackingService:
     """Service to manage loan tracking records and processed documents using TinyDB"""
     
-    def __init__(self, db_session=None):
+    def __init__(self):
         self.tinydb = get_tinydb_service()
-        # Keep SQL session for matching service (uses SQL for identifier extraction)
-        if db_session:
-            self.matching_service = LoanMatchingService(db_session)
-        else:
-            self.matching_service = None
     
     def find_existing_tracking_record(self, file_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Find existing loan tracking record based on file data identifiers"""
         
-        # Extract identifiers using the matching service
-        if self.matching_service:
-            identifiers = self.matching_service._extract_loan_identifiers(file_data)
-        else:
-            # Fallback identifier extraction if no SQL session
-            identifiers = self._extract_loan_identifiers_local(file_data)
+        # Extract identifiers using local extraction method
+        identifiers = self._extract_loan_identifiers_local(file_data)
         
         if not identifiers:
             return None
@@ -86,23 +76,18 @@ class LoanTrackingService:
     def _process_with_loan_tracking(self, file_data: Dict[str, Any], file_type: str, source_file_id: str) -> Dict[str, Any]:
         """Process with loan tracking (purchase_advice, loan_data, documents)"""
         
-        # For purchase advice, always create new loan tracking (don't look for existing)
-        if file_type == 'purchase_advice':
-            logger.info("Creating new loan tracking record for purchase advice")
-            updated_record = self._create_tracking_record_for_purchase_advice(file_data, source_file_id)
-            
-            # Try to associate with existing commitment
-            self._associate_with_commitment(updated_record, file_data)
+        # Unified logic: Check for existing tracking record first
+        tracking_record = self.find_existing_tracking_record(file_data)
+        
+        if tracking_record:
+            logger.info(f"Updating existing tracking record: {tracking_record['xpLoanNumber']}")
+            updated_record = self._update_tracking_record(tracking_record, file_data, file_type, source_file_id)
         else:
-            # For loan_data and documents, try to find existing tracking record
-            tracking_record = self.find_existing_tracking_record(file_data)
-            
-            if tracking_record:
-                logger.info(f"Updating existing tracking record: {tracking_record['xpLoanNumber']}")
-                updated_record = self._update_tracking_record(tracking_record, file_data, file_type, source_file_id)
-            else:
-                logger.info("Creating new loan tracking record")
-                updated_record = self._create_tracking_record(file_data, file_type, source_file_id)
+            logger.info(f"Creating new loan tracking record for {file_type}")
+            updated_record = self._create_tracking_record(file_data, file_type, source_file_id)
+        
+        # Always try to associate with existing commitment
+        self._associate_with_commitment(updated_record, file_data)
         
         # Store document in appropriate collection
         document_record_id = self._store_document_in_nosql(
@@ -113,17 +98,14 @@ class LoanTrackingService:
             "tracking_record": updated_record,
             "document_record_id": document_record_id,
             "xp_loan_number": updated_record['xpLoanNumber'],
-            "action": "created" if file_type == 'purchase_advice' else "updated_or_created"
+            "action": "updated_or_created"
         }
     
     def _create_tracking_record(self, file_data: Dict[str, Any], file_type: str, source_file_id: str) -> Dict[str, Any]:
         """Create new loan tracking record using TinyDB"""
         
         # Extract identifiers
-        if self.matching_service:
-            identifiers = self.matching_service._extract_loan_identifiers(file_data)
-        else:
-            identifiers = self._extract_loan_identifiers_local(file_data)
+        identifiers = self._extract_loan_identifiers_local(file_data)
         
         # Generate XP loan number if not available
         loan_numbers = identifiers.get('loan_numbers', [])
@@ -205,10 +187,7 @@ class LoanTrackingService:
         xp_loan_number = tracking_record['xpLoanNumber']
         
         # Extract identifiers
-        if self.matching_service:
-            identifiers = self.matching_service._extract_loan_identifiers(file_data)
-        else:
-            identifiers = self._extract_loan_identifiers_local(file_data)
+        identifiers = self._extract_loan_identifiers_local(file_data)
         
         # Update external IDs if we have new ones
         existing_external_ids = tracking_record.get('externalIds', {})
@@ -433,108 +412,55 @@ class LoanTrackingService:
         # Fallback to timestamp if no ID found
         return f"COMMIT_{int(datetime.now().timestamp())}"
     
-    def _create_tracking_record_for_purchase_advice(self, purchase_data: Dict[str, Any], source_file_id: str) -> Dict[str, Any]:
-        """Create new loan tracking record specifically for purchase advice"""
-        
-        # Extract identifiers from purchase advice
-        if self.matching_service:
-            identifiers = self.matching_service._extract_loan_identifiers(purchase_data)
-        else:
-            identifiers = self._extract_loan_identifiers_local(purchase_data)
-        
-        # Check if loan tracking record already exists based on investor loan number or fannie mae loan number
-        loan_numbers = identifiers.get('loan_numbers', [])
-        existing_record = None
-        
-        for loan_num in loan_numbers:
-            existing_record = self.tinydb.find_loan_tracking_by_external_ids({'loan_numbers': [loan_num]})
-            if existing_record:
-                logger.info(f"Found existing loan tracking record for loan number {loan_num}: {existing_record['xpLoanNumber']}")
-                break
-        
-        if existing_record:
-            # Update existing record with purchase advice
-            xp_loan_number = existing_record['xpLoanNumber']
-            return self._update_tracking_record(existing_record, purchase_data, 'purchase_advice', source_file_id)
-        
-        # Generate new XP loan number for purchase advice if no existing record found
-        xp_loan_number = f"XP{int(datetime.now().timestamp())}"
-        
-        # Build external IDs
-        external_ids = {}
-        servicer_numbers = identifiers.get('servicer_numbers', [])
-        
-        if loan_numbers:
-            external_ids['correspondentLoanNumber'] = loan_numbers[0]
-            if len(loan_numbers) > 1:
-                external_ids['aggregatorLoanNumber'] = loan_numbers[1]
-            if len(loan_numbers) > 2:
-                external_ids['investorLoanNumber'] = loan_numbers[2]
-        
-        if servicer_numbers:
-            external_ids['servicerNumber'] = servicer_numbers[0]
-        
-        # Extract investor name
-        external_ids['investorName'] = self._extract_investor_name(purchase_data, 'purchase_advice')
-        
-        # Build status
-        status = {
-            "boardingReadiness": "PurchaseAdviceReceived",
-            "lastEvaluated": datetime.now().isoformat()
-        }
-        
-        # Build metadata for purchase advice
-        document_id = f"{xp_loan_number}_{int(datetime.now().timestamp())}"
-        metadata = {
-            "purchase_advice": [{
-                "links": {
-                    "raw": f"stage/{source_file_id}",
-                    "transformed": f"processed/purchase_advice/{document_id}.json",
-                    "documentDb": {
-                        "collection": "purchase_advice",
-                        "documentId": document_id
-                    }
-                }
-            }]
-        }
-        
-        # Create tracking record using TinyDB
-        tracking_record = self.tinydb.create_loan_tracking_record(
-            xp_loan_number=xp_loan_number,
-            tenant_id="default_tenant",
-            external_ids=external_ids,
-            status=status,
-            metadata=metadata
-        )
-        
-        logger.info(f"Created new loan tracking record for purchase advice: {xp_loan_number}")
-        return tracking_record
     
-    def _associate_with_commitment(self, tracking_record: Dict[str, Any], purchase_data: Dict[str, Any]):
+    def _associate_with_commitment(self, tracking_record: Dict[str, Any], file_data: Dict[str, Any]):
         """Try to associate loan tracking record with existing commitment"""
         
-        # Extract commitment identifiers from purchase advice
+        # Extract commitment identifiers from file data
         commitment_fields = ['commitmentId', 'commitment_id', 'investorCommitmentId', 'investorCommitmentIdentifier']
         commitment_ids_to_try = []
         
         for field in commitment_fields:
-            value = purchase_data.get(field)
+            value = file_data.get(field)
             if value:
                 commitment_ids_to_try.append(str(value))
         
         # Also try to extract from nested data structures if they exist
-        if 'commitmentData' in purchase_data:
-            commitment_data = purchase_data['commitmentData']
+        if 'commitmentData' in file_data:
+            commitment_data = file_data['commitmentData']
             for field in commitment_fields:
                 value = commitment_data.get(field)
                 if value:
                     commitment_ids_to_try.append(str(value))
         
+        # For ULDD/loan data, also check nested DEAL structure
+        if 'DEAL' in file_data:
+            try:
+                deal = file_data.get('DEAL', {})
+                loans = deal.get('LOANS', {})
+                loan_list = loans.get('LOAN', [])
+                if not isinstance(loan_list, list):
+                    loan_list = [loan_list]
+                
+                for loan in loan_list:
+                    loan_identifiers = loan.get('LOAN_IDENTIFIERS', {})
+                    loan_id_list = loan_identifiers.get('LOAN_IDENTIFIER', [])
+                    if not isinstance(loan_id_list, list):
+                        loan_id_list = [loan_id_list]
+                    
+                    for loan_id in loan_id_list:
+                        if isinstance(loan_id, dict):
+                            commitment_id = loan_id.get('CommitmentIdentifier')
+                            if commitment_id:
+                                commitment_ids_to_try.append(str(commitment_id))
+            except Exception as e:
+                logger.debug(f"Error extracting commitment IDs from ULDD structure: {e}")
+        
         # Also try to extract from loan-level data like investor loan number matching
         loan_numbers = []
         loan_fields = ['investorLoanNumber', 'loanNumber', 'fannieMaeLn', 'lenderLoanNo']
         for field in loan_fields:
-            value = purchase_data.get(field)
+            value = file_data.get(field)
             if value:
                 loan_numbers.append(str(value))
         
@@ -610,7 +536,7 @@ class LoanTrackingService:
             
             logger.info(f"Associated loan {tracking_record['xpLoanNumber']} with commitment {commitment_id}")
         else:
-            logger.info(f"No matching commitments found for purchase advice. Tried IDs: {commitment_ids_to_try}, Loan numbers: {loan_numbers}")
+            logger.info(f"No matching commitments found for file data. Tried IDs: {commitment_ids_to_try}, Loan numbers: {loan_numbers}")
     
     def _determine_boarding_readiness(self, file_type: str, file_data: Dict[str, Any], loan_numbers: List[str]) -> str:
         """Determine boarding readiness based on file type and data completeness"""

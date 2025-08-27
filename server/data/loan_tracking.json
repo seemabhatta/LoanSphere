@@ -1,61 +1,61 @@
 {
   "_default": {
     "1": {
-      "xpLoanNumber": "XP1756263169",
+      "xpLoanNumber": "4032661590",
       "tenantId": "default_tenant",
       "externalIds": {
+        "commitmentId": "905593",
         "correspondentLoanNumber": "4032661590",
         "aggregatorLoanNumber": "10567642",
-        "servicerNumber": "237740092",
         "investorName": "Unknown"
       },
       "status": {
         "boardingReadiness": "PurchaseAdviceReceived",
-        "lastEvaluated": "2025-08-26T22:52:49.483389"
+        "lastEvaluated": "2025-08-27T00:39:44.650816"
       },
       "metaData": {
         "purchase_advice": [
           {
             "links": {
-              "raw": "stage/staged_1756263161434",
-              "transformed": "processed/purchase_advice/XP1756263169_1756263169.json",
+              "raw": "stage/staged_1756269508571",
+              "transformed": "processed/purchase_advice/4032661590_1756269584.json",
               "documentDb": {
                 "collection": "purchase_advice",
-                "documentId": "XP1756263169_1756263169"
+                "documentId": "4032661590_1756269584"
               }
             }
           }
         ]
       },
-      "createdAt": "2025-08-26T22:52:49.483403",
-      "updatedAt": "2025-08-26T22:52:49.483404"
+      "createdAt": "2025-08-27T00:39:44.650843",
+      "updatedAt": "2025-08-27T00:39:44.650845"
     },
     "2": {
-      "xpLoanNumber": "XP1756263224",
+      "xpLoanNumber": "XP1756269611",
       "tenantId": "default_tenant",
       "externalIds": {
         "investorName": "Royal United Mortgage, LLC"
       },
       "status": {
         "boardingReadiness": "DataReceived",
-        "lastEvaluated": "2025-08-26T22:53:44.370322"
+        "lastEvaluated": "2025-08-27T00:40:11.231618"
       },
       "metaData": {
         "loan_data": [
           {
             "links": {
               "raw": "stage/staged_1756263216457",
-              "transformed": "processed/loan_data/XP1756263224_1756263224.json",
+              "transformed": "processed/loan_data/XP1756269611_1756269611.json",
               "documentDb": {
                 "collection": "loan_data",
-                "documentId": "XP1756263224_1756263224"
+                "documentId": "XP1756269611_1756269611"
               }
             }
           }
         ]
       },
-      "createdAt": "2025-08-26T22:53:44.370377",
-      "updatedAt": "2025-08-26T22:53:44.370388"
+      "createdAt": "2025-08-27T00:40:11.231641",
+      "updatedAt": "2025-08-27T00:40:11.231645"
     }
   }
 }

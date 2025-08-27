@@ -17,28 +17,8 @@
         "minPTR": 6.375,
         "srpGridId": "tdeMT3ds"
       },
-      "source_file_id": "staged_1756263129556",
-      "processed_at": "2025-08-26T22:52:17.029214"
-    },
-    "2": {
-      "id": "925998",
-      "commitment_data": {
-        "commitmentId": "925998",
-        "sellerName": "NFM, Inc",
-        "sellerNumber": "268590005",
-        "servicerNumber": "237740092",
-        "status": "Open",
-        "product": "30-Year Fixed Rate",
-        "commitmentDate": "2025-05-27",
-        "expirationDate": "2025-06-16",
-        "currentCommitmentAmount": 1496000,
-        "purchasedAmount": 0,
-        "remainingBalance": 1496000,
-        "minPTR": 6.375,
-        "srpGridId": "tdeMT3ds"
-      },
       "source_file_id": "staged_1756265009075",
-      "processed_at": "2025-08-26T23:23:43.313656"
+      "processed_at": "2025-08-27T00:38:46.983921"
     }
   }
 }
