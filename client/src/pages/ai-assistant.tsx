@@ -273,9 +273,9 @@ export default function AIAssistant() {
           </div>
 
           {/* Chat Interface */}
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col overflow-hidden">
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto space-y-4 mb-4">
+            <div className="flex-1 overflow-y-auto space-y-4">
               {messages.map((message) => (
                 <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[80%] rounded-lg p-3 ${
@@ -341,36 +341,36 @@ export default function AIAssistant() {
               )}
               <div ref={messagesEndRef} />
             </div>
+          </div>
+        </div>
 
-            {/* Input Area - At the bottom of chat */}
-            <div className="border-t border-gray-200 bg-white p-4">
-              <div className="flex items-center space-x-2">
-                <div className="flex-1 relative">
-                  <Input
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                    placeholder="Ask me anything about loans, exceptions, metrics, or system status..."
-                    className="pr-12"
-                    data-testid="ai-input"
-                  />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={toggleListening}
-                    className={`absolute right-2 top-1/2 -translate-y-1/2 p-1 h-6 w-6 ${
-                      isListening ? 'text-red-600' : 'text-gray-400'
-                    }`}
-                    data-testid="voice-button"
-                  >
-                    {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                  </Button>
-                </div>
-                <Button onClick={handleSendMessage} disabled={!inputValue.trim()} data-testid="send-button">
-                  <Send className="w-4 h-4" />
-                </Button>
-              </div>
+        {/* Input Area - Fixed at bottom of panel */}
+        <div className="border-t border-gray-200 bg-white p-4">
+          <div className="flex items-center space-x-2">
+            <div className="flex-1 relative">
+              <Input
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                placeholder="Ask me anything about loans, exceptions, metrics, or system status..."
+                className="pr-12"
+                data-testid="ai-input"
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleListening}
+                className={`absolute right-2 top-1/2 -translate-y-1/2 p-1 h-6 w-6 ${
+                  isListening ? 'text-red-600' : 'text-gray-400'
+                }`}
+                data-testid="voice-button"
+              >
+                {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              </Button>
             </div>
+            <Button onClick={handleSendMessage} disabled={!inputValue.trim()} data-testid="send-button">
+              <Send className="w-4 h-4" />
+            </Button>
           </div>
         </div>
       </div>
