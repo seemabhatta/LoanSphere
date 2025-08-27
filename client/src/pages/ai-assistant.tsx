@@ -252,7 +252,7 @@ export default function AIAssistant() {
                   data-testid={`suggestion-${index}`}
                 >
                   <action.icon className="w-5 h-5 text-gray-500 mb-3 group-hover:text-blue-600" />
-                  <p className="label-text text-gray-900 mb-1">{action.label}</p>
+                  <p className="text-gray-900 font-medium mb-1 text-[12px]">{action.label}</p>
                   <p className="caption-text">{action.query}</p>
                 </button>
               ))}
