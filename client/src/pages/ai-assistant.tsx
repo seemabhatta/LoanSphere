@@ -225,73 +225,69 @@ export default function AIAssistant() {
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-white relative">
-      {/* Header */}
-      <header className="px-6 py-4">
-        <div className="flex items-center caption-text mb-1">
-          <span>Command Center</span>
-          <span className="mx-2">›</span>
-          <span className="text-gray-900">Assistant</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="section-header text-gray-900" data-testid="page-title">
-              Assistant
+      {/* Main Content */}
+      <div className="flex-1 overflow-hidden flex flex-col pb-20">
+        {/* Welcome Section */}
+        {messages.length === 0 && (
+          <div className="flex-1 flex flex-col items-center justify-center p-8 max-w-4xl mx-auto">
+            {/* Avatar */}
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mb-6">
+              <Bot className="w-8 h-8 text-white" />
+            </div>
+            
+            {/* Title */}
+            <h1 className="text-3xl font-semibold text-gray-900 mb-2">
+              Loan Assistant
             </h1>
-            <p className="body-text text-gray-500 mt-1">
-              Welcome back{user?.first_name ? `, ${user.first_name}` : ''}! Manage your loan boarding operations from your central dashboard.
+            
+            {/* Subtitle */}
+            <p className="text-gray-500 mb-2">
+              By Xpanse Loan Xchange
             </p>
+            
+            {/* Description */}
+            <p className="text-gray-600 text-center mb-8 max-w-lg">
+              Your AI-powered assistant for loan boarding, exception management, and analytics operations.
+            </p>
+            
+            {/* Suggestion Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full max-w-5xl">
+              {quickActions.slice(0, 4).map((action, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleQuickAction(action)}
+                  className="p-4 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors text-left group"
+                  data-testid={`suggestion-${index}`}
+                >
+                  <action.icon className="w-5 h-5 text-gray-500 mb-3 group-hover:text-blue-600" />
+                  <p className="text-sm text-gray-900 font-medium mb-1">{action.label}</p>
+                  <p className="text-xs text-gray-500">{action.query}</p>
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-              <Brain className="w-3 h-3 mr-1" />
-              {`${(import.meta.env.VITE_ASSISTANT_MODEL_LABEL || import.meta.env.VITE_OPENAI_MODEL || 'gpt-4o-mini').toUpperCase()} Powered`}
-            </Badge>
-            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-              <Zap className="w-3 h-3 mr-1" />
-              Real-time Data
-            </Badge>
-          </div>
-        </div>
-      </header>
+        )}
 
-      {/* Content - Main content area */}
-      <div className="flex-1 overflow-hidden flex flex-col p-6 pb-20">
-        {/* Quick Actions */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-            {quickActions.map((action, index) => (
-              <button
-                key={index}
-                onClick={() => handleQuickAction(action)}
-                className="p-3 rounded-lg border hover:bg-gray-50 transition-colors group text-center"
-                data-testid={`quick-action-${index}`}
-              >
-                <action.icon className="w-5 h-5 mx-auto mb-2 text-gray-600 group-hover:text-blue-600" />
-                <p className="label-text text-gray-900">{action.label}</p>
-                <p className="caption-text">{action.category}</p>
-              </button>
-            ))}
-          </div>
-
-          {/* Chat Interface */}
-          <div className="flex-1 flex flex-col min-h-0">
+        {/* Chat Interface */}
+        {messages.length > 0 && (
+          <div className="flex-1 flex flex-col p-6">
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto space-y-4">
+            <div className="flex-1 overflow-y-auto space-y-4 max-w-4xl mx-auto w-full">
               {messages.map((message) => (
                 <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[80%] rounded-lg p-3 ${
+                  <div className={`max-w-[80%] rounded-lg p-4 ${
                     message.type === 'user'
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-100 text-gray-900'
                   }`}>
-                    <div className="flex items-start space-x-2">
+                    <div className="flex items-start space-x-3">
                       {message.type === 'assistant' && (
-                        <Bot className="w-4 h-4 mt-0.5 text-blue-600" />
-                      )}
-                      {message.type === 'user' && (
-                        <User className="w-4 h-4 mt-0.5" />
+                        <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <Bot className="w-3 h-3 text-white" />
+                        </div>
                       )}
                       <div className="flex-1">
-                        <p className="body-text whitespace-pre-line">{message.content}</p>
+                        <p className="whitespace-pre-line">{message.content}</p>
                         {message.type === 'assistant' && (message as any).data?.visualization && (
                           (message as any).data.visualization.type === 'graph' ? (
                             <AssistantGraphInteractive spec={(message as any).data.visualization} />
@@ -299,7 +295,7 @@ export default function AIAssistant() {
                             <AssistantChart spec={(message as any).data.visualization} />
                           )
                         )}
-                        <p className={`caption-text mt-2 ${message.type === 'user' ? 'text-blue-200' : 'text-gray-500'}`}>
+                        <p className={`text-xs mt-2 ${message.type === 'user' ? 'text-blue-200' : 'text-gray-500'}`}>
                           {message.timestamp.toLocaleTimeString()}
                         </p>
                       </div>
@@ -312,7 +308,7 @@ export default function AIAssistant() {
                           <button
                             key={index}
                             onClick={() => handleSuggestionClick(suggestion)}
-                            className="caption-text px-3 py-1 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+                            className="text-xs px-3 py-1 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
                             data-testid={`suggestion-${index}`}
                           >
                             {suggestion}
@@ -327,9 +323,11 @@ export default function AIAssistant() {
               {/* Typing indicator */}
               {isTyping && (
                 <div className="flex justify-start">
-                  <div className="bg-gray-100 rounded-lg p-3">
-                    <div className="flex items-center space-x-2">
-                      <Bot className="w-4 h-4 text-blue-600" />
+                  <div className="bg-gray-100 rounded-lg p-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-md flex items-center justify-center">
+                        <Bot className="w-3 h-3 text-white" />
+                      </div>
                       <div className="flex space-x-1">
                         <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
                         <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
@@ -342,7 +340,8 @@ export default function AIAssistant() {
               <div ref={messagesEndRef} />
             </div>
           </div>
-        </div>
+        )}
+      </div>
 
       {/* Input Area - Fixed at content bottom */}
       <div className="absolute bottom-0 left-0 right-0 bg-white p-6">
