@@ -295,14 +295,7 @@ export default function AIAssistant() {
                         <p className="body-text whitespace-pre-line">{message.content}</p>
                         {message.type === 'assistant' && (message as any).data?.visualization && (
                           (message as any).data.visualization.type === 'graph' ? (
-                            <AssistantGraphInteractive
-                              spec={(message as any).data.visualization}
-                              onNodeClick={(nodeId: string, label?: string) => {
-                                const pretty = label ? `${nodeId} (${label})` : nodeId;
-                                const q = `Show details for graph node ${pretty}. If this is a loan node, show loan data summary and graph related entities.`;
-                                sendAgentQuery(q);
-                              }}
-                            />
+                            <AssistantGraphInteractive spec={(message as any).data.visualization} />
                           ) : (
                             <AssistantChart spec={(message as any).data.visualization} />
                           )

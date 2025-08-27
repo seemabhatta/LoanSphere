@@ -322,15 +322,7 @@ export default function RightPanelAssistant({
                         <p className="whitespace-pre-line text-xs leading-relaxed">{message.content}</p>
                         {message.type === 'assistant' && (message as any).data?.visualization && (
                           (message as any).data.visualization.type === 'graph' ? (
-                            <AssistantGraphInteractive
-                              spec={(message as any).data.visualization}
-                              // On node click, send a follow-up query to the agent
-                              onNodeClick={(nodeId: string, label?: string) => {
-                                const pretty = label ? `${nodeId} (${label})` : nodeId;
-                                const q = `Show details for graph node ${pretty}. If this is a loan node, show loan data summary and graph related entities.`;
-                                sendAgentQuery(q);
-                              }}
-                            />
+                            <AssistantGraphInteractive spec={(message as any).data.visualization} />
                           ) : (
                             <AssistantChart spec={(message as any).data.visualization} />
                           )
