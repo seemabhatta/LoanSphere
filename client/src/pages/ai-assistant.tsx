@@ -232,10 +232,7 @@ export default function AIAssistant() {
           <div className="flex-1 flex flex-col items-center justify-center p-8 max-w-4xl mx-auto">
             
             
-            {/* Title */}
-            <h1 className="text-3xl font-semibold text-gray-900 mb-2">
-              Loan Assistant
-            </h1>
+            
             
             {/* Subtitle */}
             <p className="text-gray-500 mb-2">
