@@ -15,12 +15,8 @@ from dotenv import load_dotenv
 load_dotenv(dotenv_path="../.env")
 
 # from database import init_db, get_db  # Using TinyDB instead
-from routers import loans, exceptions, agents, compliance, documents, metrics, staging, purchase_advices, commitments, auth, loan_data
+from routers import loans, exceptions, compliance, documents, metrics, staging, purchase_advices, commitments, auth, loan_data
 from services.loan_service import LoanService
-from agents.planner_agent import PlannerAgent
-from agents.tool_agent import ToolAgent
-from agents.verifier_agent import VerifierAgent
-from agents.document_agent import DocumentAgent
 
 # WebSocket connection manager
 class ConnectionManager:
@@ -48,8 +44,6 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
-# Initialize agents
-agents_registry = {}
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -59,17 +53,6 @@ async def lifespan(app: FastAPI):
     # Initialize database - SKIPPED: Using TinyDB instead
     # await init_db()
     
-    # Skip agent initialization - Using TinyDB staging directly
-    # db = None  # Using TinyDB instead
-    # loan_service = LoanService(db)
-    # 
-    # agents_registry["planner"] = PlannerAgent(loan_service, manager)
-    # agents_registry["tool"] = ToolAgent(loan_service, manager)
-    # agents_registry["verifier"] = VerifierAgent(loan_service, manager)
-    # agents_registry["document"] = DocumentAgent(loan_service, manager)
-    # 
-    # # Start agent monitoring
-    # asyncio.create_task(monitor_agents())
     
     logger.info("System initialized successfully")
     yield
@@ -103,7 +86,6 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(loans.router, prefix="/api/loans", tags=["loans"])
 app.include_router(exceptions.router, prefix="/api/exceptions", tags=["exceptions"])
-app.include_router(agents.router, prefix="/api/agents", tags=["agents"])
 app.include_router(compliance.router, prefix="/api/compliance", tags=["compliance"])
 app.include_router(documents.router, prefix="/api/documents", tags=["documents"])
 app.include_router(metrics.router, prefix="/api/metrics", tags=["metrics"])
@@ -129,33 +111,6 @@ async def websocket_endpoint(websocket: WebSocket):
     except WebSocketDisconnect:
         manager.disconnect(websocket)
 
-async def monitor_agents():
-    """Background task to monitor agent status and broadcast updates"""
-    while True:
-        try:
-            # Collect agent statuses
-            agent_statuses = []
-            for name, agent in agents_registry.items():
-                status = await agent.get_status()
-                agent_statuses.append({
-                    "name": name,
-                    "status": status["status"],
-                    "current_task": status.get("current_task"),
-                    "last_activity": status.get("last_activity")
-                })
-            
-            # Broadcast agent status update
-            await manager.broadcast({
-                "type": "agent_status_update",
-                "data": agent_statuses,
-                "timestamp": datetime.now().isoformat()
-            })
-            
-            await asyncio.sleep(10)  # Update every 10 seconds
-            
-        except Exception as e:
-            logger.error(f"Error in agent monitoring: {e}")
-            await asyncio.sleep(30)
 
 @app.get("/")
 async def root():

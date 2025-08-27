@@ -62,19 +62,6 @@ class ExceptionModel(Base):
     # Relationships
     loan = relationship("LoanModel", back_populates="exceptions")
 
-class AgentModel(Base):
-    __tablename__ = "agents"
-    
-    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    name = Column(String, nullable=False)
-    type = Column(String, nullable=False)  # planner, tool, verifier, document
-    status = Column(String, nullable=False, default="idle")  # active, running, idle, error, wait
-    description = Column(String)
-    current_task = Column(String)
-    tasks_completed = Column(Integer, default=0)
-    tasks_errored = Column(Integer, default=0)
-    last_activity = Column(DateTime)
-    model_metadata = Column(JSON)
 
 class ComplianceEventModel(Base):
     __tablename__ = "compliance_events"
