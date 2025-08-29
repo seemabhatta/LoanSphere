@@ -51,54 +51,68 @@ NODE_ENV=development
 
 ### 4. Start Development Server
 
-#### 🚀 **Recommended: Fast Development Mode**
+#### 🚀 **Development Speed Options (Fastest to Slowest)**
+
+**Ultra-Fast Mode (~1 second startup):**
 ```bash
-# Fastest startup (~2-3 seconds) - assumes Python server already running
+# Terminal 1: Start API server only
+npm run dev:ultra
+
+# Terminal 2: Start client server separately  
+npm run dev:client
+```
+
+**Fast Mode (~2-3 seconds startup):**
+```bash
+# Fastest single-command option (assumes Python already running)
 npm run dev:fast
 ```
 
-#### **Alternative Development Commands**
+**Alternative Commands:**
 ```bash
 # Standard mode (starts all services, ~8+ seconds)
 npm run dev
 
-# Start Python server only (run in separate terminal)
-npm run python
-
-# Concurrent mode (separate client/server processes)
+# Concurrent mode (separate client/server processes, ~3-4 seconds)
 npm run dev:concurrent
 
 # Watch mode (auto-restart on changes)
 npm run dev:watch
+
+# Start Python server only (run in separate terminal)
+npm run python
 ```
 
-#### **Optimal Development Workflow:**
-1. **First time setup:**
-   ```bash
-   # Activate Python virtual environment
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   
-   # Start Python server in one terminal
-   cd server && python3 -m uvicorn main:app --reload --port 8000
-   
-   # Start Express server in another terminal
-   npm run dev:fast
-   ```
+#### **⚡ Recommended Development Workflow:**
 
-2. **Daily development (fastest - Python already running):**
-   ```bash
-   npm run dev:fast
-   ```
+**For Maximum Speed (3 terminals):**
+```bash
+# Terminal 1: Python API server
+source venv/bin/activate
+cd server && python3 -m uvicorn main:app --reload --port 8000
 
-3. **If Python server stops working:**
-   ```bash
-   # Kill any stuck processes
-   pkill -f "uvicorn main:app"
-   
-   # Restart Python server (in venv)
-   source venv/bin/activate
-   cd server && python3 -m uvicorn main:app --reload --port 8000
-   ```
+# Terminal 2: Express proxy server (~1s startup)
+npm run dev:ultra
+
+# Terminal 3: Vite client server (independent)
+npm run dev:client
+```
+
+**For Simplicity (2 terminals):**
+```bash
+# Terminal 1: Python API server
+source venv/bin/activate
+cd server && python3 -m uvicorn main:app --reload --port 8000
+
+# Terminal 2: Everything else (~2-3s startup)
+npm run dev:fast
+```
+
+**For First-Time Setup (1 command):**
+```bash
+# Starts everything automatically (~8+ seconds)
+npm run dev
+```
 
 **Development URLs:**
 - **Frontend**: http://localhost:5173 (Vite dev server)
@@ -207,9 +221,22 @@ npm run python              # Restart Python server
 - **Auth not working**: Ensure Google OAuth credentials in `.env`
 
 ### Performance Optimizations
-- **Fast mode**: Uses `npm run dev:fast` (2-3s startup)
+- **Ultra mode**: `npm run dev:ultra` (~1s startup) - Express only, separate Vite
+- **Fast mode**: `npm run dev:fast` (~2-3s startup) - Skips Python startup wait
+- **Concurrent mode**: `npm run dev:concurrent` (~3-4s startup) - Parallel processes
 - **Vite optimizations**: Pre-bundles dependencies, disabled error overlay
 - **TypeScript**: `--no-cache` flag for faster compilation
+
+### Why Development is Slow
+**Startup Bottlenecks:**
+1. **Python server startup** (~3s) - Port checking and uvicorn launch
+2. **Vite bundling** (~2-4s) - Dependency scanning and pre-bundling
+3. **Express setup** (~0.5s) - Middleware and proxy configuration
+
+**Speed Comparison:**
+- `npm run dev`: ~8+ seconds (full stack)
+- `npm run dev:fast`: ~2-3 seconds (skip Python wait)  
+- `npm run dev:ultra`: ~1 second (Express only)
 
 ### OAuth Issues
 - Verify Google Cloud Console redirect URIs

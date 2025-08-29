@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "NODE_ENV=development tsx server/index.ts",
     "dev:fast": "NODE_ENV=development tsx --no-cache server/index-fast.ts",
+    "dev:ultra": "NODE_ENV=development SKIP_VITE=true tsx --no-cache server/index-fast.ts",
     "dev:watch": "NODE_ENV=development tsx watch server/index.ts",
     "dev:concurrent": "concurrently \"npm run dev:client\" \"npm run dev:server\"",
     "dev:client": "vite",

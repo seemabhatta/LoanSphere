@@ -27,6 +27,7 @@ import Loans from "@/pages/loans";
 import PurchaseAdvices from "@/pages/purchase-advices";
 import SettingsPage from "@/pages/settings";
 import AgentStudioPage from "@/pages/agent-studio";
+import IntegrationsPage from "@/pages/integrations";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -286,6 +287,19 @@ function Router() {
                 <div className="flex-1 p-4 transition-all duration-300 overflow-hidden">
                   <div className="bg-white rounded-lg shadow-sm h-full overflow-y-auto">
                     <AgentStudioPage />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Route>
+          <Route path="/integrations">
+            <div className="h-screen flex flex-col bg-gray-100">
+              <TopHeader onToggleSidebar={toggleSidebar} sidebarCollapsed={sidebarCollapsed} />
+              <div className="flex-1 flex overflow-hidden">
+                <Sidebar isOpen={true} onClose={() => {}} collapsed={sidebarCollapsed} />
+                <div className="flex-1 p-4 transition-all duration-300 overflow-hidden">
+                  <div className="bg-white rounded-lg shadow-sm h-full overflow-y-auto">
+                    <IntegrationsPage />
                   </div>
                 </div>
               </div>

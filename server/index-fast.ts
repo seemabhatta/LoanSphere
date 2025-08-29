@@ -74,8 +74,9 @@ app.use((req, res, next) => {
     res.status(status).json({ message });
   });
 
-  // Fast Vite setup
-  if (app.get("env") === "development") {
+  // Skip Vite setup for maximum speed - assuming client runs separately
+  // For even faster startup, run: npm run dev:client in separate terminal
+  if (process.env.SKIP_VITE !== 'true' && app.get("env") === "development") {
     console.log("⚡ Setting up Vite (fast mode)...");
     await setupVite(app, server);
   }

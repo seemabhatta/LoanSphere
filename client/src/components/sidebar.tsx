@@ -21,7 +21,8 @@ import {
   History,
   LogOut,
   ChevronDown,
-  Brain
+  Brain,
+  Cable
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -62,7 +63,7 @@ const navigationSections = [
   {
     title: "PLATFORM",
     items: [
-      { name: "Integrations", href: "/settings", icon: Settings, description: "Connectors & platform integrations" },
+      { name: "Integrations", href: "/integrations", icon: Cable, description: "Connectors & platform integrations" },
       { name: "Agent Studio", href: "/agent-studio", icon: Brain, description: "Tools, prompts, behavior" },
       { name: "Stage", href: "/simple-staging", icon: Upload, description: "Upload & stage files" },
       { name: "Scheduler", href: "/scheduler", icon: Calendar, description: "Loan processing schedule" },
