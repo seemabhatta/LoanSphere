@@ -5,6 +5,12 @@
   "license": "MIT",
   "scripts": {
     "dev": "NODE_ENV=development tsx server/index.ts",
+    "dev:fast": "NODE_ENV=development tsx --no-cache server/index-fast.ts",
+    "dev:watch": "NODE_ENV=development tsx watch server/index.ts",
+    "dev:concurrent": "concurrently \"npm run dev:client\" \"npm run dev:server\"",
+    "dev:client": "vite",
+    "dev:server": "NODE_ENV=development tsx --no-cache server/index.ts",
+    "python": "cd server && python3 -m uvicorn main:app --reload --port 8000",
     "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc"

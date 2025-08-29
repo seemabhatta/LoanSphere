@@ -33,5 +33,21 @@ export default defineConfig({
       strict: true,
       deny: ["**/.*"],
     },
+    hmr: {
+      overlay: false, // Disable error overlay for faster HMR
+    },
+  },
+  optimizeDeps: {
+    include: [
+      "react",
+      "react-dom",
+      "@tanstack/react-query",
+      "lucide-react",
+      "clsx",
+      "tailwind-merge"
+    ],
+  },
+  define: {
+    __DEV__: process.env.NODE_ENV === "development",
   },
 });
