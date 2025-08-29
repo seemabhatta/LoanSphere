@@ -23,9 +23,17 @@ cd LoanSphere
 npm install
 ```
 
-**Python Dependencies:**
+**Python Dependencies (Virtual Environment Recommended):**
 ```bash
-pip install uvicorn fastapi python-dotenv tinydb
+# Create and activate virtual environment
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r server/requirements.txt
+
+# Or install manually:
+pip install uvicorn fastapi python-dotenv tinydb sqlalchemy authlib itsdangerous httpx loguru snowflake-connector-python
 ```
 
 ### 3. Environment Configuration
@@ -65,17 +73,32 @@ npm run dev:watch
 ```
 
 #### **Optimal Development Workflow:**
-1. **First time setup or when restarting everything:**
+1. **First time setup:**
    ```bash
-   npm run dev
+   # Activate Python virtual environment
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   
+   # Start Python server in one terminal
+   cd server && python3 -m uvicorn main:app --reload --port 8000
+   
+   # Start Express server in another terminal
+   npm run dev:fast
    ```
 
-2. **Daily development (fastest):**
+2. **Daily development (fastest - Python already running):**
    ```bash
    npm run dev:fast
    ```
+
+3. **If Python server stops working:**
+   ```bash
+   # Kill any stuck processes
+   pkill -f "uvicorn main:app"
    
-   *Note: If Python server isn't running, start it separately with `npm run python`*
+   # Restart Python server (in venv)
+   source venv/bin/activate
+   cd server && python3 -m uvicorn main:app --reload --port 8000
+   ```
 
 **Development URLs:**
 - **Frontend**: http://localhost:5173 (Vite dev server)
@@ -158,7 +181,8 @@ curl -X POST "http://localhost:8000/api/staging/process" \
 ### Development Speed Issues
 ```bash
 # If npm run dev:fast shows "Python server unavailable"
-npm run python  # Start Python server in separate terminal
+source venv/bin/activate
+cd server && python3 -m uvicorn main:app --reload --port 8000
 
 # If startup is still slow, clear caches
 rm -rf node_modules/.vite
@@ -177,8 +201,10 @@ npm run python              # Restart Python server
 
 ### Python Issues  
 - Ensure Python 3.11+ installed
-- Install uvicorn: `pip install uvicorn[standard]`
-- Activate virtual environment: `source venv/bin/activate`
+- **Always activate virtual environment first**: `source venv/bin/activate`
+- **Missing dependencies error**: Install with `pip install -r server/requirements.txt`
+- **Import errors**: Check if `itsdangerous`, `authlib`, `sqlalchemy` are installed
+- **Auth not working**: Ensure Google OAuth credentials in `.env`
 
 ### Performance Optimizations
 - **Fast mode**: Uses `npm run dev:fast` (2-3s startup)
