@@ -43,11 +43,41 @@ NODE_ENV=development
 
 ### 4. Start Development Server
 
+#### 🚀 **Recommended: Fast Development Mode**
 ```bash
-npm run dev
+# Fastest startup (~2-3 seconds) - assumes Python server already running
+npm run dev:fast
 ```
 
-This starts:
+#### **Alternative Development Commands**
+```bash
+# Standard mode (starts all services, ~8+ seconds)
+npm run dev
+
+# Start Python server only (run in separate terminal)
+npm run python
+
+# Concurrent mode (separate client/server processes)
+npm run dev:concurrent
+
+# Watch mode (auto-restart on changes)
+npm run dev:watch
+```
+
+#### **Optimal Development Workflow:**
+1. **First time setup or when restarting everything:**
+   ```bash
+   npm run dev
+   ```
+
+2. **Daily development (fastest):**
+   ```bash
+   npm run dev:fast
+   ```
+   
+   *Note: If Python server isn't running, start it separately with `npm run python`*
+
+**Development URLs:**
 - **Frontend**: http://localhost:5173 (Vite dev server)
 - **Node.js API**: http://localhost:5000 (Express proxy)  
 - **Python API**: http://localhost:8000 (FastAPI server)
@@ -125,13 +155,35 @@ curl -X POST "http://localhost:8000/api/staging/process" \
 
 ## Troubleshooting
 
+### Development Speed Issues
+```bash
+# If npm run dev:fast shows "Python server unavailable"
+npm run python  # Start Python server in separate terminal
+
+# If startup is still slow, clear caches
+rm -rf node_modules/.vite
+npm run dev:fast
+```
+
 ### Port Conflicts
-- Frontend: Change port in `vite.config.ts`
-- Backend: Set `PORT` environment variable
+```bash
+# If "Address already in use" error:
+pkill -f "uvicorn main:app"  # Kill Python server
+npm run python              # Restart Python server
+
+# Frontend port conflicts: Change port in `vite.config.ts`
+# Backend port conflicts: Set `PORT` environment variable
+```
 
 ### Python Issues  
 - Ensure Python 3.11+ installed
 - Install uvicorn: `pip install uvicorn[standard]`
+- Activate virtual environment: `source venv/bin/activate`
+
+### Performance Optimizations
+- **Fast mode**: Uses `npm run dev:fast` (2-3s startup)
+- **Vite optimizations**: Pre-bundles dependencies, disabled error overlay
+- **TypeScript**: `--no-cache` flag for faster compilation
 
 ### OAuth Issues
 - Verify Google Cloud Console redirect URIs

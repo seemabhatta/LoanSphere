@@ -79,15 +79,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     process.exit(0);
   });
 
-  // Proxy remaining API requests to Python FastAPI (excluding auth routes)
+  // Proxy remaining API requests to Python FastAPI
   const apiProxy = createProxyMiddleware({
     target: 'http://127.0.0.1:8000',
     changeOrigin: true,
     timeout: 30000,
-    pathRewrite: {
-      '^/': '/api/'  // Add /api prefix since Express strips it
-    },
+    // Don't rewrite paths - just forward as-is
     onProxyReq: (proxyReq, req, res) => {
+      console.log(`🔄 Forwarding: ${req.method} ${req.url} -> http://127.0.0.1:8000${req.url}`);
       // Forward cookies from client to Python backend
       if (req.headers.cookie) {
         proxyReq.setHeader('cookie', req.headers.cookie);
@@ -98,6 +97,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (proxyRes.headers['set-cookie']) {
         res.setHeader('set-cookie', proxyRes.headers['set-cookie']);
       }
+    },
+    onError: (err, req, res) => {
+      console.error('❌ Proxy error:', err.message);
+      console.error('❌ Request was:', req.method, req.url);
     }
   });
 

@@ -291,8 +291,23 @@ function Router() {
               </div>
             </div>
           </Route>
+          {/* Catch-all route for authenticated users */}
+          <Route>
+            <div className="h-screen flex flex-col bg-gray-100">
+              <TopHeader onToggleSidebar={toggleSidebar} sidebarCollapsed={sidebarCollapsed} />
+              <div className="flex-1 flex overflow-hidden">
+                <Sidebar isOpen={true} onClose={() => {}} collapsed={sidebarCollapsed} />
+                <div className="flex-1 p-4 transition-all duration-300 overflow-hidden">
+                  <div className="bg-white rounded-lg shadow-sm h-full overflow-y-auto">
+                    <NotFound />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Route>
         </>
       )}
+      {/* Catch-all for non-authenticated users */}
       <Route component={NotFound} />
     </Switch>
   );
