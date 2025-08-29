@@ -20,7 +20,8 @@ import {
   Bot,
   History,
   LogOut,
-  ChevronDown
+  ChevronDown,
+  Brain
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -35,42 +36,44 @@ import {
 
 const navigationSections = [
   {
-    title: "COMMAND CENTER",
+    title: "OVERVIEW",
     items: [
       { name: "Assistant", href: "/", icon: Bot, description: "Natural language interface" },
       { name: "Command Center", href: "/command-center", icon: Home, description: "Mission control dashboard" },
     ]
   },
   {
-    title: "WORKSPACE",
+    title: "OPERATIONS",
     items: [
-      { name: "Stage", href: "/simple-staging", icon: Upload, description: "Upload & stage files" },
-      { name: "Process", href: "/scheduler", icon: Calendar, description: "Loan processing schedule" },
-      { name: "Synthetic Data Generation", href: "/synthetic-data", icon: Zap, description: "Generate synthetic loan data" },
+      { name: "Pipeline", href: "/pipeline", icon: Route, description: "Track loan progress" },
+      { name: "Doc Processing", href: "/doc-processing", icon: Zap, description: "Document processing pipeline" },
+      { name: "Exceptions", href: "/exceptions", icon: AlertTriangle, description: "Review and resolve issues" },
     ]
   },
   {
-    title: "DATA & DOCS",
+    title: "DATA",
     items: [
       { name: "Loans", href: "/loans", icon: CreditCard, description: "Loan management" },
       { name: "Commitments", href: "/commitments", icon: FileCheck, description: "Commitment tracking" },
-      { name: "PurchaseAdvices", href: "/purchase-advices", icon: Receipt, description: "Purchase advice management" },
+      { name: "Purchase Advices", href: "/purchase-advices", icon: Receipt, description: "Purchase advice management" },
       { name: "Documents", href: "/documents", icon: FileText, description: "Document processing" },
     ]
   },
   {
-    title: "JOBS & PIPELINES",
+    title: "PLATFORM",
     items: [
-      { name: "Loan Boarding", href: "/pipeline", icon: Route, description: "Track loan progress" },
-      { name: "Doc Processing", href: "/doc-processing", icon: Zap, description: "Document processing pipeline" },
-      { name: "Exceptions", href: "/exceptions", icon: AlertTriangle, description: "Review and resolve issues", badge: "5" },
+      { name: "Integrations", href: "/settings", icon: Settings, description: "Connectors & platform integrations" },
+      { name: "Agent Studio", href: "/agent-studio", icon: Brain, description: "Tools, prompts, behavior" },
+      { name: "Stage", href: "/simple-staging", icon: Upload, description: "Upload & stage files" },
+      { name: "Scheduler", href: "/scheduler", icon: Calendar, description: "Loan processing schedule" },
+      { name: "Synthetic Data", href: "/synthetic-data", icon: Zap, description: "Generate synthetic loan data" },
     ]
   },
   {
     title: "GOVERNANCE",
     items: [
-      { name: "Compliance", href: "/compliance", icon: Shield, description: "RESPA/TILA tracking" },
       { name: "Analytics", href: "/analytics", icon: BarChart3, description: "Performance insights" },
+      { name: "Compliance", href: "/compliance", icon: Shield, description: "RESPA/TILA tracking" },
       { name: "Audit Log", href: "/audit-log", icon: History, description: "System audit trail" },
     ]
   }

@@ -157,3 +157,34 @@ class LoanTrackingModel(Base):
     meta_data = Column(JSON)  # Complete metadata with links to documents (renamed from metadata)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+# Settings persisted in SQLite
+class SnowflakeConnectionModel(Base):
+    __tablename__ = "snowflake_connections"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, nullable=False)
+    name = Column(String, nullable=False)
+    account = Column(String, nullable=False)
+    username = Column(String, nullable=False)
+    password = Column(String)  # stored hashed/encrypted in real systems
+    database = Column(String)
+    schema = Column(String)
+    warehouse = Column(String)
+    role = Column(String)
+    authenticator = Column(String, default="SNOWFLAKE")
+    is_default = Column(Boolean, default=False)
+    is_active = Column(Boolean, default=True)
+    last_connected = Column(DateTime)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
+class AgentConfigurationModel(Base):
+    __tablename__ = "agent_configurations"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, nullable=False)
+    config_data = Column(JSON, nullable=False)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
