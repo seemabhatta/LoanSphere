@@ -25,6 +25,7 @@ interface SnowflakeConnection {
   is_default: boolean
   is_active: boolean
   last_connected?: string
+  has_password?: boolean
 }
 
 interface EnvironmentConfig {
@@ -42,6 +43,7 @@ export default function IntegrationsPage() {
   const [showForm, setShowForm] = useState(false)
   const [editMode, setEditMode] = useState(false)
   const [editingConnection, setEditingConnection] = useState<SnowflakeConnection | null>(null)
+  const [passwordChanged, setPasswordChanged] = useState(false)
   const [form, setForm] = useState({
     name: '',
     account: '',
@@ -169,7 +171,8 @@ export default function IntegrationsPage() {
         name: form.name,
         account: form.account,
         username: form.username,
-        password: form.password,
+        // Only include password if it was changed (not the masked placeholder)
+        password: passwordChanged && form.password !== '********' ? form.password : undefined,
         database: form.database || null,
         schema: form.schema || null,
         warehouse: form.warehouse || null,
@@ -240,6 +243,7 @@ export default function IntegrationsPage() {
     setShowForm(false)
     setEditMode(false)
     setEditingConnection(null)
+    setPasswordChanged(false)
     setTestResult(null)
   }
 
@@ -247,7 +251,13 @@ export default function IntegrationsPage() {
   const testMutation = useMutation({
     mutationFn: async () => {
       try {
-        // If we're editing and password is empty, test the stored connection
+        // If we're editing and password hasn't been changed (still showing ********), test the stored connection
+        if (editMode && editingConnection && !passwordChanged && form.password === '********') {
+          const response = await apiRequest('POST', `/api/snowflake/connections/${editingConnection.id}/test`)
+          return response
+        }
+        
+        // If we're editing and password is empty (user cleared it), test stored connection
         if (editMode && editingConnection && !form.password.trim()) {
           const response = await apiRequest('POST', `/api/snowflake/connections/${editingConnection.id}/test`)
           return response
@@ -296,11 +306,12 @@ export default function IntegrationsPage() {
   const handleEditConnection = (connection: SnowflakeConnection) => {
     setEditMode(true)
     setEditingConnection(connection)
+    setPasswordChanged(false)
     setForm({
       name: connection.name,
       account: connection.account,
       username: connection.username,
-      password: '', // Don't pre-fill password for security - user needs to re-enter
+      password: connection.has_password ? '********' : '', // Show masked placeholder if password exists
       database: connection.database || '',
       schema: connection.schema || '',
       warehouse: connection.warehouse || '',
@@ -495,14 +506,38 @@ export default function IntegrationsPage() {
             
             <div>
               <Label htmlFor="password" className="body-text">
-                Password {editMode && <span className="text-sm text-orange-600">(leave empty to keep current, or re-enter to update)</span>}
+                Password 
+                {editMode && editingConnection?.has_password && !passwordChanged && (
+                  <span className="text-sm text-green-600">(saved password shown)</span>
+                )}
+                {editMode && passwordChanged && (
+                  <span className="text-sm text-blue-600">(will update)</span>
+                )}
+                {editMode && !editingConnection?.has_password && (
+                  <span className="text-sm text-orange-600">(no password saved - enter new)</span>
+                )}
               </Label>
               <Input
                 id="password"
                 type="password"
                 value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-                placeholder={editMode ? "Leave empty to keep current password" : "Enter password"}
+                onChange={(e) => {
+                  setForm({ ...form, password: e.target.value })
+                  setPasswordChanged(true)
+                }}
+                onFocus={() => {
+                  if (editMode && form.password === '********') {
+                    setForm({ ...form, password: '' })
+                    setPasswordChanged(true)
+                  }
+                }}
+                placeholder={
+                  editMode && editingConnection?.has_password 
+                    ? "Enter new password to update, or leave as ******** to keep current" 
+                    : editMode 
+                    ? "Enter password (none currently saved)"
+                    : "Enter password"
+                }
               />
             </div>
             

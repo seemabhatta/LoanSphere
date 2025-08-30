@@ -14,6 +14,8 @@ def sanitize(conn: SnowflakeConnectionModel) -> dict:
         'id','name','account','username','database','schema','warehouse','role','authenticator',
         'is_default','is_active','last_connected','created_at','updated_at'
     ]}
+    # Add password indicator without exposing the actual password
+    d['has_password'] = bool(conn.password and conn.password.strip())
     return d
 
 
@@ -203,9 +205,9 @@ def update_connection(conn_id: str, payload: dict, db: Session = Depends(get_db)
     conn.name = payload['name']
     conn.account = payload['account']
     conn.username = payload['username']
-    # Only update password if provided (non-empty)
-    if payload.get('password'):
-        conn.password = payload.get('password')
+    # Only update password if explicitly provided and not None/undefined
+    if 'password' in payload and payload['password'] is not None and payload['password'].strip():
+        conn.password = payload['password']
     conn.database = payload.get('database')
     conn.schema = payload.get('schema')
     conn.warehouse = payload.get('warehouse')
