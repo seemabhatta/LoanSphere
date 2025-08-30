@@ -303,7 +303,7 @@ export default function IntegrationsPage() {
               <Database className="w-6 h-6 text-blue-600" />
             </div>
             <div>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 section-header">
                 <Snowflake className="w-5 h-5" />
                 Snowflake Data Warehouse
               </CardTitle>
