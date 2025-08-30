@@ -416,7 +416,7 @@ export default function IntegrationsPage() {
               
               <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="name" className="caption-text">Connection Name</Label>
+              <Label htmlFor="name" className="body-text">Connection Name</Label>
               <Input
                 id="name"
                 value={form.name}
@@ -426,7 +426,7 @@ export default function IntegrationsPage() {
             </div>
             
             <div>
-              <Label htmlFor="account" className="caption-text">Account Identifier</Label>
+              <Label htmlFor="account" className="body-text">Account Identifier</Label>
               <Input
                 id="account"
                 value={form.account}
@@ -436,7 +436,7 @@ export default function IntegrationsPage() {
             </div>
             
             <div>
-              <Label htmlFor="username" className="caption-text">Username</Label>
+              <Label htmlFor="username" className="body-text">Username</Label>
               <Input
                 id="username"
                 value={form.username}
@@ -446,7 +446,7 @@ export default function IntegrationsPage() {
             </div>
             
             <div>
-              <Label htmlFor="password" className="caption-text">Password</Label>
+              <Label htmlFor="password" className="body-text">Password</Label>
               <Input
                 id="password"
                 type="password"
@@ -457,7 +457,7 @@ export default function IntegrationsPage() {
             </div>
             
             <div>
-              <Label htmlFor="warehouse" className="caption-text">Warehouse</Label>
+              <Label htmlFor="warehouse" className="body-text">Warehouse</Label>
               <Input
                 id="warehouse"
                 value={form.warehouse}
@@ -467,7 +467,7 @@ export default function IntegrationsPage() {
             </div>
             
             <div>
-              <Label htmlFor="database" className="caption-text">Database</Label>
+              <Label htmlFor="database" className="body-text">Database</Label>
               <Input
                 id="database"
                 value={form.database}
@@ -477,7 +477,7 @@ export default function IntegrationsPage() {
             </div>
             
             <div>
-              <Label htmlFor="schema" className="caption-text">Schema</Label>
+              <Label htmlFor="schema" className="body-text">Schema</Label>
               <Input
                 id="schema"
                 value={form.schema}
@@ -487,7 +487,7 @@ export default function IntegrationsPage() {
             </div>
             
             <div>
-              <Label htmlFor="role" className="caption-text">Role</Label>
+              <Label htmlFor="role" className="body-text">Role</Label>
               <Input
                 id="role"
                 value={form.role}
