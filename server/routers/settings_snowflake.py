@@ -11,15 +11,15 @@ router = APIRouter()
 
 def sanitize(conn: SnowflakeConnectionModel) -> dict:
     d = {k: getattr(conn, k) for k in [
-        'id','user_id','name','account','username','database','schema','warehouse','role','authenticator',
+        'id','name','account','username','database','schema','warehouse','role','authenticator',
         'is_default','is_active','last_connected','created_at','updated_at'
     ]}
     return d
 
 
-@router.get("/snowflake/connections/{user_id}")
-def list_connections(user_id: str, db: Session = Depends(get_db)) -> List[dict]:
-    conns = db.query(SnowflakeConnectionModel).filter_by(user_id=user_id).order_by(
+@router.get("/snowflake/connections")
+def list_connections(db: Session = Depends(get_db)) -> List[dict]:
+    conns = db.query(SnowflakeConnectionModel).order_by(
         SnowflakeConnectionModel.is_default.desc(), SnowflakeConnectionModel.updated_at.desc()
     ).all()
     return [sanitize(c) for c in conns]
@@ -27,13 +27,13 @@ def list_connections(user_id: str, db: Session = Depends(get_db)) -> List[dict]:
 
 @router.post("/snowflake/connections")
 def create_connection(payload: dict, db: Session = Depends(get_db)) -> dict:
-    required = ['userId','name','account','username','password']
+    required = ['name','account','username','password']
     for r in required:
         if r not in payload or not payload[r]:
             raise HTTPException(status_code=400, detail=f"Missing field: {r}")
 
     conn = SnowflakeConnectionModel(
-        user_id=payload['userId'],
+        user_id='default',
         name=payload['name'],
         account=payload['account'],
         username=payload['username'],
@@ -98,12 +98,9 @@ def update_connection(conn_id: str, payload: dict, db: Session = Depends(get_db)
 
 
 @router.put("/snowflake/connections/{conn_id}/default")
-def set_default(conn_id: str, payload: dict, db: Session = Depends(get_db)) -> dict:
-    user_id = payload.get('userId')
-    if not user_id:
-        raise HTTPException(status_code=400, detail="userId is required")
+def set_default(conn_id: str, db: Session = Depends(get_db)) -> dict:
     # Unset others
-    db.query(SnowflakeConnectionModel).filter_by(user_id=user_id).update({SnowflakeConnectionModel.is_default: False})
+    db.query(SnowflakeConnectionModel).update({SnowflakeConnectionModel.is_default: False})
     # Set this one
     conn = db.query(SnowflakeConnectionModel).get(conn_id)
     if not conn:

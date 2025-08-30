@@ -5,9 +5,16 @@ import { setupVite, log } from "./vite";
 
 const app = express();
 
-// Minimal middleware setup
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+// Minimal middleware setup, but avoid parsing bodies for /api (proxied)
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api')) return next();
+  return express.json()(req, res, next);
+});
+
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api')) return next();
+  return express.urlencoded({ extended: false })(req, res, next);
+});
 
 // Simple logging
 app.use((req, res, next) => {

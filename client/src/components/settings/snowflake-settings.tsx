@@ -12,7 +12,6 @@ import { apiRequest } from '@/lib/api'
 
 interface SnowflakeConnection {
   id: string
-  user_id: string
   name: string
   account: string
   username: string
@@ -26,10 +25,9 @@ interface SnowflakeConnection {
   last_connected?: string
 }
 
-export default function SnowflakeSettings({ userId }: { userId: string }) {
+export default function SnowflakeSettings() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState<any>({
-    userId,
     name: '', account: '', username: '', password: '',
     database: '', schema: '', warehouse: '', role: '',
     authenticator: 'SNOWFLAKE', isDefault: false, isActive: true,
@@ -37,24 +35,49 @@ export default function SnowflakeSettings({ userId }: { userId: string }) {
   const [testingId, setTestingId] = useState<string | null>(null)
   const qc = useQueryClient()
 
-  const { data: connections = [], isLoading } = useQuery<SnowflakeConnection[]>({
-    queryKey: ['snowflake-conns', userId],
-    queryFn: async () => apiRequest('GET', `/api/snowflake/connections/${userId}`)
+  const { data: connections = [], isLoading, error } = useQuery<SnowflakeConnection[]>({
+    queryKey: ['snowflake-connections-v2'],
+    queryFn: async () => {
+      console.log('Fetching snowflake connections...');
+      const result = await apiRequest('GET', '/api/snowflake/connections');
+      console.log('Fetched connections:', result);
+      return result;
+    },
   })
 
   const createMut = useMutation({
-    mutationFn: async () => apiRequest('POST', '/api/snowflake/connections', form),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['snowflake-conns', userId] }); setShowForm(false); setForm({ ...form, name: '', account: '', username: '', password: '' }) }
+    mutationFn: async () => apiRequest('POST', '/api/snowflake/connections', {
+      name: form.name,
+      account: form.account,
+      username: form.username,
+      password: form.password,
+      database: form.database,
+      schema: form.schema,
+      warehouse: form.warehouse,
+      role: form.role,
+      authenticator: form.authenticator,
+      isDefault: form.isDefault,
+      isActive: form.isActive,
+    }),
+    onSuccess: (data) => { 
+      console.log('Connection created successfully:', data);
+      qc.invalidateQueries({ queryKey: ['snowflake-connections-v2'] }); 
+      setShowForm(false); 
+      setForm({ ...form, name: '', account: '', username: '', password: '' });
+    },
+    onError: (error) => {
+      console.error('Error creating connection:', error);
+    }
   })
 
   const deleteMut = useMutation({
     mutationFn: async (id: string) => apiRequest('DELETE', `/api/snowflake/connections/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['snowflake-conns', userId] })
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['snowflake-connections-v2'] })
   })
 
   const defaultMut = useMutation({
-    mutationFn: async (id: string) => apiRequest('PUT', `/api/snowflake/connections/${id}/default`, { userId }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['snowflake-conns', userId] })
+    mutationFn: async (id: string) => apiRequest('PUT', `/api/snowflake/connections/${id}/default`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['snowflake-connections-v2'] })
   })
 
   const testMut = useMutation({
@@ -66,6 +89,8 @@ export default function SnowflakeSettings({ userId }: { userId: string }) {
   if (isLoading) {
     return <div className="flex items-center gap-2 p-4"><Loader2 className="w-4 h-4 animate-spin" /> <span className="body-text">Loading connections…</span></div>
   }
+
+  console.log('Render - connections:', connections, 'error:', error, 'isLoading:', isLoading);
 
   return (
     <div className="space-y-4">

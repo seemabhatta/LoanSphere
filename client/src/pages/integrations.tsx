@@ -79,12 +79,10 @@ export default function IntegrationsPage() {
 
   // Fetch existing connections
   const { data: connections = [], isLoading: connectionsLoading } = useQuery<SnowflakeConnection[]>({
-    queryKey: ['snowflake-connections', user?.id],
+    queryKey: ['snowflake-connections-v2'],
     queryFn: async () => {
-      if (!user?.id) throw new Error('User not authenticated')
-      return apiRequest('GET', `/api/snowflake/connections/${user.id}`)
+      return apiRequest('GET', '/api/snowflake/connections')
     },
-    enabled: !!user?.id
   })
 
   // Populate form with environment defaults when envConfig loads
@@ -106,10 +104,7 @@ export default function IntegrationsPage() {
   // Save connection mutation
   const saveMutation = useMutation({
     mutationFn: async () => {
-      if (!user) throw new Error('User not authenticated')
-      
       return apiRequest('POST', '/api/snowflake/connections', {
-        userId: user.id,
         name: form.name,
         account: form.account,
         username: form.username,
@@ -130,7 +125,7 @@ export default function IntegrationsPage() {
       setShowForm(false)
       
       // 3. Return to integrations list view, refreshed to show the newly saved connection
-      qc.invalidateQueries({ queryKey: ['snowflake-connections', user?.id] })
+      qc.invalidateQueries({ queryKey: ['snowflake-connections-v2'] })
       
       // 4. Success notification (toast) to confirm the save
       toast({
@@ -168,10 +163,9 @@ export default function IntegrationsPage() {
 
   const updateMutation = useMutation({
     mutationFn: async () => {
-      if (!user?.id || !editingConnection) throw new Error('User not authenticated or no connection to edit')
+      if (!editingConnection) throw new Error('No connection to edit')
       
       const connectionData = {
-        user_id: user.id,
         name: form.name,
         account: form.account,
         username: form.username,
@@ -196,7 +190,7 @@ export default function IntegrationsPage() {
       resetForm()
       
       // Refresh connections list
-      qc.invalidateQueries({ queryKey: ['snowflake-connections'] })
+      qc.invalidateQueries({ queryKey: ['snowflake-connections-v2'] })
     },
     onError: (error: any) => {
       toast({
@@ -218,7 +212,7 @@ export default function IntegrationsPage() {
       })
       
       // Refresh connections list
-      qc.invalidateQueries({ queryKey: ['snowflake-connections'] })
+      qc.invalidateQueries({ queryKey: ['snowflake-connections-v2'] })
     },
     onError: (error: any) => {
       toast({
