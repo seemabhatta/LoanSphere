@@ -290,7 +290,7 @@ export default function IntegrationsPage() {
       <div className="flex items-center gap-3">
         <Settings2 className="w-6 h-6 text-blue-600" />
         <div>
-          <h1 className="page-title">Integrations</h1>
+          <h1 className="section-header">Integrations</h1>
           <p className="body-text">Configure external system connections for agents</p>
         </div>
       </div>
@@ -303,7 +303,7 @@ export default function IntegrationsPage() {
               <Database className="w-6 h-6 text-blue-600" />
             </div>
             <div>
-              <CardTitle className="flex items-center gap-2 section-header">
+              <CardTitle className="flex items-center gap-2 body-text">
                 <Snowflake className="w-5 h-5" />
                 Snowflake Data Warehouse
               </CardTitle>
@@ -326,7 +326,7 @@ export default function IntegrationsPage() {
               ) : connections.length > 0 ? (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <h3 className="section-header">Saved Connections</h3>
+                    <h3 className="body-text">Saved Connections</h3>
                     <Button size="sm" onClick={() => {
                       resetForm()
                       setShowForm(true)
@@ -345,7 +345,7 @@ export default function IntegrationsPage() {
                               <Database className="w-4 h-4 text-blue-600" />
                             </div>
                             <div>
-                              <h4 className="section-header">{connection.name}</h4>
+                              <h4 className="body-text">{connection.name}</h4>
                               <p className="body-text">
                                 {connection.account} • {connection.username}
                                 {connection.database && ` • ${connection.database}`}
@@ -381,7 +381,7 @@ export default function IntegrationsPage() {
               ) : (
                 <div className="text-center p-8 border-2 border-dashed border-gray-200 rounded-lg">
                   <Database className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="section-header mb-2">No Connections Yet</h3>
+                  <h3 className="body-text mb-2">No Connections Yet</h3>
                   <p className="body-text mb-4">
                     Add your first Snowflake connection to get started with data analytics.
                   </p>
@@ -401,7 +401,7 @@ export default function IntegrationsPage() {
           {showForm && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="section-header">
+                <h3 className="body-text">
                   {editMode ? `Edit Connection: ${editingConnection?.name}` : 'Add New Connection'}
                 </h3>
                 <Button 
