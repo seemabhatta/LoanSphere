@@ -63,6 +63,40 @@ def test_connection(conn_id: str, db: Session = Depends(get_db)) -> dict:
     return {"success": True}
 
 
+@router.put("/snowflake/connections/{conn_id}")
+def update_connection(conn_id: str, payload: dict, db: Session = Depends(get_db)) -> dict:
+    """Update an existing Snowflake connection"""
+    # Get the existing connection
+    conn = db.query(SnowflakeConnectionModel).get(conn_id)
+    if not conn:
+        raise HTTPException(status_code=404, detail="Connection not found")
+    
+    # Validate required fields
+    required = ['user_id', 'name', 'account', 'username', 'password']
+    for r in required:
+        if r not in payload or not payload[r]:
+            raise HTTPException(status_code=400, detail=f"Missing field: {r}")
+    
+    # Update the connection fields
+    conn.user_id = payload['user_id']
+    conn.name = payload['name']
+    conn.account = payload['account']
+    conn.username = payload['username']
+    conn.password = payload.get('password')
+    conn.database = payload.get('database')
+    conn.schema = payload.get('schema')
+    conn.warehouse = payload.get('warehouse')
+    conn.role = payload.get('role')
+    conn.authenticator = payload.get('authenticator', 'SNOWFLAKE')
+    conn.is_default = bool(payload.get('is_default', False))
+    conn.is_active = bool(payload.get('is_active', True))
+    conn.updated_at = datetime.utcnow()
+    
+    db.commit()
+    db.refresh(conn)
+    return sanitize(conn)
+
+
 @router.put("/snowflake/connections/{conn_id}/default")
 def set_default(conn_id: str, payload: dict, db: Session = Depends(get_db)) -> dict:
     user_id = payload.get('userId')
