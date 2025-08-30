@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, TestTube, Database, Save, Snowflake, Settings2, CheckCircle, List } from 'lucide-react'
+import { Loader2, TestTube, Database, Save, Snowflake, Settings2, CheckCircle, List, Edit, Trash2 } from 'lucide-react'
 import { apiRequest } from '@/lib/api'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/use-toast'
@@ -40,6 +40,8 @@ export default function IntegrationsPage() {
   const { user } = useAuth()
   const { toast } = useToast()
   const [showForm, setShowForm] = useState(false)
+  const [editMode, setEditMode] = useState(false)
+  const [editingConnection, setEditingConnection] = useState<SnowflakeConnection | null>(null)
   const [form, setForm] = useState({
     name: '',
     account: '',
@@ -164,6 +166,67 @@ export default function IntegrationsPage() {
     }
   })
 
+  const updateMutation = useMutation({
+    mutationFn: async () => {
+      if (!user?.id || !editingConnection) throw new Error('User not authenticated or no connection to edit')
+      
+      const connectionData = {
+        user_id: user.id,
+        name: form.name,
+        account: form.account,
+        username: form.username,
+        password: form.password,
+        database: form.database || null,
+        schema: form.schema || null,
+        warehouse: form.warehouse || null,
+        role: form.role || null,
+        authenticator: form.authenticator,
+        is_default: form.isDefault,
+        is_active: form.isActive
+      }
+      
+      return apiRequest('PUT', `/api/snowflake/connections/${editingConnection.id}`, connectionData)
+    },
+    onSuccess: () => {
+      toast({
+        title: "Connection Updated Successfully!",
+        description: `${form.name} has been updated.`,
+      })
+      
+      resetForm()
+      
+      // Refresh connections list
+      qc.invalidateQueries({ queryKey: ['snowflake-connections'] })
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error Updating Connection",
+        description: error.message || "Failed to update connection. Please try again.",
+        variant: "destructive",
+      })
+    },
+  })
+
+  const resetForm = () => {
+    setForm({
+      name: '',
+      account: '',
+      username: '',
+      password: '',
+      database: '',
+      schema: '',
+      warehouse: '',
+      role: '',
+      authenticator: 'SNOWFLAKE',
+      isDefault: true,
+      isActive: true,
+    })
+    setShowForm(false)
+    setEditMode(false)
+    setEditingConnection(null)
+    setTestResult(null)
+  }
+
   // Test connection mutation
   const testMutation = useMutation({
     mutationFn: async () => {
@@ -191,7 +254,35 @@ export default function IntegrationsPage() {
     })
   })
 
-  const handleSave = () => saveMutation.mutate()
+  // Handler for editing existing connection
+  const handleEditConnection = (connection: SnowflakeConnection) => {
+    setEditMode(true)
+    setEditingConnection(connection)
+    setForm({
+      name: connection.name,
+      account: connection.account,
+      username: connection.username,
+      password: '', // Don't pre-fill password for security
+      database: connection.database || '',
+      schema: connection.schema || '',
+      warehouse: connection.warehouse || '',
+      role: connection.role || '',
+      authenticator: connection.authenticator || 'SNOWFLAKE',
+      isDefault: connection.is_default,
+      isActive: connection.is_active,
+    })
+    setShowForm(true)
+    setTestResult(null)
+  }
+
+  const handleSave = () => {
+    if (editMode && editingConnection) {
+      updateMutation.mutate()
+    } else {
+      saveMutation.mutate()
+    }
+  }
+  
   const handleTest = () => testMutation.mutate()
 
   return (
@@ -236,7 +327,10 @@ export default function IntegrationsPage() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <h3 className="label-text text-gray-900">Saved Connections</h3>
-                    <Button size="sm" onClick={() => setShowForm(true)}>
+                    <Button size="sm" onClick={() => {
+                      resetForm()
+                      setShowForm(true)
+                    }}>
                       <Save className="w-4 h-4 mr-2" />
                       Add Connection
                     </Button>
@@ -265,6 +359,14 @@ export default function IntegrationsPage() {
                             <Badge variant="outline" className="caption-text">
                               {connection.is_active ? 'Active' : 'Inactive'}
                             </Badge>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleEditConnection(connection)}
+                              data-testid={`button-edit-${connection.id}`}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
                           </div>
                         </div>
                         {connection.last_connected && (
@@ -283,7 +385,10 @@ export default function IntegrationsPage() {
                   <p className="caption-text text-gray-500 mb-4">
                     Add your first Snowflake connection to get started with data analytics.
                   </p>
-                  <Button onClick={() => setShowForm(true)}>
+                  <Button onClick={() => {
+                    resetForm()
+                    setShowForm(true)
+                  }}>
                     <Save className="w-4 h-4 mr-2" />
                     Add Your First Connection
                   </Button>
@@ -296,14 +401,13 @@ export default function IntegrationsPage() {
           {showForm && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="label-text text-gray-900">Add New Connection</h3>
+                <h3 className="label-text text-gray-900">
+                  {editMode ? `Edit Connection: ${editingConnection?.name}` : 'Add New Connection'}
+                </h3>
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  onClick={() => {
-                    setShowForm(false)
-                    setTestResult(null)
-                  }}
+                  onClick={() => resetForm()}
                 >
                   <List className="w-4 h-4 mr-2" />
                   Back to List
@@ -448,14 +552,14 @@ export default function IntegrationsPage() {
             
             <Button 
               onClick={handleSave}
-              disabled={!form.name || !form.account || !form.username || !form.password || saveMutation.isPending}
+              disabled={!form.name || !form.account || !form.username || !form.password || saveMutation.isPending || updateMutation.isPending}
             >
-              {saveMutation.isPending ? (
+              {(saveMutation.isPending || updateMutation.isPending) ? (
                 <Loader2 className="w-4 h-4 animate-spin mr-2" />
               ) : (
                 <Save className="w-4 h-4 mr-2" />
               )}
-              Save Connection
+              {editMode ? 'Update Connection' : 'Save Connection'}
             </Button>
             
             {saveMutation.isSuccess && (
