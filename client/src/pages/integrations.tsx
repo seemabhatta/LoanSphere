@@ -207,6 +207,28 @@ export default function IntegrationsPage() {
     },
   })
 
+  const deleteMutation = useMutation({
+    mutationFn: async (connectionId: string) => {
+      return apiRequest('DELETE', `/api/snowflake/connections/${connectionId}`)
+    },
+    onSuccess: () => {
+      toast({
+        title: "Connection Deleted Successfully!",
+        description: "The Snowflake connection has been removed.",
+      })
+      
+      // Refresh connections list
+      qc.invalidateQueries({ queryKey: ['snowflake-connections'] })
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error Deleting Connection",
+        description: error.message || "Failed to delete connection. Please try again.",
+        variant: "destructive",
+      })
+    },
+  })
+
   const resetForm = () => {
     setForm({
       name: '',
@@ -366,6 +388,16 @@ export default function IntegrationsPage() {
                               data-testid={`button-edit-${connection.id}`}
                             >
                               <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => deleteMutation.mutate(connection.id)}
+                              disabled={deleteMutation.isPending}
+                              data-testid={`button-delete-${connection.id}`}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="w-4 h-4" />
                             </Button>
                           </div>
                         </div>
