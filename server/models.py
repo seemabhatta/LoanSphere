@@ -188,3 +188,22 @@ class AgentConfigurationModel(Base):
     config_data = Column(JSON, nullable=False)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
+class DatabricksConnectionModel(Base):
+    __tablename__ = "databricks_connections"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, nullable=False)
+    name = Column(String, nullable=False)
+    server_hostname = Column(String, nullable=False)
+    http_path = Column(String, nullable=False)
+    access_token = Column(String)  # stored hashed/encrypted in real systems
+    catalog = Column(String)
+    schema = Column(String)
+    cluster_id = Column(String)
+    is_default = Column(Boolean, default=False)
+    is_active = Column(Boolean, default=True)
+    last_connected = Column(DateTime)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())

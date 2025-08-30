@@ -16,7 +16,7 @@ load_dotenv(dotenv_path="../.env")
 
 # from database import init_db, get_db  # Using TinyDB instead
 from routers import loans, exceptions, compliance, documents, metrics, staging, purchase_advices, commitments, auth, loan_data, ai_agent
-from routers import settings_snowflake, settings_agent_config
+from routers import settings_snowflake, settings_agent_config, settings_databricks
 from routers import graph as graph_router
 from services.loan_service import LoanService
 
@@ -100,6 +100,7 @@ app.include_router(loan_data.router, prefix="/api/loan-data", tags=["loan-data"]
 app.include_router(ai_agent.router, prefix="/api/ai-agent", tags=["ai-agent"])
 app.include_router(graph_router.router, prefix="/api/graph", tags=["graph"])
 app.include_router(settings_snowflake.router, prefix="/api", tags=["settings-snowflake"])
+app.include_router(settings_databricks.router, prefix="/api", tags=["settings-databricks"])
 app.include_router(settings_agent_config.router, prefix="/api", tags=["settings-agent-config"])
 
 @app.websocket("/ws")

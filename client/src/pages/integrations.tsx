@@ -6,10 +6,11 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, TestTube, Database, Save, Snowflake, Settings2, CheckCircle, List, Edit, Trash2 } from 'lucide-react'
+import { Loader2, TestTube, Database, Save, Snowflake, Settings2, CheckCircle, List, Edit, Trash2, Zap } from 'lucide-react'
 import { apiRequest } from '@/lib/api'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/use-toast'
+import DatabricksSettings from '@/components/settings/databricks-settings'
 
 interface SnowflakeConnection {
   id: string
@@ -663,6 +664,30 @@ export default function IntegrationsPage() {
               </div>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Databricks Integration Card */}
+      <Card className="border-l-4 border-l-orange-500">
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-orange-100 rounded-lg">
+              <Zap className="w-6 h-6 text-orange-600" />
+            </div>
+            <div>
+              <CardTitle className="flex items-center gap-2 body-text">
+                <Zap className="w-5 h-5" />
+                Databricks Data Intelligence Platform
+              </CardTitle>
+              <CardDescription className="body-text">
+                Connect to Databricks for unified data analytics and AI workloads
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        
+        <CardContent>
+          <DatabricksSettings />
         </CardContent>
       </Card>
     </div>
