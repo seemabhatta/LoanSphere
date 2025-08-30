@@ -64,15 +64,15 @@ export default function SnowflakeSettings({ userId }: { userId: string }) {
   })
 
   if (isLoading) {
-    return <div className="flex items-center gap-2 p-4"><Loader2 className="w-4 h-4 animate-spin" /> Loading connections…</div>
+    return <div className="flex items-center gap-2 p-4"><Loader2 className="w-4 h-4 animate-spin" /> <span className="body-text">Loading connections…</span></div>
   }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-base font-semibold">Snowflake Connections</h2>
-          <p className="text-xs text-gray-500">Manage database connections used by agents.</p>
+          <h2 className="section-header">Snowflake Connections</h2>
+          <p className="body-text">Manage database connections used by agents.</p>
         </div>
         <Button size="sm" onClick={() => setShowForm(true)}><Plus className="w-4 h-4 mr-2" />Add</Button>
       </div>
@@ -84,22 +84,22 @@ export default function SnowflakeSettings({ userId }: { userId: string }) {
               <div className="flex items-center gap-2">
                 <Database className="w-4 h-4 text-blue-600" />
                 <div>
-                  <CardTitle className="text-sm">{c.name}</CardTitle>
-                  <CardDescription>{c.account} • {c.username}{c.database ? ` • ${c.database}` : ''}</CardDescription>
+                  <CardTitle className="section-header">{c.name}</CardTitle>
+                  <CardDescription className="body-text">{c.account} • {c.username}{c.database ? ` • ${c.database}` : ''}</CardDescription>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                {c.is_default && <Badge className="text-xs" variant="secondary">Default</Badge>}
-                <Badge className="text-xs" variant="outline">{c.is_active ? 'Active' : 'Inactive'}</Badge>
+                {c.is_default && <Badge className="body-text" variant="secondary">Default</Badge>}
+                <Badge className="body-text" variant="outline">{c.is_active ? 'Active' : 'Inactive'}</Badge>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="text-xs text-gray-600">
+          <CardContent className="body-text">
             <div className="grid grid-cols-2 gap-2">
-              <div><span className="text-gray-500">Warehouse:</span> {c.warehouse || '—'}</div>
-              <div><span className="text-gray-500">Schema:</span> {c.schema || '—'}</div>
-              <div><span className="text-gray-500">Role:</span> {c.role || '—'}</div>
-              <div><span className="text-gray-500">Last Connected:</span> {c.last_connected ? new Date(c.last_connected).toLocaleString() : 'Never'}</div>
+              <div><span className="caption-text">Warehouse:</span> {c.warehouse || '—'}</div>
+              <div><span className="caption-text">Schema:</span> {c.schema || '—'}</div>
+              <div><span className="caption-text">Role:</span> {c.role || '—'}</div>
+              <div><span className="caption-text">Last Connected:</span> {c.last_connected ? new Date(c.last_connected).toLocaleString() : 'Never'}</div>
             </div>
           </CardContent>
           <CardFooter className="flex justify-between">
@@ -122,8 +122,8 @@ export default function SnowflakeSettings({ userId }: { userId: string }) {
       {showForm && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Add Connection</CardTitle>
-            <CardDescription>Enter connection details</CardDescription>
+            <CardTitle className="section-header">Add Connection</CardTitle>
+            <CardDescription className="body-text">Enter connection details</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
