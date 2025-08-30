@@ -85,7 +85,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     changeOrigin: true,
     timeout: 30000,
     pathRewrite: {
-      '^/api': '/api'  // Keep the /api prefix when forwarding to Python
+      '^/': '/api/'  // Add /api prefix to all forwarded requests
     },
     // Don't rewrite paths - just forward as-is
     onProxyReq: (proxyReq, req, res) => {
