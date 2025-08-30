@@ -246,15 +246,37 @@ export default function IntegrationsPage() {
   // Test connection mutation
   const testMutation = useMutation({
     mutationFn: async () => {
-      // Test connection using environment variables
       try {
-        const response = await apiRequest('POST', '/api/snowflake/test-env-connection')
+        // If we're editing and password is empty, test the stored connection
+        if (editMode && editingConnection && !form.password.trim()) {
+          const response = await apiRequest('POST', `/api/snowflake/connections/${editingConnection.id}/test`)
+          return response
+        }
+        
+        // Otherwise test with current form parameters
+        if (!form.password.trim()) {
+          return {
+            success: false,
+            message: 'Password is required for connection testing'
+          }
+        }
+        
+        const response = await apiRequest('POST', '/api/snowflake/test-connection', {
+          name: form.name,
+          account: form.account,
+          username: form.username,
+          password: form.password,
+          database: form.database,
+          schema: form.schema,
+          warehouse: form.warehouse,
+          role: form.role,
+          authenticator: form.authenticator,
+        })
         return response
       } catch (error: any) {
-        // Fallback message for development
         return { 
           success: false, 
-          message: 'Test endpoint not available - run: python3 test_snowflake_connection.py for manual test' 
+          message: error.message || 'Connection test failed'
         }
       }
     },
@@ -278,7 +300,7 @@ export default function IntegrationsPage() {
       name: connection.name,
       account: connection.account,
       username: connection.username,
-      password: '', // Don't pre-fill password for security
+      password: '', // Don't pre-fill password for security - user needs to re-enter
       database: connection.database || '',
       schema: connection.schema || '',
       warehouse: connection.warehouse || '',
@@ -472,13 +494,15 @@ export default function IntegrationsPage() {
             </div>
             
             <div>
-              <Label htmlFor="password" className="body-text">Password</Label>
+              <Label htmlFor="password" className="body-text">
+                Password {editMode && <span className="text-sm text-orange-600">(leave empty to keep current, or re-enter to update)</span>}
+              </Label>
               <Input
                 id="password"
                 type="password"
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
-                placeholder="Enter password"
+                placeholder={editMode ? "Leave empty to keep current password" : "Enter password"}
               />
             </div>
             
