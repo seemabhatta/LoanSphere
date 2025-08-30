@@ -290,8 +290,8 @@ export default function IntegrationsPage() {
       <div className="flex items-center gap-3">
         <Settings2 className="w-6 h-6 text-blue-600" />
         <div>
-          <h1 className="text-2xl font-bold">Integrations</h1>
-          <p className="text-gray-600">Configure external system connections for agents</p>
+          <h1 className="page-title">Integrations</h1>
+          <p className="body-text">Configure external system connections for agents</p>
         </div>
       </div>
 
@@ -307,7 +307,7 @@ export default function IntegrationsPage() {
                 <Snowflake className="w-5 h-5" />
                 Snowflake Data Warehouse
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="body-text">
                 Connect to Snowflake for data analytics and agent queries
               </CardDescription>
             </div>
@@ -321,12 +321,12 @@ export default function IntegrationsPage() {
               {connectionsLoading ? (
                 <div className="flex items-center gap-2 p-4">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span className="caption-text">Loading connections...</span>
+                  <span className="body-text">Loading connections...</span>
                 </div>
               ) : connections.length > 0 ? (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <h3 className="label-text text-gray-900">Saved Connections</h3>
+                    <h3 className="section-header">Saved Connections</h3>
                     <Button size="sm" onClick={() => {
                       resetForm()
                       setShowForm(true)
@@ -345,8 +345,8 @@ export default function IntegrationsPage() {
                               <Database className="w-4 h-4 text-blue-600" />
                             </div>
                             <div>
-                              <h4 className="label-text text-gray-900">{connection.name}</h4>
-                              <p className="caption-text">
+                              <h4 className="section-header">{connection.name}</h4>
+                              <p className="body-text">
                                 {connection.account} • {connection.username}
                                 {connection.database && ` • ${connection.database}`}
                               </p>
@@ -354,9 +354,9 @@ export default function IntegrationsPage() {
                           </div>
                           <div className="flex items-center gap-2">
                             {connection.is_default && (
-                              <Badge variant="secondary" className="caption-text">Default</Badge>
+                              <Badge variant="secondary" className="body-text">Default</Badge>
                             )}
-                            <Badge variant="outline" className="caption-text">
+                            <Badge variant="outline" className="body-text">
                               {connection.is_active ? 'Active' : 'Inactive'}
                             </Badge>
                             <Button 
@@ -370,7 +370,7 @@ export default function IntegrationsPage() {
                           </div>
                         </div>
                         {connection.last_connected && (
-                          <p className="caption-text text-gray-500 mt-2">
+                          <p className="body-text text-gray-500 mt-2">
                             Last connected: {new Date(connection.last_connected).toLocaleString()}
                           </p>
                         )}
@@ -381,8 +381,8 @@ export default function IntegrationsPage() {
               ) : (
                 <div className="text-center p-8 border-2 border-dashed border-gray-200 rounded-lg">
                   <Database className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="label-text text-gray-900 mb-2">No Connections Yet</h3>
-                  <p className="caption-text text-gray-500 mb-4">
+                  <h3 className="section-header mb-2">No Connections Yet</h3>
+                  <p className="body-text mb-4">
                     Add your first Snowflake connection to get started with data analytics.
                   </p>
                   <Button onClick={() => {
@@ -401,7 +401,7 @@ export default function IntegrationsPage() {
           {showForm && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="label-text text-gray-900">
+                <h3 className="section-header">
                   {editMode ? `Edit Connection: ${editingConnection?.name}` : 'Add New Connection'}
                 </h3>
                 <Button 
@@ -530,7 +530,7 @@ export default function IntegrationsPage() {
                 </span>
               </div>
               {testResult.message && (
-                <p className="mt-1 text-xs opacity-90">{testResult.message}</p>
+                <p className="mt-1 caption-text opacity-90">{testResult.message}</p>
               )}
             </div>
           )}
@@ -571,7 +571,7 @@ export default function IntegrationsPage() {
 
               {/* Environment Notice */}
               <div className="bg-blue-50 p-3 rounded-md border border-blue-200">
-                <p className="text-sm text-blue-800">
+                <p className="body-text text-blue-800">
                   <strong>💡 Auto-populated:</strong> Connection details are pre-filled from environment variables. 
                   Only enter the password to complete the setup.
                 </p>
