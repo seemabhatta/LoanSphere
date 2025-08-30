@@ -6,9 +6,10 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, TestTube, Database, Save, Snowflake, Settings2 } from 'lucide-react'
+import { Loader2, TestTube, Database, Save, Snowflake, Settings2, CheckCircle, List } from 'lucide-react'
 import { apiRequest } from '@/lib/api'
 import { useAuth } from '@/hooks/useAuth'
+import { useToast } from '@/hooks/use-toast'
 
 interface SnowflakeConnection {
   id: string
@@ -37,6 +38,8 @@ interface EnvironmentConfig {
 
 export default function IntegrationsPage() {
   const { user } = useAuth()
+  const { toast } = useToast()
+  const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({
     name: '',
     account: '',
@@ -72,9 +75,19 @@ export default function IntegrationsPage() {
     }
   })
 
+  // Fetch existing connections
+  const { data: connections = [], isLoading: connectionsLoading } = useQuery<SnowflakeConnection[]>({
+    queryKey: ['snowflake-connections', user?.id],
+    queryFn: async () => {
+      if (!user?.id) throw new Error('User not authenticated')
+      return apiRequest('GET', `/api/snowflake/connections/${user.id}`)
+    },
+    enabled: !!user?.id
+  })
+
   // Populate form with environment defaults when envConfig loads
   useEffect(() => {
-    if (envConfig) {
+    if (envConfig && showForm) {
       setForm(prev => ({
         ...prev,
         name: prev.name || 'Production Snowflake',
@@ -86,7 +99,7 @@ export default function IntegrationsPage() {
         role: prev.role || envConfig.SNOWFLAKE_ROLE || '',
       }))
     }
-  }, [envConfig])
+  }, [envConfig, showForm])
 
   // Save connection mutation
   const saveMutation = useMutation({
@@ -108,10 +121,46 @@ export default function IntegrationsPage() {
         isActive: form.isActive
       })
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['snowflake-connections'] })
-      // Reset password field after save
-      setForm(prev => ({ ...prev, password: '' }))
+    onSuccess: (data) => {
+      // 1. Save to database (already handled by the API)
+      
+      // 2. Close the modal/form window automatically
+      setShowForm(false)
+      
+      // 3. Return to integrations list view, refreshed to show the newly saved connection
+      qc.invalidateQueries({ queryKey: ['snowflake-connections', user?.id] })
+      
+      // 4. Success notification (toast) to confirm the save
+      toast({
+        title: "Connection Saved Successfully!",
+        description: `"${form.name}" has been saved and is ready to use.`,
+        variant: "default"
+      })
+      
+      // Reset form for next use
+      setForm({
+        name: '',
+        account: '',
+        username: '',
+        password: '',
+        database: '',
+        schema: '',
+        warehouse: '',
+        role: '',
+        authenticator: 'SNOWFLAKE',
+        isDefault: true,
+        isActive: true,
+      })
+      
+      // Clear any test results
+      setTestResult(null)
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Save Connection",
+        description: error?.message || "An error occurred while saving the connection.",
+        variant: "destructive"
+      })
     }
   })
 
@@ -175,8 +224,93 @@ export default function IntegrationsPage() {
         </CardHeader>
         
         <CardContent className="space-y-4">
+          {/* Existing Connections List */}
+          {!showForm && (
+            <div className="space-y-4">
+              {connectionsLoading ? (
+                <div className="flex items-center gap-2 p-4">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span className="caption-text">Loading connections...</span>
+                </div>
+              ) : connections.length > 0 ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="label-text text-gray-900">Saved Connections</h3>
+                    <Button size="sm" onClick={() => setShowForm(true)}>
+                      <Save className="w-4 h-4 mr-2" />
+                      Add Connection
+                    </Button>
+                  </div>
+                  
+                  {connections.map((connection) => (
+                    <Card key={connection.id} className="border border-gray-200">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-blue-100 rounded-lg">
+                              <Database className="w-4 h-4 text-blue-600" />
+                            </div>
+                            <div>
+                              <h4 className="label-text text-gray-900">{connection.name}</h4>
+                              <p className="caption-text">
+                                {connection.account} • {connection.username}
+                                {connection.database && ` • ${connection.database}`}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {connection.is_default && (
+                              <Badge variant="secondary" className="caption-text">Default</Badge>
+                            )}
+                            <Badge variant="outline" className="caption-text">
+                              {connection.is_active ? 'Active' : 'Inactive'}
+                            </Badge>
+                          </div>
+                        </div>
+                        {connection.last_connected && (
+                          <p className="caption-text text-gray-500 mt-2">
+                            Last connected: {new Date(connection.last_connected).toLocaleString()}
+                          </p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center p-8 border-2 border-dashed border-gray-200 rounded-lg">
+                  <Database className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="label-text text-gray-900 mb-2">No Connections Yet</h3>
+                  <p className="caption-text text-gray-500 mb-4">
+                    Add your first Snowflake connection to get started with data analytics.
+                  </p>
+                  <Button onClick={() => setShowForm(true)}>
+                    <Save className="w-4 h-4 mr-2" />
+                    Add Your First Connection
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Connection Form */}
-          <div className="grid grid-cols-2 gap-4">
+          {showForm && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="label-text text-gray-900">Add New Connection</h3>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => {
+                    setShowForm(false)
+                    setTestResult(null)
+                  }}
+                >
+                  <List className="w-4 h-4 mr-2" />
+                  Back to List
+                </Button>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="name">Connection Name</Label>
               <Input
@@ -297,8 +431,8 @@ export default function IntegrationsPage() {
             </div>
           )}
 
-          {/* Action Buttons */}
-          <div className="flex items-center gap-3 pt-4">
+              {/* Action Buttons */}
+              <div className="flex items-center gap-3 pt-4">
             <Button 
               onClick={handleTest}
               variant="outline"
@@ -331,13 +465,15 @@ export default function IntegrationsPage() {
             )}
           </div>
 
-          {/* Environment Notice */}
-          <div className="bg-blue-50 p-3 rounded-md border border-blue-200">
-            <p className="text-sm text-blue-800">
-              <strong>💡 Auto-populated:</strong> Connection details are pre-filled from environment variables. 
-              Only enter the password to complete the setup.
-            </p>
-          </div>
+              {/* Environment Notice */}
+              <div className="bg-blue-50 p-3 rounded-md border border-blue-200">
+                <p className="text-sm text-blue-800">
+                  <strong>💡 Auto-populated:</strong> Connection details are pre-filled from environment variables. 
+                  Only enter the password to complete the setup.
+                </p>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
