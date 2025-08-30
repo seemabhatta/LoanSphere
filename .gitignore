@@ -2,6 +2,9 @@
 node_modules/
 venv/
 server/test_venv/
+attached_assets/datamind-master/
+attached_assets/datamind-ui-main/
+server/data/sessions/
 
 # Build outputs
 dist/

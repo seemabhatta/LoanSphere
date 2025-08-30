@@ -23,9 +23,17 @@ cd LoanSphere
 npm install
 ```
 
-**Python Dependencies:**
+**Python Dependencies (Virtual Environment Recommended):**
 ```bash
-pip install uvicorn fastapi python-dotenv tinydb
+# Create and activate virtual environment
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r server/requirements.txt
+
+# Or install manually:
+pip install uvicorn fastapi python-dotenv tinydb sqlalchemy authlib itsdangerous httpx loguru snowflake-connector-python
 ```
 
 ### 3. Environment Configuration
@@ -43,11 +51,70 @@ NODE_ENV=development
 
 ### 4. Start Development Server
 
+#### 🚀 **Development Speed Options (Fastest to Slowest)**
+
+**Ultra-Fast Mode (~1 second startup):**
 ```bash
+# Terminal 1: Start API server only
+npm run dev:ultra
+
+# Terminal 2: Start client server separately  
+npm run dev:client
+```
+
+**Fast Mode (~2-3 seconds startup):**
+```bash
+# Fastest single-command option (assumes Python already running)
+npm run dev:fast
+```
+
+**Alternative Commands:**
+```bash
+# Standard mode (starts all services, ~8+ seconds)
+npm run dev
+
+# Concurrent mode (separate client/server processes, ~3-4 seconds)
+npm run dev:concurrent
+
+# Watch mode (auto-restart on changes)
+npm run dev:watch
+
+# Start Python server only (run in separate terminal)
+npm run python
+```
+
+#### **⚡ Recommended Development Workflow:**
+
+**For Maximum Speed (3 terminals):**
+```bash
+# Terminal 1: Python API server
+source venv/bin/activate
+cd server && python3 -m uvicorn main:app --reload --port 8000
+
+# Terminal 2: Express proxy server (~1s startup)
+npm run dev:ultra
+
+# Terminal 3: Vite client server (independent)
+npm run dev:client
+```
+
+**For Simplicity (2 terminals):**
+```bash
+# Terminal 1: Python API server
+source venv/bin/activate
+cd server && python3 -m uvicorn main:app --reload --port 8000
+
+# Terminal 2: Everything else (~2-3s startup)
+npm run dev:fast
+```
+
+**For First-Time Setup (1 command):**
+```bash
+# Starts everything automatically (~8+ seconds)
 npm run dev
 ```
 
-This starts:
+**Development URLs:**
 - **Frontend**: http://localhost:5173 (Vite dev server)
 - **Node.js API**: http://localhost:5000 (Express proxy)  
 - **Python API**: http://localhost:8000 (FastAPI server)
@@ -125,13 +192,51 @@ curl -X POST "http://localhost:8000/api/staging/process" \
 
 ## Troubleshooting
 
+### Development Speed Issues
+```bash
+# If npm run dev:fast shows "Python server unavailable"
+source venv/bin/activate
+cd server && python3 -m uvicorn main:app --reload --port 8000
+
+# If startup is still slow, clear caches
+rm -rf node_modules/.vite
+npm run dev:fast
+```
+
 ### Port Conflicts
-- Frontend: Change port in `vite.config.ts`
-- Backend: Set `PORT` environment variable
+```bash
+# If "Address already in use" error:
+pkill -f "uvicorn main:app"  # Kill Python server
+npm run python              # Restart Python server
+
+# Frontend port conflicts: Change port in `vite.config.ts`
+# Backend port conflicts: Set `PORT` environment variable
+```
 
 ### Python Issues  
 - Ensure Python 3.11+ installed
-- Install uvicorn: `pip install uvicorn[standard]`
+- **Always activate virtual environment first**: `source venv/bin/activate`
+- **Missing dependencies error**: Install with `pip install -r server/requirements.txt`
+- **Import errors**: Check if `itsdangerous`, `authlib`, `sqlalchemy` are installed
+- **Auth not working**: Ensure Google OAuth credentials in `.env`
+
+### Performance Optimizations
+- **Ultra mode**: `npm run dev:ultra` (~1s startup) - Express only, separate Vite
+- **Fast mode**: `npm run dev:fast` (~2-3s startup) - Skips Python startup wait
+- **Concurrent mode**: `npm run dev:concurrent` (~3-4s startup) - Parallel processes
+- **Vite optimizations**: Pre-bundles dependencies, disabled error overlay
+- **TypeScript**: `--no-cache` flag for faster compilation
+
+### Why Development is Slow
+**Startup Bottlenecks:**
+1. **Python server startup** (~3s) - Port checking and uvicorn launch
+2. **Vite bundling** (~2-4s) - Dependency scanning and pre-bundling
+3. **Express setup** (~0.5s) - Middleware and proxy configuration
+
+**Speed Comparison:**
+- `npm run dev`: ~8+ seconds (full stack)
+- `npm run dev:fast`: ~2-3 seconds (skip Python wait)  
+- `npm run dev:ultra`: ~1 second (Express only)
 
 ### OAuth Issues
 - Verify Google Cloud Console redirect URIs

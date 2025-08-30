@@ -25,6 +25,9 @@ import SyntheticData from "@/pages/synthetic-data";
 import Commitments from "@/pages/commitments";
 import Loans from "@/pages/loans";
 import PurchaseAdvices from "@/pages/purchase-advices";
+import SettingsPage from "@/pages/settings";
+import AgentStudioPage from "@/pages/agent-studio";
+import IntegrationsPage from "@/pages/integrations";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -263,8 +266,62 @@ function Router() {
               </div>
             </div>
           </Route>
+          <Route path="/settings">
+            <div className="h-screen flex flex-col bg-gray-100">
+              <TopHeader onToggleSidebar={toggleSidebar} sidebarCollapsed={sidebarCollapsed} />
+              <div className="flex-1 flex overflow-hidden">
+                <Sidebar isOpen={true} onClose={() => {}} collapsed={sidebarCollapsed} />
+                <div className="flex-1 p-4 transition-all duration-300 overflow-hidden">
+                  <div className="bg-white rounded-lg shadow-sm h-full overflow-y-auto">
+                    <SettingsPage />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Route>
+          <Route path="/agent-studio">
+            <div className="h-screen flex flex-col bg-gray-100">
+              <TopHeader onToggleSidebar={toggleSidebar} sidebarCollapsed={sidebarCollapsed} />
+              <div className="flex-1 flex overflow-hidden">
+                <Sidebar isOpen={true} onClose={() => {}} collapsed={sidebarCollapsed} />
+                <div className="flex-1 p-4 transition-all duration-300 overflow-hidden">
+                  <div className="bg-white rounded-lg shadow-sm h-full overflow-y-auto">
+                    <AgentStudioPage />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Route>
+          <Route path="/integrations">
+            <div className="h-screen flex flex-col bg-gray-100">
+              <TopHeader onToggleSidebar={toggleSidebar} sidebarCollapsed={sidebarCollapsed} />
+              <div className="flex-1 flex overflow-hidden">
+                <Sidebar isOpen={true} onClose={() => {}} collapsed={sidebarCollapsed} />
+                <div className="flex-1 p-4 transition-all duration-300 overflow-hidden">
+                  <div className="bg-white rounded-lg shadow-sm h-full overflow-y-auto">
+                    <IntegrationsPage />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Route>
+          {/* Catch-all route for authenticated users */}
+          <Route>
+            <div className="h-screen flex flex-col bg-gray-100">
+              <TopHeader onToggleSidebar={toggleSidebar} sidebarCollapsed={sidebarCollapsed} />
+              <div className="flex-1 flex overflow-hidden">
+                <Sidebar isOpen={true} onClose={() => {}} collapsed={sidebarCollapsed} />
+                <div className="flex-1 p-4 transition-all duration-300 overflow-hidden">
+                  <div className="bg-white rounded-lg shadow-sm h-full overflow-y-auto">
+                    <NotFound />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Route>
         </>
       )}
+      {/* Catch-all for non-authenticated users */}
       <Route component={NotFound} />
     </Switch>
   );

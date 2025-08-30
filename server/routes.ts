@@ -2,6 +2,26 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { spawn } from 'child_process';
+import net from 'net';
+
+async function isPortInUse(port: number, host = '127.0.0.1'): Promise<boolean> {
+  return new Promise((resolve) => {
+    const socket = new net.Socket();
+    socket.setTimeout(1000);
+    socket.once('connect', () => {
+      socket.destroy();
+      resolve(true);
+    });
+    socket.once('timeout', () => {
+      socket.destroy();
+      resolve(false);
+    });
+    socket.once('error', () => {
+      resolve(false);
+    });
+    socket.connect(port, host);
+  });
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication is now handled by Python backend
@@ -17,51 +37,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Start Python FastAPI server
-  console.log('🐍 Starting Python FastAPI server...');
-  const isProduction = process.env.NODE_ENV === 'production';
-  const pythonCmd = 'python3';
-  const uvicornArgs = ['-m', 'uvicorn', 'main:app', '--host', '0.0.0.0', '--port', '8000'];
-  
-  const pythonProcess = spawn(pythonCmd, uvicornArgs, {
-    cwd: './server',
-    stdio: 'pipe'
-  });
+  // Start Python FastAPI server (only if port 8000 not already in use)
+  const fastApiPort = 8000;
+  const alreadyRunning = await isPortInUse(fastApiPort);
+  let pythonProcess: ReturnType<typeof spawn> | null = null;
 
-  pythonProcess.stdout.on('data', (data) => {
-    console.log(`[python] ${data.toString().trim()}`);
-  });
+  if (alreadyRunning) {
+    console.log(`♻️  Reusing existing Python FastAPI on port ${fastApiPort}`);
+  } else {
+    console.log('🐍 Starting Python FastAPI server...');
+    const pythonCmd = 'python3';
+    const uvicornArgs = ['-m', 'uvicorn', 'main:app', '--host', '0.0.0.0', '--port', String(fastApiPort)];
+    pythonProcess = spawn(pythonCmd, uvicornArgs, {
+      cwd: './server',
+      stdio: 'pipe'
+    });
 
-  pythonProcess.stderr.on('data', (data) => {
-    console.log(`[python] ${data.toString().trim()}`);
-  });
+    pythonProcess.stdout.on('data', (data) => {
+      console.log(`[python] ${data.toString().trim()}`);
+    });
 
-  // Wait for Python server to start
-  await new Promise(resolve => setTimeout(resolve, 3000));
-  console.log('✅ Python FastAPI server running on port 8000');
+    pythonProcess.stderr.on('data', (data) => {
+      console.log(`[python] ${data.toString().trim()}`);
+    });
+
+    // Wait briefly for Python server to start
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    console.log(`✅ Python FastAPI server running on port ${fastApiPort}`);
+  }
 
   // Cleanup Python process on exit
   process.on('SIGINT', () => {
     console.log('🛑 Shutting down Python server...');
-    pythonProcess.kill('SIGINT');
+    if (pythonProcess) pythonProcess.kill('SIGINT');
     process.exit(0);
   });
 
   process.on('SIGTERM', () => {
     console.log('🛑 Shutting down Python server...');
-    pythonProcess.kill('SIGTERM');
+    if (pythonProcess) pythonProcess.kill('SIGTERM');
     process.exit(0);
   });
 
-  // Proxy remaining API requests to Python FastAPI (excluding auth routes)
+  // Proxy remaining API requests to Python FastAPI
   const apiProxy = createProxyMiddleware({
     target: 'http://127.0.0.1:8000',
     changeOrigin: true,
     timeout: 30000,
-    pathRewrite: {
-      '^/': '/api/'  // Add /api prefix since Express strips it
-    },
+    // Don't rewrite paths - just forward as-is
     onProxyReq: (proxyReq, req, res) => {
+      console.log(`🔄 Forwarding: ${req.method} ${req.url} -> http://127.0.0.1:8000${req.url}`);
       // Forward cookies from client to Python backend
       if (req.headers.cookie) {
         proxyReq.setHeader('cookie', req.headers.cookie);
@@ -72,6 +97,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (proxyRes.headers['set-cookie']) {
         res.setHeader('set-cookie', proxyRes.headers['set-cookie']);
       }
+    },
+    onError: (err, req, res) => {
+      console.error('❌ Proxy error:', err.message);
+      console.error('❌ Request was:', req.method, req.url);
     }
   });
 
