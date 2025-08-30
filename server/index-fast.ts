@@ -38,8 +38,12 @@ app.use((req, res, next) => {
     target: 'http://127.0.0.1:8000',
     changeOrigin: true,
     timeout: 10000,
-    pathRewrite: {
-      '^/': '/api/'
+    // Express strips the mount path ('/api') from req.url when using app.use('/api', ...)
+    // Add it back so FastAPI receives the correct '/api/*' path
+    pathRewrite: (path, req) => {
+      const rewritten = `/api${path}`;
+      console.log(`🔁 Rewriting path: ${path} -> ${rewritten}`);
+      return rewritten;
     },
     onProxyReq: (proxyReq, req, res) => {
       if (req.headers.cookie) {
@@ -50,6 +54,9 @@ app.use((req, res, next) => {
       if (proxyRes.headers['set-cookie']) {
         res.setHeader('set-cookie', proxyRes.headers['set-cookie']);
       }
+    },
+    onError: (err, req, res) => {
+      console.error('❌ Proxy error:', err.message);
     }
   });
 
