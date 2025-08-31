@@ -10,10 +10,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from loguru import logger
 
-# Add DataMind path for imports
-DATAMIND_PATH = os.path.join(os.path.dirname(__file__), '..', 'attached_assets', 'datamind-master', 'datamind-master')
-if DATAMIND_PATH not in sys.path:
-    sys.path.insert(0, DATAMIND_PATH)
+# DataMind functionality now copied and improved locally
 
 # OpenAI Agent SDK imports
 AGENTS_AVAILABLE = True
@@ -42,9 +39,6 @@ class AgentContext:
     current_stage: Optional[str] = None
     selected_tables: List[str] = field(default_factory=list)
     dictionary_content: Optional[str] = None
-    # Add connection pooling
-    _snowflake_connection: Optional[Any] = field(default=None, init=False)
-    _connection_config: Optional[Dict[str, Any]] = field(default=None, init=False)
     
     def __post_init__(self):
         """Ensure selected_tables is always a list"""
@@ -53,7 +47,7 @@ class AgentContext:
 
 
 class DataModelAgentSession:
-    """Session management for @datamodel agent"""
+    """Session management for @datamodel agent with pre-emptive connection"""
     
     def __init__(self, session_id: str, connection_id: str):
         self.session_id = session_id
@@ -62,6 +56,8 @@ class DataModelAgentSession:
         self.created_at = datetime.now()
         self.last_activity = datetime.now()
         self.sqlite_session = None
+        self._snowflake_connection = None
+        self._connection_config = None
         
         # Create SQLite session for OpenAI Agent SDK if available
         if AGENTS_AVAILABLE:
@@ -69,6 +65,9 @@ class DataModelAgentSession:
                 self.sqlite_session = SQLiteSession(f"datamodel_session_{session_id}")
             except Exception as e:
                 logger.warning(f"Failed to create SQLite session: {e}")
+        
+        # Pre-emptively establish Snowflake connection
+        self._establish_connection()
     
     def update_activity(self):
         """Update last activity timestamp"""
@@ -77,6 +76,40 @@ class DataModelAgentSession:
     def is_expired(self, timeout_minutes: int = 60) -> bool:
         """Check if session is expired"""
         return (datetime.now() - self.last_activity).total_seconds() > (timeout_minutes * 60)
+    
+    def _establish_connection(self):
+        """Pre-emptively establish Snowflake connection when session starts"""
+        try:
+            # Load connection config
+            db = SessionLocal()
+            try:
+                conn_model = db.query(SnowflakeConnectionModel).filter_by(
+                    id=self.connection_id
+                ).first()
+                if not conn_model:
+                    raise ValueError(f"Connection not found: {self.connection_id}")
+                
+                self._connection_config = {
+                    'user': conn_model.username,
+                    'password': conn_model.password,
+                    'account': conn_model.account,
+                    'warehouse': conn_model.warehouse,
+                    'database': conn_model.database,
+                    'schema': conn_model.schema,
+                    'role': conn_model.role
+                }
+            finally:
+                db.close()
+            
+            # Create connection immediately
+            import snowflake.connector
+            self._snowflake_connection = snowflake.connector.connect(**self._connection_config)
+            logger.info(f"✅ Pre-established Snowflake connection for session {self.session_id}")
+        
+        except Exception as e:
+            logger.error(f"❌ Failed to pre-establish connection: {e}")
+            # Don't fail session creation, just log the error
+            self._snowflake_connection = None
     
     def get_snowflake_connection(self):
         """Get or create a reusable Snowflake connection"""
@@ -304,7 +337,7 @@ class DataModelAgent:
         
         try:
             from src.functions.metadata_functions import list_databases
-            result = list_databases(session)
+            result = list_databases(session.connection_id)
             
             if result["status"] == "success":
                 databases = result["databases"]
@@ -343,7 +376,7 @@ class DataModelAgent:
         
         try:
             from src.functions.metadata_functions import list_schemas
-            result = list_schemas(session, db_name)
+            result = list_schemas(session.connection_id, db_name)
             
             if result["status"] == "success":
                 schemas = result["schemas"]
@@ -385,7 +418,7 @@ class DataModelAgent:
         try:
             from src.functions.metadata_functions import list_tables
             result = list_tables(
-                session,
+                session.connection_id,
                 session.agent_context.current_database,
                 session.agent_context.current_schema
             )
@@ -470,7 +503,7 @@ class DataModelAgent:
         try:
             from src.functions.dictionary_functions import generate_data_dictionary
             result = generate_data_dictionary(
-                context.connection_id,
+                session.connection_id,
                 context.selected_tables,
                 context.current_database,
                 context.current_schema
