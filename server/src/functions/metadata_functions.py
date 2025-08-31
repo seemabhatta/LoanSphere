@@ -30,15 +30,13 @@ def get_snowflake_connection_config(connection_id: str) -> Dict[str, Any]:
         db.close()
 
 
-def list_databases(connection_id: str) -> Dict[str, Any]:
+def list_databases(snowflake_connection) -> Dict[str, Any]:
     """
-    List all databases in Snowflake
-    Enhanced version from DataMind with better error handling
+    List all databases in Snowflake using pre-established connection
+    Enhanced version with connection reuse for better performance
     """
     try:
-        config = get_snowflake_connection_config(connection_id)
-        conn = snowflake.connector.connect(**config)
-        cursor = conn.cursor()
+        cursor = snowflake_connection.cursor()
         
         try:
             cursor.execute("SHOW DATABASES")
@@ -49,7 +47,7 @@ def list_databases(connection_id: str) -> Dict[str, Any]:
                 if not db_name.startswith('SNOWFLAKE_'):  # Optional filter
                     databases.append(db_name)
             
-            logger.info(f"Listed {len(databases)} databases for connection {connection_id}")
+            logger.info(f"Listed {len(databases)} databases using existing connection")
             
             return {
                 "status": "success",
@@ -59,25 +57,23 @@ def list_databases(connection_id: str) -> Dict[str, Any]:
             
         finally:
             cursor.close()
-            conn.close()
+            # Don't close connection - it's reused
             
     except Exception as e:
-        logger.error(f"Error listing databases for {connection_id}: {e}")
+        logger.error(f"Error listing databases: {e}")
         return {
             "status": "error",
             "error": str(e)
         }
 
 
-def list_schemas(connection_id: str, database_name: str) -> Dict[str, Any]:
+def list_schemas(snowflake_connection, database_name: str) -> Dict[str, Any]:
     """
-    List schemas in a database
-    Enhanced version from DataMind with better error handling
+    List schemas in a database using pre-established connection
+    Enhanced version with connection reuse for better performance
     """
     try:
-        config = get_snowflake_connection_config(connection_id)
-        conn = snowflake.connector.connect(**config)
-        cursor = conn.cursor()
+        cursor = snowflake_connection.cursor()
         
         try:
             cursor.execute(f"SHOW SCHEMAS IN DATABASE {database_name}")
@@ -102,7 +98,7 @@ def list_schemas(connection_id: str, database_name: str) -> Dict[str, Any]:
             
         finally:
             cursor.close()
-            conn.close()
+            # Don't close connection - it's reused
             
     except Exception as e:
         logger.error(f"Error listing schemas in {database_name}: {e}")
@@ -113,15 +109,13 @@ def list_schemas(connection_id: str, database_name: str) -> Dict[str, Any]:
         }
 
 
-def list_tables(connection_id: str, database_name: str, schema_name: str) -> Dict[str, Any]:
+def list_tables(snowflake_connection, database_name: str, schema_name: str) -> Dict[str, Any]:
     """
-    List tables in a schema  
-    Enhanced version from DataMind with table metadata
+    List tables in a schema using pre-established connection
+    Enhanced version with connection reuse for better performance
     """
     try:
-        config = get_snowflake_connection_config(connection_id)
-        conn = snowflake.connector.connect(**config)
-        cursor = conn.cursor()
+        cursor = snowflake_connection.cursor()
         
         try:
             # Get tables with additional metadata
@@ -152,7 +146,7 @@ def list_tables(connection_id: str, database_name: str, schema_name: str) -> Dic
             
         finally:
             cursor.close()
-            conn.close()
+            # Don't close connection - it's reused
             
     except Exception as e:
         logger.error(f"Error listing tables in {database_name}.{schema_name}: {e}")

@@ -59,15 +59,18 @@ class DataModelAgentSession:
         self._snowflake_connection = None
         self._connection_config = None
         
-        # Create SQLite session for OpenAI Agent SDK if available
-        if AGENTS_AVAILABLE:
+        # Create SQLite session for OpenAI Agent SDK if available (temporarily disabled for debugging)
+        if False:  # AGENTS_AVAILABLE:
             try:
                 self.sqlite_session = SQLiteSession(f"datamodel_session_{session_id}")
             except Exception as e:
                 logger.warning(f"Failed to create SQLite session: {e}")
+        else:
+            self.sqlite_session = None
         
-        # Pre-emptively establish Snowflake connection
-        self._establish_connection()
+        # Connection will be established lazily on first use for better performance
+        self._snowflake_connection = None
+        self._connection_config = None
     
     def update_activity(self):
         """Update last activity timestamp"""
@@ -77,84 +80,59 @@ class DataModelAgentSession:
         """Check if session is expired"""
         return (datetime.now() - self.last_activity).total_seconds() > (timeout_minutes * 60)
     
-    def _establish_connection(self):
-        """Pre-emptively establish Snowflake connection when session starts"""
-        try:
-            # Load connection config
-            db = SessionLocal()
-            try:
-                conn_model = db.query(SnowflakeConnectionModel).filter_by(
-                    id=self.connection_id
-                ).first()
-                if not conn_model:
-                    raise ValueError(f"Connection not found: {self.connection_id}")
-                
-                self._connection_config = {
-                    'user': conn_model.username,
-                    'password': conn_model.password,
-                    'account': conn_model.account,
-                    'warehouse': conn_model.warehouse,
-                    'database': conn_model.database,
-                    'schema': conn_model.schema,
-                    'role': conn_model.role
-                }
-            finally:
-                db.close()
-            
-            # Create connection immediately
-            import snowflake.connector
-            self._snowflake_connection = snowflake.connector.connect(**self._connection_config)
-            logger.info(f"✅ Pre-established Snowflake connection for session {self.session_id}")
-        
-        except Exception as e:
-            logger.error(f"❌ Failed to pre-establish connection: {e}")
-            # Don't fail session creation, just log the error
-            self._snowflake_connection = None
     
     def get_snowflake_connection(self):
         """Get or create a reusable Snowflake connection"""
-        if self.agent_context._snowflake_connection is None:
+        if self._snowflake_connection is None:
             # Load connection config once
-            if self.agent_context._connection_config is None:
-                db = SessionLocal()
+            if self._connection_config is None:
                 try:
-                    conn = db.query(SnowflakeConnectionModel).filter_by(
-                        id=self.connection_id
-                    ).first()
-                    if not conn:
-                        raise ValueError(f"Connection not found: {self.connection_id}")
-                    
-                    self.agent_context._connection_config = {
-                        'user': conn.username,
-                        'password': conn.password,
-                        'account': conn.account,
-                        'warehouse': conn.warehouse,
-                        'database': conn.database,
-                        'schema': conn.schema,
-                        'role': conn.role
-                    }
-                finally:
-                    db.close()
+                    db = SessionLocal()
+                    try:
+                        conn = db.query(SnowflakeConnectionModel).filter_by(
+                            id=self.connection_id
+                        ).first()
+                        if not conn:
+                            raise ValueError(f"Connection not found: {self.connection_id}")
+                        
+                        self._connection_config = {
+                            'user': conn.username,
+                            'password': conn.password,
+                            'account': conn.account,
+                            'warehouse': conn.warehouse,
+                            'database': conn.database,
+                            'schema': conn.schema,
+                            'role': conn.role,
+                            'connection_timeout': 10,  # Shorter timeout
+                            'network_timeout': 15      # Shorter network timeout
+                        }
+                    finally:
+                        db.close()
+                except Exception as e:
+                    logger.error(f"Failed to load connection config: {e}")
+                    return None
             
             # Create connection once and reuse
-            import snowflake.connector
-            self.agent_context._snowflake_connection = snowflake.connector.connect(
-                **self.agent_context._connection_config
-            )
-            logger.info(f"Created Snowflake connection for session {self.session_id}")
+            try:
+                import snowflake.connector
+                self._snowflake_connection = snowflake.connector.connect(**self._connection_config)
+                logger.info(f"✅ Created Snowflake connection for session {self.session_id}")
+            except Exception as e:
+                logger.error(f"❌ Failed to create Snowflake connection: {e}")
+                return None
         
-        return self.agent_context._snowflake_connection
+        return self._snowflake_connection
     
     def close_snowflake_connection(self):
         """Close the Snowflake connection when session ends"""
-        if self.agent_context._snowflake_connection:
+        if self._snowflake_connection:
             try:
-                self.agent_context._snowflake_connection.close()
+                self._snowflake_connection.close()
                 logger.info(f"Closed Snowflake connection for session {self.session_id}")
             except Exception as e:
                 logger.warning(f"Error closing Snowflake connection: {e}")
             finally:
-                self.agent_context._snowflake_connection = None
+                self._snowflake_connection = None
 
 
 class DataModelAgent:
@@ -337,7 +315,13 @@ class DataModelAgent:
         
         try:
             from src.functions.metadata_functions import list_databases
-            result = list_databases(session.connection_id)
+            
+            # Get or create connection lazily
+            snowflake_connection = session.get_snowflake_connection()
+            if not snowflake_connection:
+                return "❌ Failed to establish Snowflake connection. Please check your connection settings."
+            
+            result = list_databases(snowflake_connection)
             
             if result["status"] == "success":
                 databases = result["databases"]
@@ -376,7 +360,13 @@ class DataModelAgent:
         
         try:
             from src.functions.metadata_functions import list_schemas
-            result = list_schemas(session.connection_id, db_name)
+            
+            # Get or create connection lazily
+            snowflake_connection = session.get_snowflake_connection()
+            if not snowflake_connection:
+                return "❌ Failed to establish Snowflake connection. Please check your connection settings."
+            
+            result = list_schemas(snowflake_connection, db_name)
             
             if result["status"] == "success":
                 schemas = result["schemas"]
@@ -417,8 +407,14 @@ class DataModelAgent:
         
         try:
             from src.functions.metadata_functions import list_tables
+            
+            # Get or create connection lazily
+            snowflake_connection = session.get_snowflake_connection()
+            if not snowflake_connection:
+                return "❌ Failed to establish Snowflake connection. Please check your connection settings."
+            
             result = list_tables(
-                session.connection_id,
+                snowflake_connection,
                 session.agent_context.current_database,
                 session.agent_context.current_schema
             )
@@ -501,12 +497,19 @@ class DataModelAgent:
             return "❌ No tables selected. Please select tables first."
         
         try:
-            from src.functions.dictionary_functions import generate_data_dictionary
-            result = generate_data_dictionary(
-                session.connection_id,
+            from src.functions.dictionary_functions import generate_data_dictionary_with_connection
+            
+            # Get or create connection lazily
+            snowflake_connection = session.get_snowflake_connection()
+            if not snowflake_connection:
+                return "❌ Failed to establish Snowflake connection. Please check your connection settings."
+            
+            result = generate_data_dictionary_with_connection(
+                snowflake_connection,
                 context.selected_tables,
                 context.current_database,
-                context.current_schema
+                context.current_schema,
+                session.connection_id
             )
             
             if result["status"] == "success":
@@ -705,9 +708,10 @@ class DataModelAgent:
     def start_session(self, connection_id: str) -> str:
         """Start a new @datamodel agent session"""
         try:
-            # Validate connection exists
+            # Validate connection exists - with timeout protection
             db = SessionLocal()
             try:
+                # Add explicit timeout to database query
                 conn = db.query(SnowflakeConnectionModel).filter_by(id=connection_id).first()
                 if not conn:
                     raise ValueError(f"Connection not found: {connection_id}")
@@ -715,21 +719,25 @@ class DataModelAgent:
                 if not conn.is_active:
                     raise ValueError(f"Connection is not active: {connection_id}")
                 
-                # Generate session ID
-                session_id = f"datamodel_{int(time.time())}_{connection_id}"
-                
-                # Create session
-                session = DataModelAgentSession(session_id, connection_id)
-                self.sessions[session_id] = session
-                
-                # Cleanup expired sessions
-                self.cleanup_expired_sessions()
-                
-                logger.info(f"Started @datamodel agent session: {session_id}")
-                return session_id
-                
             finally:
-                db.close()
+                # Ensure database connection is closed
+                try:
+                    db.close()
+                except:
+                    pass
+                
+            # Generate session ID
+            session_id = f"datamodel_{int(time.time())}_{connection_id}"
+            
+            # Create session - this should be fast now with lazy connection
+            session = DataModelAgentSession(session_id, connection_id)
+            self.sessions[session_id] = session
+            
+            # Cleanup expired sessions
+            self.cleanup_expired_sessions()
+            
+            logger.info(f"Started @datamodel agent session: {session_id}")
+            return session_id
                 
         except Exception as e:
             logger.error(f"Error starting @datamodel session: {e}")
@@ -777,20 +785,66 @@ class DataModelAgent:
             raise
     
     def _fallback_response(self, session: DataModelAgentSession, message: str) -> str:
-        """Fallback response when OpenAI Agent SDK is not available"""
+        """Fallback response when OpenAI Agent SDK is not available - includes direct function calling"""
         msg_lower = message.lower()
         context = session.agent_context
         
-        if not context.current_database:
-            return "I can help you create YAML data dictionaries from your Snowflake database! I'm ready to connect when you are. You can ask me to 'show databases' or 'connect to Snowflake' to get started."
-        elif not context.current_schema:
-            return f"Great! Database '{context.current_database}' is selected. Now let me show you the available schemas."
-        elif not context.selected_tables:
-            return f"Perfect! Schema '{context.current_schema}' is selected. Now let me show you the available tables so you can select which ones to include in your data dictionary."
-        elif "generate" in msg_lower or "create" in msg_lower:
-            return f"Excellent! I'll generate a YAML data dictionary for your selected tables: {', '.join(context.selected_tables)}"
-        else:
-            return "I'm ready to help you generate YAML data dictionaries! You can ask me to show databases, schemas, tables, or generate a dictionary."
+        # Set current session for function tools to work
+        self._current_session = session
+        
+        try:
+            # Check for specific requests and call functions directly
+            if "database" in msg_lower and ("show" in msg_lower or "list" in msg_lower or "what" in msg_lower or "available" in msg_lower):
+                return self._get_databases()
+            elif "schema" in msg_lower and ("show" in msg_lower or "list" in msg_lower or "what" in msg_lower or "available" in msg_lower):
+                if context.current_database:
+                    return self._get_schemas()
+                else:
+                    return "❌ Please select a database first. Ask me to 'show databases'."
+            elif "table" in msg_lower and ("show" in msg_lower or "list" in msg_lower or "what" in msg_lower or "available" in msg_lower):
+                if context.current_database and context.current_schema:
+                    return self._get_tables()
+                else:
+                    return "❌ Please select a database and schema first."
+            elif "generate" in msg_lower or "create" in msg_lower or "yaml" in msg_lower:
+                if context.selected_tables:
+                    return self._generate_yaml_dictionary()
+                else:
+                    return "❌ Please select tables first. Ask me to 'show tables'."
+            elif "select database" in msg_lower or "use database" in msg_lower:
+                # Extract database name from message
+                import re
+                db_match = re.search(r'\b([A-Z0-9_]+)\b', message.upper())
+                if db_match:
+                    return self._select_database(db_match.group(1))
+                else:
+                    return "❌ Please specify a database name."
+            elif "select schema" in msg_lower or "use schema" in msg_lower:
+                # Extract schema name from message  
+                import re
+                schema_match = re.search(r'\b([A-Z0-9_]+)\b', message.upper())
+                if schema_match:
+                    return self._select_schema(schema_match.group(1))
+                else:
+                    return "❌ Please specify a schema name."
+            elif "connect" in msg_lower:
+                return self._connect_to_snowflake()
+            else:
+                # Default guidance based on current state
+                if not context.current_database:
+                    return "✅ Connected to Snowflake! I can help you create YAML data dictionaries. Ask me to 'show databases' to get started."
+                elif not context.current_schema:
+                    return f"📂 Database '{context.current_database}' is selected. Ask me to 'show schemas' to see available schemas."
+                elif not context.selected_tables:
+                    return f"📂 Schema '{context.current_database}.{context.current_schema}' is selected. Ask me to 'show tables' to see available tables."
+                elif context.dictionary_content:
+                    return f"✅ YAML dictionary generated for {len(context.selected_tables)} tables! You can download it or ask me questions about it."
+                else:
+                    return f"📋 Tables selected: {', '.join(context.selected_tables)}. Ask me to 'generate yaml dictionary' to create your data dictionary."
+                    
+        finally:
+            # Clear current session reference
+            self._current_session = None
     
     def get_session_context(self, session_id: str) -> AgentContext:
         """Get session context"""
