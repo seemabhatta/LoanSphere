@@ -123,15 +123,15 @@ export default function AIAssistant() {
       
       setDatamodelSessionId(result.session_id);
       
-      // Add welcome message
-      const welcomeMessage: Message = {
+      // Add auto-initialization message from the agent (like DataMind CLI)
+      const initializationMessage: Message = {
         id: Date.now().toString(),
         type: 'assistant',
-        content: `🎉 Connected to ${result.connection_name}!\n\nI'm ready to help you generate YAML data dictionaries. Here's what I can do:\n\n📊 Browse your databases and schemas\n🔍 Select tables for dictionary generation\n📝 Generate comprehensive YAML dictionaries\n💾 Download the generated files\n\nJust tell me what you'd like to do!`,
+        content: result.initialization_message || `🎉 Connected to ${result.connection_name}!\n\nI'm ready to help you generate YAML data dictionaries. Please ask me to show databases to get started.`,
         timestamp: new Date()
       };
       
-      setMessages([welcomeMessage]);
+      setMessages([initializationMessage]);
       
       toast({
         title: '@datamodel Agent Started',

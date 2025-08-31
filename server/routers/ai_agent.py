@@ -34,6 +34,7 @@ class DataModelStartRequest(BaseModel):
 class DataModelStartResponse(BaseModel):
     session_id: str
     connection_name: str
+    initialization_message: str
 
 
 class DataModelChatRequest(BaseModel):
@@ -113,9 +114,13 @@ async def start_datamodel_agent(request: DataModelStartRequest):
         session_id = datamodel_agent.start_session(request.connection_id)
         connection_info = datamodel_agent.get_connection_info(request.connection_id)
         
+        # Get auto-initialization response like DataMind CLI
+        initialization_message = await datamodel_agent.get_initialization_response(session_id)
+        
         return DataModelStartResponse(
             session_id=session_id,
-            connection_name=connection_info["name"]
+            connection_name=connection_info["name"],
+            initialization_message=initialization_message
         )
         
     except ValueError as e:

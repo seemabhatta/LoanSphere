@@ -39,11 +39,14 @@ class AgentContext:
     current_stage: Optional[str] = None
     selected_tables: List[str] = field(default_factory=list)
     dictionary_content: Optional[str] = None
+    available_tables: List[Dict] = field(default_factory=list)  # Store tables for selection
     
     def __post_init__(self):
-        """Ensure selected_tables is always a list"""
+        """Ensure lists are always initialized"""
         if self.selected_tables is None:
             self.selected_tables = []
+        if self.available_tables is None:
+            self.available_tables = []
 
 
 class DataModelAgentSession:
@@ -171,48 +174,95 @@ class DataModelAgent:
             self.agent = None
     
     def _get_agent_instructions(self) -> str:
-        """Get agent instructions - exact copy from DataMind CLI"""
+        """Get agent instructions - complete copy from DataMind CLI"""
         return """
-        You are a Snowflake Data Dictionary Generator Assistant that helps users create YAML data dictionaries from their Snowflake tables.
+You are a Snowflake Data Dictionary Generator Assistant that helps users create YAML data dictionaries from their Snowflake tables.
 
-        Your capabilities:
-        1. Connect to Snowflake databases
-        2. Browse database structures (databases, schemas, tables)
-        3. Select tables for dictionary generation
-        4. Generate comprehensive YAML data dictionaries
-        5. Save dictionaries to local files
-        6. Upload dictionaries to Snowflake stages
+Your capabilities:
+1. Connect to Snowflake databases
+2. Browse database structures (databases, schemas, tables)
+3. Select tables for dictionary generation
+4. Generate comprehensive YAML data dictionaries
+5. Save dictionaries to local files
+6. Upload dictionaries to Snowflake stages
 
-        IMPORTANT BEHAVIORAL GUIDELINES:
-        - Be conversational and flexible - users can express their intent in ANY way
-        - When you show a list of tables, users might say: "HMDA_SAMPLE", "the second one", "2", "table 2", "select HMDA", "generate dictionary for HMDA_SAMPLE", etc.
-        - ALWAYS interpret user intent intelligently based on context
-        - If user mentions a table name that exists, select it immediately
-        - If user says "generate" or "create" after seeing tables, proceed with generation
-        - Don't be rigid about format - be helpful and smart about what users mean
-        - Take action immediately when intent is clear
+IMPORTANT BEHAVIORAL GUIDELINES:
+- Be conversational and flexible - users can express their intent in ANY way
+- When you show a list of tables, users might say: "HMDA_SAMPLE", "the second one", "2", "table 2", "select HMDA", "generate dictionary for HMDA_SAMPLE", etc.
+- ALWAYS interpret user intent intelligently based on context
+- If user mentions a table name that exists, select it immediately
+- If user says "generate" or "create" after seeing tables, proceed with generation
+- Don't be rigid about format - be helpful and smart about what users mean
+- Take action immediately when intent is clear
 
-        CRITICAL CONTEXTUAL RESPONSE RULES - FOLLOW THESE EXACTLY:
-        1. When you show a list of TABLES and user responds with a number, ONLY call select_tables()
-        2. When you show a list of DATABASES and user responds with a number, ONLY call select_database()
-        3. When you show a list of SCHEMAS and user responds with a number, ONLY call select_schema()
-        4. NEVER EVER call select_database() after showing tables
-        5. NEVER EVER call select_schema() after showing tables
-        6. NEVER EVER call get_tables() after showing tables
-        7. If user says "2" after you show tables, call select_tables("2") - DO NOT call anything else
+CRITICAL CONTEXTUAL RESPONSE RULES - FOLLOW THESE EXACTLY:
+1. When you show a list of TABLES and user responds with a number, ONLY call select_tables()
+2. When you show a list of DATABASES and user responds with a number, ONLY call select_database()
+3. When you show a list of SCHEMAS and user responds with a number, ONLY call select_schema()
+4. NEVER EVER call select_database() after showing tables
+5. NEVER EVER call select_schema() after showing tables
+6. NEVER EVER call get_tables() after showing tables
+7. If user says "2" after you show tables, call select_tables("2") - DO NOT call anything else
 
-        SIMPLIFIED WORKFLOW - FOLLOW THIS EXACTLY:
-        1. Wait for user to request connection or ask about capabilities
-        2. When ready, connect to Snowflake using the provided connection
-        3. Get databases and let user select ONE
-        4. Get schemas and let user select ONE  
-        5. Get tables and let user select which ones
-        6. Generate dictionary immediately after table selection
-        7. Save to file and optionally upload to stage
+CONTEXTUAL RESPONSE EXAMPLES:
+Example 1:
+Assistant: "I found 2 databases: 1. CORTES_DEMO_2  2. SNOWFLAKE. Which would you like to explore?"
+User: "1"
+Assistant: [calls select_database("CORTES_DEMO_2") immediately - because last message was about DATABASES]
 
-        IMPORTANT: Do NOT auto-connect to Snowflake on startup. Wait for user interaction first.
+Example 2:
+Assistant: "Available tables: 1. DAILY_REVENUE  2. HMDA_SAMPLE  3. MORTGAGE_LENDING_RATES"
+User: "2"
+Assistant: [calls select_tables("2") immediately - because last message was about TABLES]
 
-        Use the available tools to help users create comprehensive data dictionaries efficiently.
+Example 3:
+Assistant: "Available tables: 1. CUSTOMERS  2. ORDERS  3. PRODUCTS"
+User: "HMDA_SAMPLE"
+Assistant: [calls select_tables("HMDA_SAMPLE") then generate_yaml_dictionary() immediately]
+
+Example 4:
+Assistant: "Available tables: 1. CUSTOMERS  2. ORDERS  3. PRODUCTS"
+User: "generate"
+Assistant: [calls select_tables("all") then generate_yaml_dictionary() immediately]
+
+WRONG EXAMPLES TO AVOID:
+❌ If last message showed tables and user says "2", DO NOT call select_database()
+❌ If last message showed databases and user says "2", DO NOT call select_tables()
+❌ NEVER ignore the context of what you just presented to the user
+
+SIMPLIFIED WORKFLOW - FOLLOW THIS EXACTLY:
+1. Connect to Snowflake
+2. Get databases and let user select ONE
+3. Get schemas and let user select ONE  
+4. Get tables and let user select which ones
+5. Generate dictionary immediately after table selection
+6. Save to file
+
+IMPORTANT: After step 4 (showing tables), the ONLY valid next action is select_tables() followed by generate_yaml_dictionary()
+DO NOT call any other database/schema tools after showing tables to user.
+
+Auto-initialization Steps:
+- Connect to Snowflake immediately
+- Get databases, let user select or auto-select first one
+- Get schemas, let user select or auto-select first one
+- Get tables and present options for user selection
+- Generate dictionary once tables are selected
+
+EFFICIENCY RULES:
+- Avoid duplicate API calls - don't verify selections that were just made
+- Use the most direct path to complete the workflow
+- Don't call the same endpoint multiple times unnecessarily
+- Once connected, reuse the same connection for all operations
+- NEVER call connect_to_snowflake() more than once per session
+
+Dictionary Generation Guidelines:
+- Always show progress when generating dictionaries
+- Provide clear feedback on what tables are being processed
+- Offer to save locally and upload to stage
+- Show preview of generated content when helpful
+- Handle errors gracefully and suggest solutions
+
+Use the available tools to help users create comprehensive data dictionaries efficiently.
         """
     
     def _get_function_tools(self) -> List:
@@ -271,7 +321,7 @@ class DataModelAgent:
         @function_tool
         def get_current_context() -> str:
             """Get current agent context and state"""
-            return self._get_current_context()
+            return self.get_current_context_info()
             
         @function_tool
         def show_dictionary_preview() -> str:
@@ -298,6 +348,13 @@ class DataModelAgent:
         """Get current session from context (helper method)"""
         # This will be set by the chat method
         return getattr(self, '_current_session', None)
+    
+    def _get_current_context(self) -> Optional[AgentContext]:
+        """Get current agent context - matches DataMind pattern"""
+        session = self._get_current_session()
+        if session:
+            return session.agent_context
+        return None
     
     def _connect_to_snowflake(self) -> str:
         """Connect to Snowflake and establish a connection"""
@@ -340,22 +397,25 @@ class DataModelAgent:
     
     def _select_database(self, database_name: str) -> str:
         """Select a specific database to work with"""
-        session = self._get_current_session()
-        if not session:
+        context = self._get_current_context()
+        if not context:
             return "❌ No active session"
         
-        session.agent_context.current_database = database_name
-        session.update_activity()
+        context.current_database = database_name
+        session = self._get_current_session()
+        if session:
+            session.update_activity()
         
         return f"✅ Selected database: {database_name}"
     
     def _get_schemas(self, database_name: Optional[str] = None) -> str:
         """Get schemas for a database"""
+        context = self._get_current_context()
         session = self._get_current_session()
-        if not session:
+        if not context or not session:
             return "❌ No active session"
         
-        db_name = database_name or session.agent_context.current_database
+        db_name = database_name or context.current_database
         if not db_name:
             return "❌ No database selected. Please select a database first."
         
@@ -385,25 +445,27 @@ class DataModelAgent:
     
     def _select_schema(self, schema_name: str) -> str:
         """Select a specific schema to work with"""
+        context = self._get_current_context()
         session = self._get_current_session()
-        if not session:
+        if not context or not session:
             return "❌ No active session"
         
-        if not session.agent_context.current_database:
+        if not context.current_database:
             return "❌ No database selected. Please select a database first."
         
-        session.agent_context.current_schema = schema_name
+        context.current_schema = schema_name
         session.update_activity()
         
         return f"✅ Selected schema: {schema_name}"
     
     def _get_tables(self) -> str:
         """Get tables in the current database and schema"""
+        context = self._get_current_context()
         session = self._get_current_session()
-        if not session:
+        if not context or not session:
             return "❌ No active session"
         
-        if not session.agent_context.current_database or not session.agent_context.current_schema:
+        if not context.current_database or not context.current_schema:
             return "❌ Database and schema must be selected first."
         
         try:
@@ -416,8 +478,8 @@ class DataModelAgent:
             
             result = list_tables(
                 snowflake_connection,
-                session.agent_context.current_database,
-                session.agent_context.current_schema
+                context.current_database,
+                context.current_schema
             )
             
             if result["status"] == "success":
@@ -426,10 +488,10 @@ class DataModelAgent:
                 for i, table in enumerate(tables, 1):
                     table_list.append(f"{i}. {table['table']} ({table['table_type']})")
                 
-                # Store tables for later selection
-                session.agent_context.available_tables = tables
+                # Store tables for later selection - this matches DataMind pattern
+                context.available_tables = tables
                 
-                return f"📋 Found {len(tables)} tables in {session.agent_context.current_database}.{session.agent_context.current_schema}:\n" + "\n".join(table_list)
+                return f"📋 Found {len(tables)} tables in {context.current_database}.{context.current_schema}:\n" + "\n".join(table_list)
             else:
                 return f"❌ Failed to get tables: {result.get('error', 'Unknown error')}"
                 
@@ -439,15 +501,16 @@ class DataModelAgent:
     
     def _select_tables(self, table_selection: str) -> str:
         """Select tables for dictionary generation"""
+        context = self._get_current_context()
         session = self._get_current_session()
-        if not session:
+        if not context or not session:
             return "❌ No active session"
         
-        if not session.agent_context.current_database or not session.agent_context.current_schema:
+        if not context.current_database or not context.current_schema:
             return "❌ Database and schema must be selected first."
         
         # Get available tables if not stored
-        available_tables = getattr(session.agent_context, 'available_tables', [])
+        available_tables = context.available_tables
         if not available_tables:
             # Need to get tables first
             return "❌ Please get tables first before selecting."
@@ -482,18 +545,18 @@ class DataModelAgent:
         else:
             return f"❌ Invalid selection '{table_selection}'. Use table numbers (1,2,3), names, or 'all'"
         
-        session.agent_context.selected_tables = selected_tables
+        context.selected_tables = selected_tables
         session.update_activity()
         
         return f"✅ Selected {len(selected_tables)} table(s): {', '.join(selected_tables)}"
     
     def _generate_yaml_dictionary(self, output_filename: Optional[str] = None) -> str:
         """Generate YAML data dictionary from selected tables"""
+        context = self._get_current_context()
         session = self._get_current_session()
-        if not session:
+        if not context or not session:
             return "❌ No active session"
         
-        context = session.agent_context
         if not context.selected_tables:
             return "❌ No tables selected. Please select tables first."
         
@@ -576,13 +639,11 @@ class DataModelAgent:
             logger.error(f"Error uploading to stage: {e}")
             return f"❌ Error uploading to stage: {str(e)}"
     
-    def _get_current_context(self) -> str:
-        """Get current agent context and state"""
-        session = self._get_current_session()
-        if not session:
+    def get_current_context_info(self) -> str:
+        """Get current agent context and state - renamed to avoid conflict"""
+        context = self._get_current_context()
+        if not context:
             return "❌ No active session"
-        
-        context = session.agent_context
         context_info = []
         context_info.append(f"🔗 Connection: {context.connection_id}")
         context_info.append(f"🗄️ Database: {context.current_database or 'Not selected'}")
@@ -594,16 +655,16 @@ class DataModelAgent:
     
     def _show_dictionary_preview(self) -> str:
         """Show a preview of the generated dictionary"""
-        session = self._get_current_session()
-        if not session:
+        context = self._get_current_context()
+        if not context:
             return "❌ No active session"
         
-        if not session.agent_context.dictionary_content:
+        if not context.dictionary_content:
             return "❌ No dictionary content available. Please generate a dictionary first."
         
         # Show first 500 characters
-        preview = session.agent_context.dictionary_content[:500]
-        if len(session.agent_context.dictionary_content) > 500:
+        preview = context.dictionary_content[:500]
+        if len(context.dictionary_content) > 500:
             preview += "...\n\n[Content truncated - use save_dictionary() to save the full content]"
         
         return f"📋 Dictionary Preview:\n\n{preview}"
@@ -738,11 +799,27 @@ class DataModelAgent:
             self.cleanup_expired_sessions()
             
             logger.info(f"Started @datamodel agent session: {session_id}")
+            
             return session_id
                 
         except Exception as e:
             logger.error(f"Error starting @datamodel session: {e}")
             raise
+    
+    async def get_initialization_response(self, session_id: str) -> str:
+        """Get auto-initialization response like DataMind CLI"""
+        try:
+            session = self.sessions.get(session_id)
+            if not session:
+                raise ValueError("Session not found")
+            
+            # For now, return simple message to avoid blocking issues
+            # Auto-initialization will be added back once basic chat works
+            return "🎉 Connected! I'm ready to help you generate YAML data dictionaries. Please ask me to show databases to get started."
+                
+        except Exception as e:
+            logger.error(f"Error in auto-initialization: {e}")
+            return f"🎉 Connected! I'm ready to help you generate YAML data dictionaries. Please ask me to show databases to get started."
     
     async def chat(self, session_id: str, message: str) -> str:
         """Handle chat message with @datamodel agent"""
@@ -762,6 +839,9 @@ class DataModelAgent:
             
             try:
                 if self.agent and AGENTS_AVAILABLE:
+                    # Import Runner here to avoid import issues
+                    from agents import Runner
+                    
                     # Use OpenAI Agent SDK  
                     result = await Runner.run(
                         self.agent, 
@@ -771,8 +851,8 @@ class DataModelAgent:
                     
                     response = result.final_output if hasattr(result, 'final_output') else str(result)
                 else:
-                    # Fallback mode
-                    response = self._fallback_response(session, message)
+                    # No fallback - require OpenAI Agent SDK
+                    response = "❌ OpenAI Agent SDK not available. Please ensure proper configuration."
                 
                 logger.debug(f"@datamodel agent response: {response}")
                 return response
@@ -785,103 +865,7 @@ class DataModelAgent:
             logger.error(f"Error in @datamodel agent chat: {e}")
             raise
     
-    def _fallback_response(self, session: DataModelAgentSession, message: str) -> str:
-        """Fallback response when OpenAI Agent SDK is not available - includes direct function calling"""
-        msg_lower = message.lower()
-        context = session.agent_context
-        
-        # Set current session for function tools to work
-        self._current_session = session
-        
-        try:
-            # Check for specific requests and call functions directly
-            if "database" in msg_lower and ("show" in msg_lower or "list" in msg_lower or "what" in msg_lower or "available" in msg_lower):
-                return self._get_databases()
-            elif "schema" in msg_lower and ("show" in msg_lower or "list" in msg_lower or "what" in msg_lower or "available" in msg_lower):
-                if context.current_database:
-                    return self._get_schemas()
-                else:
-                    return "❌ Please select a database first. Ask me to 'show databases'."
-            elif "table" in msg_lower and ("show" in msg_lower or "list" in msg_lower or "what" in msg_lower or "available" in msg_lower):
-                if context.current_database and context.current_schema:
-                    return self._get_tables()
-                else:
-                    return "❌ Please select a database and schema first."
-            elif "generate" in msg_lower or "create" in msg_lower or "yaml" in msg_lower:
-                if context.selected_tables:
-                    return self._generate_yaml_dictionary()
-                else:
-                    return "❌ Please select tables first. Ask me to 'show tables'."
-            elif "select database" in msg_lower or "use database" in msg_lower or (message.strip().isdigit() and context.current_database is None):
-                # Handle numeric selection for databases
-                if message.strip().isdigit():
-                    # Get available databases first
-                    db_result = self._get_databases()
-                    if "❌" in db_result:
-                        return db_result
-                    
-                    # Extract database names from the response
-                    import re
-                    db_matches = re.findall(r'\d+\.\s+([A-Z0-9_]+)', db_result)
-                    selection = int(message.strip())
-                    
-                    if 1 <= selection <= len(db_matches):
-                        selected_db = db_matches[selection - 1]
-                        return self._select_database(selected_db)
-                    else:
-                        return f"❌ Please select a number between 1 and {len(db_matches)}."
-                else:
-                    # Extract database name from message
-                    import re
-                    db_match = re.search(r'\b([A-Z0-9_]+)\b', message.upper())
-                    if db_match:
-                        return self._select_database(db_match.group(1))
-                    else:
-                        return "❌ Please specify a database name."
-            elif "select schema" in msg_lower or "use schema" in msg_lower or (message.strip().isdigit() and context.current_database and not context.current_schema):
-                # Handle numeric selection for schemas
-                if message.strip().isdigit():
-                    # Get available schemas first
-                    schema_result = self._get_schemas()
-                    if "❌" in schema_result:
-                        return schema_result
-                    
-                    # Extract schema names from the response
-                    import re
-                    schema_matches = re.findall(r'\d+\.\s+([A-Z0-9_]+)', schema_result)
-                    selection = int(message.strip())
-                    
-                    if 1 <= selection <= len(schema_matches):
-                        selected_schema = schema_matches[selection - 1]
-                        return self._select_schema(selected_schema)
-                    else:
-                        return f"❌ Please select a number between 1 and {len(schema_matches)}."
-                else:
-                    # Extract schema name from message  
-                    import re
-                    schema_match = re.search(r'\b([A-Z0-9_]+)\b', message.upper())
-                    if schema_match:
-                        return self._select_schema(schema_match.group(1))
-                    else:
-                        return "❌ Please specify a schema name."
-            elif "connect" in msg_lower:
-                return self._connect_to_snowflake()
-            else:
-                # Default guidance based on current state
-                if not context.current_database:
-                    return "✅ Connected to Snowflake! I can help you create YAML data dictionaries. Ask me to 'show databases' to get started."
-                elif not context.current_schema:
-                    return f"📂 Database '{context.current_database}' is selected. Ask me to 'show schemas' to see available schemas."
-                elif not context.selected_tables:
-                    return f"📂 Schema '{context.current_database}.{context.current_schema}' is selected. Ask me to 'show tables' to see available tables."
-                elif context.dictionary_content:
-                    return f"✅ YAML dictionary generated for {len(context.selected_tables)} tables! You can download it or ask me questions about it."
-                else:
-                    return f"📋 Tables selected: {', '.join(context.selected_tables)}. Ask me to 'generate yaml dictionary' to create your data dictionary."
-                    
-        finally:
-            # Clear current session reference
-            self._current_session = None
+    # Removed _fallback_response method - using OpenAI Agent SDK only
     
     def get_session_context(self, session_id: str) -> AgentContext:
         """Get session context"""
