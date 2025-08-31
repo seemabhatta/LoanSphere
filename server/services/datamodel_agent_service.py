@@ -59,12 +59,13 @@ class DataModelAgentSession:
         self._snowflake_connection = None
         self._connection_config = None
         
-        # Create SQLite session for OpenAI Agent SDK if available (temporarily disabled for debugging)
-        if False:  # AGENTS_AVAILABLE:
+        # Create SQLite session for OpenAI Agent SDK if available
+        if AGENTS_AVAILABLE:
             try:
                 self.sqlite_session = SQLiteSession(f"datamodel_session_{session_id}")
             except Exception as e:
                 logger.warning(f"Failed to create SQLite session: {e}")
+                self.sqlite_session = None
         else:
             self.sqlite_session = None
         
@@ -811,22 +812,58 @@ class DataModelAgent:
                     return self._generate_yaml_dictionary()
                 else:
                     return "❌ Please select tables first. Ask me to 'show tables'."
-            elif "select database" in msg_lower or "use database" in msg_lower:
-                # Extract database name from message
-                import re
-                db_match = re.search(r'\b([A-Z0-9_]+)\b', message.upper())
-                if db_match:
-                    return self._select_database(db_match.group(1))
+            elif "select database" in msg_lower or "use database" in msg_lower or (message.strip().isdigit() and context.current_database is None):
+                # Handle numeric selection for databases
+                if message.strip().isdigit():
+                    # Get available databases first
+                    db_result = self._get_databases()
+                    if "❌" in db_result:
+                        return db_result
+                    
+                    # Extract database names from the response
+                    import re
+                    db_matches = re.findall(r'\d+\.\s+([A-Z0-9_]+)', db_result)
+                    selection = int(message.strip())
+                    
+                    if 1 <= selection <= len(db_matches):
+                        selected_db = db_matches[selection - 1]
+                        return self._select_database(selected_db)
+                    else:
+                        return f"❌ Please select a number between 1 and {len(db_matches)}."
                 else:
-                    return "❌ Please specify a database name."
-            elif "select schema" in msg_lower or "use schema" in msg_lower:
-                # Extract schema name from message  
-                import re
-                schema_match = re.search(r'\b([A-Z0-9_]+)\b', message.upper())
-                if schema_match:
-                    return self._select_schema(schema_match.group(1))
+                    # Extract database name from message
+                    import re
+                    db_match = re.search(r'\b([A-Z0-9_]+)\b', message.upper())
+                    if db_match:
+                        return self._select_database(db_match.group(1))
+                    else:
+                        return "❌ Please specify a database name."
+            elif "select schema" in msg_lower or "use schema" in msg_lower or (message.strip().isdigit() and context.current_database and not context.current_schema):
+                # Handle numeric selection for schemas
+                if message.strip().isdigit():
+                    # Get available schemas first
+                    schema_result = self._get_schemas()
+                    if "❌" in schema_result:
+                        return schema_result
+                    
+                    # Extract schema names from the response
+                    import re
+                    schema_matches = re.findall(r'\d+\.\s+([A-Z0-9_]+)', schema_result)
+                    selection = int(message.strip())
+                    
+                    if 1 <= selection <= len(schema_matches):
+                        selected_schema = schema_matches[selection - 1]
+                        return self._select_schema(selected_schema)
+                    else:
+                        return f"❌ Please select a number between 1 and {len(schema_matches)}."
                 else:
-                    return "❌ Please specify a schema name."
+                    # Extract schema name from message  
+                    import re
+                    schema_match = re.search(r'\b([A-Z0-9_]+)\b', message.upper())
+                    if schema_match:
+                        return self._select_schema(schema_match.group(1))
+                    else:
+                        return "❌ Please specify a schema name."
             elif "connect" in msg_lower:
                 return self._connect_to_snowflake()
             else:
