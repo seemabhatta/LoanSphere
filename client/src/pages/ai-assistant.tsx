@@ -39,20 +39,115 @@ interface QuickAction {
   category: string;
 }
 
+type AgentMode = '@general' | '@datamodel';
+
+interface SnowflakeConnection {
+  id: string;
+  name: string;
+  account: string;
+  username: string;
+  database?: string;
+  schema?: string;
+  is_default: boolean;
+  is_active: boolean;
+}
+
 export default function AIAssistant() {
   const { user } = useAuth();
 
-  const getWelcomeMessage = () => {
+  const getWelcomeMessage = (mode: AgentMode) => {
+    if (mode === '@datamodel') {
+      return `Hello! I'm your @datamodel agent. I can help you generate YAML data dictionaries from your Snowflake tables. I'll guide you through selecting databases, schemas, and tables to create comprehensive data models.`;
+    }
     return `Hello! I'm your AI Assistant for Xpanse Loan Xchange. I can help you with loan boarding, exception management, analytics, and system operations. What would you like to know?`;
   };
 
+  const [agentMode, setAgentMode] = useState<AgentMode>('@general');
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [datamodelSessionId, setDatamodelSessionId] = useState<string | null>(null);
+  const [connections, setConnections] = useState<SnowflakeConnection[]>([]);
+  const [selectedConnection, setSelectedConnection] = useState<string>('');
+  const [connectionsLoading, setConnectionsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  // Load Snowflake connections on mount
+  useEffect(() => {
+    loadConnections();
+  }, []);
+
+  // Reset session and messages when agent mode changes
+  useEffect(() => {
+    setMessages([]);
+    setSessionId(null);
+    setDatamodelSessionId(null);
+    setInputValue('');
+  }, [agentMode]);
+
+  const loadConnections = async () => {
+    try {
+      setConnectionsLoading(true);
+      const result = await apiRequest('GET', '/api/snowflake/connections');
+      setConnections(result);
+      
+      // Auto-select default or first active connection
+      const defaultConn = result.find((c: SnowflakeConnection) => c.is_default && c.is_active);
+      const firstActive = result.find((c: SnowflakeConnection) => c.is_active);
+      if (defaultConn) {
+        setSelectedConnection(defaultConn.id);
+      } else if (firstActive) {
+        setSelectedConnection(firstActive.id);
+      }
+    } catch (err: any) {
+      console.error('Error loading connections:', err);
+      toast({
+        title: 'Connection Error',
+        description: 'Failed to load Snowflake connections',
+        variant: 'destructive'
+      });
+    } finally {
+      setConnectionsLoading(false);
+    }
+  };
+
+  const startDatamodelSession = async (connectionId: string) => {
+    try {
+      setIsTyping(true);
+      const result = await apiRequest('POST', '/api/ai-agent/datamodel/start', {
+        connection_id: connectionId
+      });
+      
+      setDatamodelSessionId(result.session_id);
+      
+      // Add welcome message
+      const welcomeMessage: Message = {
+        id: Date.now().toString(),
+        type: 'assistant',
+        content: `🎉 Connected to ${result.connection_name}!\n\nI'm ready to help you generate YAML data dictionaries. Here's what I can do:\n\n📊 Browse your databases and schemas\n🔍 Select tables for dictionary generation\n📝 Generate comprehensive YAML dictionaries\n💾 Download the generated files\n\nJust tell me what you'd like to do!`,
+        timestamp: new Date()
+      };
+      
+      setMessages([welcomeMessage]);
+      
+      toast({
+        title: '@datamodel Agent Started',
+        description: `Connected to ${result.connection_name}`,
+      });
+      
+    } catch (err: any) {
+      toast({
+        title: 'Connection Failed',
+        description: err?.message || 'Failed to start @datamodel agent session',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsTyping(false);
+    }
+  };
 
   // Helper to send a direct query (used by graph node clicks)
   const sendAgentQuery = async (query: string) => {
@@ -87,17 +182,20 @@ export default function AIAssistant() {
     }
   };
 
-  const quickActions: QuickAction[] = [
-    // Loans
+  const quickActions: QuickAction[] = agentMode === '@datamodel' ? [
+    // @datamodel specific actions
+    { label: 'Browse Databases', query: 'Show me the available databases', icon: FileText, category: 'Browse' },
+    { label: 'Browse Schemas', query: 'List the schemas in my database', icon: FileText, category: 'Browse' },
+    { label: 'Browse Tables', query: 'Show me the tables in my schema', icon: FileText, category: 'Browse' },
+    { label: 'Generate Dictionary', query: 'Generate a YAML dictionary for my selected tables', icon: TrendingUp, category: 'Generate' },
+  ] : [
+    // @general mode actions
     { label: 'Recent Loans', query: 'List recent loans and summarize statuses', icon: FileText, category: 'Loans' },
     { label: 'Graph Latest Loan', query: 'Show the latest loan data and visualize it as a knowledge graph', icon: TrendingUp, category: 'Loans' },
-    // Commitments
     { label: 'Commitments', query: 'List commitments with IDs, then show details for the latest', icon: FileText, category: 'Commitments' },
     { label: 'Commitment (Raw)', query: 'Show raw commitment JSON for the latest commitment', icon: Lightbulb, category: 'Commitments' },
-    // Purchase Advice
     { label: 'Purchase Advices', query: 'List purchase advices and show a concise summary of the latest', icon: FileText, category: 'Purchase Advice' },
     { label: 'PA (Raw)', query: 'Show raw purchase advice JSON for the latest purchase advice', icon: Lightbulb, category: 'Purchase Advice' },
-    // Loan Tracking
     { label: 'Tracking Status', query: 'Show loan tracking status summary', icon: Clock, category: 'Loan Tracking' },
     { label: 'SLA Risks', query: 'Which loans are at risk of missing SLA targets?', icon: AlertTriangle, category: 'Loan Tracking' },
   ];
@@ -114,6 +212,17 @@ export default function AIAssistant() {
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
 
+    // Handle @datamodel mode
+    if (agentMode === '@datamodel') {
+      await handleDatamodelMessage();
+      return;
+    }
+
+    // Handle @general mode
+    await handleGeneralMessage();
+  };
+
+  const handleGeneralMessage = async () => {
     const userMessage: Message = {
       id: Date.now().toString(),
       type: 'user',
@@ -156,6 +265,68 @@ export default function AIAssistant() {
         id: `${Date.now()}-assistant-error`,
         type: 'assistant',
         content: 'Sorry, I could not reach the AI service right now.',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errMessage]);
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
+  const handleDatamodelMessage = async () => {
+    // Start session if not already started
+    if (!datamodelSessionId && selectedConnection) {
+      await startDatamodelSession(selectedConnection);
+      return;
+    }
+    
+    if (!datamodelSessionId) {
+      toast({
+        title: 'No Connection',
+        description: 'Please select a Snowflake connection first.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      type: 'user',
+      content: inputValue,
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    const outgoing = inputValue;
+    setInputValue('');
+    setIsTyping(true);
+
+    try {
+      const result = await apiRequest('POST', '/api/ai-agent/datamodel/chat', {
+        session_id: datamodelSessionId,
+        message: outgoing
+      });
+
+      console.log('@datamodel agent response:', result);
+
+      const aiMessage: Message = {
+        id: `${Date.now()}-assistant`,
+        type: 'assistant',
+        content: result?.response ?? 'No response received.',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, aiMessage]);
+    } catch (err: any) {
+      console.error('@datamodel agent chat error:', err);
+      toast({
+        title: '@datamodel Agent Error',
+        description: err?.message || 'Failed to contact @datamodel agent.',
+        variant: 'destructive'
+      });
+      const errMessage: Message = {
+        id: `${Date.now()}-assistant-error`,
+        type: 'assistant',
+        content: 'Sorry, I could not process your request right now.',
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errMessage]);
@@ -225,22 +396,101 @@ export default function AIAssistant() {
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-white relative">
+      {/* Header with Agent Mode Selector */}
+      <div className="border-b bg-white px-6 py-4">
+        <div className="flex items-center justify-between max-w-4xl mx-auto">
+          <div>
+            <h1 className="text-lg font-semibold">
+              {agentMode === '@datamodel' ? 'Data Model & Dictionary Generator' : 'AI Assistant'}
+            </h1>
+            <p className="text-sm text-gray-500">
+              {agentMode === '@datamodel' 
+                ? 'Generate YAML data dictionaries from Snowflake tables'
+                : 'Your AI-powered assistant for loan operations'
+              }
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            {/* Agent Mode Selector */}
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium">Mode:</label>
+              <select 
+                value={agentMode}
+                onChange={(e) => setAgentMode(e.target.value as AgentMode)}
+                className="px-3 py-1 border border-gray-300 rounded-md text-sm"
+                data-testid="agent-mode-selector"
+              >
+                <option value="@general">@general</option>
+                <option value="@datamodel">@datamodel</option>
+              </select>
+            </div>
+
+            {/* Connection Picker for @datamodel mode */}
+            {agentMode === '@datamodel' && (
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium">Connection:</label>
+                {connectionsLoading ? (
+                  <div className="text-sm text-gray-500">Loading connections...</div>
+                ) : connections.length === 0 ? (
+                  <div className="text-sm text-red-500">No connections available</div>
+                ) : (
+                  <select 
+                    value={selectedConnection}
+                    onChange={(e) => {
+                      setSelectedConnection(e.target.value);
+                      setDatamodelSessionId(null); // Reset session when connection changes
+                    }}
+                    className="px-3 py-1 border border-gray-300 rounded-md text-sm min-w-48"
+                    data-testid="connection-picker"
+                  >
+                    {connections.filter(c => c.is_active).map((conn) => (
+                      <option key={conn.id} value={conn.id}>
+                        {conn.name} {conn.is_default && '(Default)'}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Main Content */}
       <div className="flex-1 overflow-hidden flex flex-col pb-20">
         {/* Welcome Section */}
         {messages.length === 0 && (
           <div className="flex-1 flex flex-col items-center justify-center p-8 max-w-4xl mx-auto">
-            
-            
-            
-            
-            {/* Subtitle */}
-            <p className="caption-text mb-2 text-[14px]">XLX Assistant</p>
-            
-            {/* Description */}
-            <p className="body-text text-gray-600 text-center mb-8 max-w-lg">
-              Your AI-powered assistant for loan boarding, exception management, and analytics operations.
-            </p>
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold mb-2">
+                {agentMode === '@datamodel' ? '📊 Data Model Generator' : '🤖 AI Assistant'}
+              </h2>
+              <p className="body-text text-gray-600 max-w-lg">
+                {getWelcomeMessage(agentMode)}
+              </p>
+              
+              {/* Connection Status for @datamodel mode */}
+              {agentMode === '@datamodel' && (
+                <div className="mt-4 p-3 bg-blue-50 rounded-lg" data-testid="connection-status">
+                  {selectedConnection ? (
+                    <div className="flex items-center justify-center gap-2 text-blue-700">
+                      <span className="text-sm">
+                        Ready to connect to {connections.find(c => c.id === selectedConnection)?.name || 'Snowflake'}
+                      </span>
+                    </div>
+                  ) : connections.length === 0 ? (
+                    <div className="text-orange-700 text-sm">
+                      No Snowflake connections available. Please configure a connection first.
+                    </div>
+                  ) : (
+                    <div className="text-orange-700 text-sm">
+                      Please select a Snowflake connection above.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
             
             {/* Suggestion Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full max-w-5xl">
