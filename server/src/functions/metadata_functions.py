@@ -301,3 +301,101 @@ def get_table_columns(connection_id: str, database_name: str, schema_name: str, 
             "schema": schema_name,
             "database": database_name
         }
+
+
+def get_table_columns_with_connection(snowflake_connection, database_name: str, schema_name: str, table_name: str) -> Dict[str, Any]:
+    """
+    Get detailed column information for a table using pre-established connection
+    """
+    try:
+        cursor = snowflake_connection.cursor()
+        
+        try:
+            # Get column details from INFORMATION_SCHEMA
+            query = f"""
+            SELECT 
+                COLUMN_NAME,
+                DATA_TYPE,
+                IS_NULLABLE,
+                COLUMN_DEFAULT,
+                ORDINAL_POSITION,
+                CHARACTER_MAXIMUM_LENGTH,
+                NUMERIC_PRECISION,
+                NUMERIC_SCALE,
+                COMMENT
+            FROM {database_name}.INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_SCHEMA = '{schema_name}'
+            AND TABLE_NAME = '{table_name}'
+            ORDER BY ORDINAL_POSITION
+            """
+            
+            cursor.execute(query)
+            columns = []
+            for row in cursor.fetchall():
+                column_info = {
+                    'name': row[0],
+                    'type': row[1],
+                    'nullable': row[2] == 'YES',
+                    'default': row[3],
+                    'position': row[4],
+                    'max_length': row[5],
+                    'precision': row[6],
+                    'scale': row[7],
+                    'comment': row[8]
+                }
+                columns.append(column_info)
+            
+            return {
+                "status": "success",
+                "columns": columns,
+                "table": table_name,
+                "schema": schema_name,
+                "database": database_name,
+                "count": len(columns)
+            }
+            
+        finally:
+            cursor.close()
+            # Don't close connection - it's reused
+            
+    except Exception as e:
+        logger.error(f"Error getting columns for {database_name}.{schema_name}.{table_name}: {e}")
+        return {
+            "status": "error",
+            "error": str(e),
+            "table": table_name,
+            "schema": schema_name,
+            "database": database_name
+        }
+
+
+def get_table_metadata_with_connection(snowflake_connection, database_name: str, schema_name: str, table_name: str) -> Dict[str, Any]:
+    """
+    Get additional table metadata using pre-established connection
+    """
+    try:
+        cursor = snowflake_connection.cursor()
+        
+        try:
+            # Get table metadata from SHOW TABLES
+            cursor.execute(f"SHOW TABLES IN SCHEMA {database_name}.{schema_name}")
+            
+            for row in cursor.fetchall():
+                if row[1] == table_name:  # Table name is in column 1
+                    return {
+                        'comment': row[6] if len(row) > 6 and row[6] else None,
+                        'rows': row[4] if len(row) > 4 else None,
+                        'size_bytes': row[5] if len(row) > 5 else None,
+                        'last_altered': row[8] if len(row) > 8 else None,
+                        'created': row[7] if len(row) > 7 else None
+                    }
+            
+            return {}  # Table not found or no metadata
+            
+        finally:
+            cursor.close()
+            # Don't close connection - it's reused
+            
+    except Exception as e:
+        logger.warning(f"Could not get metadata for {database_name}.{schema_name}.{table_name}: {e}")
+        return {}
