@@ -17,7 +17,10 @@ import {
   Clock,
   User,
   Lightbulb,
-  Brain
+  Brain,
+  Loader2,
+  CheckCircle,
+  AlertCircle
 } from "lucide-react";
 import AssistantChart from "@/components/assistant-chart";
 import AssistantGraph from "@/components/assistant-graph";
@@ -68,6 +71,7 @@ export default function AIAssistant() {
   const [isListening, setIsListening] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [typingMessage, setTypingMessage] = useState('');
+  const [lastRequestTime, setLastRequestTime] = useState(0);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [datamodelSessionId, setDatamodelSessionId] = useState<string | null>(null);
   const [connections, setConnections] = useState<SnowflakeConnection[]>([]);
@@ -76,9 +80,20 @@ export default function AIAssistant() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  // Load Snowflake connections on mount
+  // Load Snowflake connections on mount and auto-connect if in @datamodel mode
   useEffect(() => {
-    loadConnections();
+    const initializeConnections = async () => {
+      await loadConnections();
+      
+      // Auto-connect if we're in @datamodel mode and have a selected connection
+      if (agentMode === '@datamodel' && selectedConnection && !datamodelSessionId) {
+        setTimeout(() => {
+          startDatamodelSession(selectedConnection);
+        }, 1000); // Wait 1 second for connections to load
+      }
+    };
+    
+    initializeConnections();
   }, []);
 
   // Reset session and messages when agent mode changes
@@ -87,7 +102,16 @@ export default function AIAssistant() {
     setSessionId(null);
     setDatamodelSessionId(null);
     setInputValue('');
-  }, [agentMode]);
+
+    // Auto-connect to default connection when switching to @datamodel mode
+    if (agentMode === '@datamodel' && selectedConnection && !datamodelSessionId) {
+      const timer = setTimeout(() => {
+        startDatamodelSession(selectedConnection);
+      }, 500); // Small delay to let UI update
+      
+      return () => clearTimeout(timer);
+    }
+  }, [agentMode, selectedConnection]);
 
   const loadConnections = async () => {
     try {
@@ -98,10 +122,21 @@ export default function AIAssistant() {
       // Auto-select default or first active connection
       const defaultConn = result.find((c: SnowflakeConnection) => c.is_default && c.is_active);
       const firstActive = result.find((c: SnowflakeConnection) => c.is_active);
+      let connectionToSelect = null;
+      
       if (defaultConn) {
+        connectionToSelect = defaultConn.id;
         setSelectedConnection(defaultConn.id);
       } else if (firstActive) {
+        connectionToSelect = firstActive.id;
         setSelectedConnection(firstActive.id);
+      }
+      
+      // Auto-connect if we're in @datamodel mode and just selected a connection
+      if (agentMode === '@datamodel' && connectionToSelect && !datamodelSessionId) {
+        setTimeout(() => {
+          startDatamodelSession(connectionToSelect);
+        }, 1000);
       }
     } catch (err: any) {
       console.error('Error loading connections:', err);
@@ -129,7 +164,7 @@ export default function AIAssistant() {
       const initializationMessage: Message = {
         id: Date.now().toString(),
         type: 'assistant',
-        content: result.initialization_message || `🎉 Connected to ${result.connection_name}!\n\nI'm ready to help you generate YAML data dictionaries. Please ask me to show databases to get started.`,
+        content: result.initialization_message || `🎉 Connected to ${result.connection_name}!\n\nI'm ready to help you generate YAML data dictionaries. You can now type your request (e.g., "show databases", "list databases", etc.)`,
         timestamp: new Date()
       };
       
@@ -214,7 +249,12 @@ export default function AIAssistant() {
 
 
   const handleSendMessage = async () => {
-    if (!inputValue.trim()) return;
+    if (!inputValue.trim() || isTyping) return; // Prevent sending while already processing
+    
+    // Debounce: prevent rapid successive requests
+    const now = Date.now();
+    if (now - lastRequestTime < 1000) return; // 1 second debounce
+    setLastRequestTime(now);
 
     // Handle @datamodel mode
     if (agentMode === '@datamodel') {
@@ -279,17 +319,21 @@ export default function AIAssistant() {
   };
 
   const handleDatamodelMessage = async () => {
-    // Start session if not already started
-    if (!datamodelSessionId && selectedConnection) {
-      await startDatamodelSession(selectedConnection);
-      return;
-    }
-    
+    // If session doesn't exist, user needs to wait for auto-connection or select a connection
     if (!datamodelSessionId) {
+      if (!selectedConnection) {
+        toast({
+          title: 'No Connection Selected',
+          description: 'Please select a Snowflake connection above.',
+          variant: 'destructive'
+        });
+        return;
+      }
+      
+      // Connection is in progress, show message
       toast({
-        title: 'No Connection',
-        description: 'Please select a Snowflake connection first.',
-        variant: 'destructive'
+        title: 'Connecting...',
+        description: 'Please wait while we establish the connection to Snowflake.',
       });
       return;
     }
@@ -438,25 +482,53 @@ export default function AIAssistant() {
               <div className="flex items-center gap-2">
                 <label className="text-sm font-medium">Connection:</label>
                 {connectionsLoading ? (
-                  <div className="text-sm text-gray-500">Loading connections...</div>
+                  <div className="text-sm text-gray-500 flex items-center gap-1">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Loading connections...
+                  </div>
                 ) : connections.length === 0 ? (
-                  <div className="text-sm text-red-500">No connections available</div>
+                  <div className="text-sm text-red-500 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    No connections available
+                  </div>
                 ) : (
-                  <select 
-                    value={selectedConnection}
-                    onChange={(e) => {
-                      setSelectedConnection(e.target.value);
-                      setDatamodelSessionId(null); // Reset session when connection changes
-                    }}
-                    className="px-3 py-1 border border-gray-300 rounded-md text-sm min-w-48"
-                    data-testid="connection-picker"
-                  >
-                    {connections.filter(c => c.is_active).map((conn) => (
-                      <option key={conn.id} value={conn.id}>
-                        {conn.name} {conn.is_default && '(Default)'}
-                      </option>
-                    ))}
-                  </select>
+                  <>
+                    <select 
+                      value={selectedConnection}
+                      onChange={(e) => {
+                        setSelectedConnection(e.target.value);
+                        setDatamodelSessionId(null); // Reset session when connection changes
+                      }}
+                      className="px-3 py-1 border border-gray-300 rounded-md text-sm min-w-48"
+                      data-testid="connection-picker"
+                      disabled={isTyping}
+                    >
+                      {connections.filter(c => c.is_active).map((conn) => (
+                        <option key={conn.id} value={conn.id}>
+                          {conn.name} {conn.is_default && '(Default)'}
+                        </option>
+                      ))}
+                    </select>
+                    
+                    {/* Connection Status Indicator */}
+                    <div className="flex items-center gap-1">
+                      {datamodelSessionId ? (
+                        <div className="text-xs text-green-600 flex items-center gap-1">
+                          <CheckCircle className="w-3 h-3" />
+                          Connected
+                        </div>
+                      ) : selectedConnection ? (
+                        <div className="text-xs text-yellow-600 flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" />
+                          Ready to connect
+                        </div>
+                      ) : (
+                        <div className="text-xs text-gray-500">
+                          Select connection
+                        </div>
+                      )}
+                    </div>
+                  </>
                 )}
               </div>
             )}
@@ -479,19 +551,27 @@ export default function AIAssistant() {
               
               {/* Connection Status for @datamodel mode */}
               {agentMode === '@datamodel' && (
-                <div className="mt-4 p-3 bg-blue-50 rounded-lg" data-testid="connection-status">
-                  {selectedConnection ? (
-                    <div className="flex items-center justify-center gap-2 text-blue-700">
+                <div className="mt-4 p-3 rounded-lg" data-testid="connection-status">
+                  {datamodelSessionId ? (
+                    <div className="flex items-center justify-center gap-2 text-green-700 bg-green-50 p-2 rounded">
+                      <CheckCircle className="w-4 h-4" />
+                      <span className="text-sm font-medium">
+                        ✅ Connected to {connections.find(c => c.id === selectedConnection)?.name}
+                      </span>
+                    </div>
+                  ) : selectedConnection ? (
+                    <div className="flex items-center justify-center gap-2 text-blue-700 bg-blue-50 p-2 rounded">
+                      <Loader2 className="w-4 h-4 animate-spin" />
                       <span className="text-sm">
-                        Ready to connect to {connections.find(c => c.id === selectedConnection)?.name || 'Snowflake'}
+                        Connecting to {connections.find(c => c.id === selectedConnection)?.name || 'Snowflake'}...
                       </span>
                     </div>
                   ) : connections.length === 0 ? (
-                    <div className="text-orange-700 text-sm">
+                    <div className="text-orange-700 text-sm bg-orange-50 p-2 rounded">
                       No Snowflake connections available. Please configure a connection first.
                     </div>
                   ) : (
-                    <div className="text-orange-700 text-sm">
+                    <div className="text-orange-700 text-sm bg-orange-50 p-2 rounded">
                       Please select a Snowflake connection above.
                     </div>
                   )}
@@ -505,12 +585,14 @@ export default function AIAssistant() {
                 <button
                   key={index}
                   onClick={() => handleQuickAction(action)}
-                  className="p-4 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors text-left group"
+                  className="p-4 rounded-lg border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-all text-left group shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                   data-testid={`suggestion-${index}`}
+                  disabled={isTyping}
                 >
-                  <action.icon className="w-5 h-5 text-gray-500 mb-3 group-hover:text-blue-600" />
-                  <p className="text-gray-900 font-medium mb-1 text-[12px]">{action.label}</p>
-                  <p className="caption-text">{action.query}</p>
+                  <action.icon className="w-5 h-5 text-gray-500 mb-3 group-hover:text-blue-600 transition-colors" />
+                  <p className="text-gray-900 font-medium mb-1 text-[12px] group-hover:text-blue-900">{action.label}</p>
+                  <p className="caption-text group-hover:text-blue-700 transition-colors">{action.query}</p>
+                  <p className="text-xs text-gray-400 mt-2 group-hover:text-blue-500">Click to run →</p>
                 </button>
               ))}
             </div>
@@ -605,10 +687,17 @@ export default function AIAssistant() {
             <Input
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-              placeholder="Ask me anything about loans, exceptions, metrics, or system status..."
-              className="pr-12"
+              onKeyDown={(e) => e.key === 'Enter' && !isTyping && handleSendMessage()}
+              placeholder={
+                isTyping 
+                  ? "Processing your request..." 
+                  : agentMode === '@datamodel' 
+                    ? "Ask about databases, schemas, tables, or dictionary generation..."
+                    : "Ask me anything about loans, exceptions, metrics, or system status..."
+              }
+              className={`pr-12 ${isTyping ? 'bg-gray-50 text-gray-500' : ''}`}
               data-testid="ai-input"
+              disabled={isTyping}
             />
             <Button
               variant="ghost"
@@ -622,8 +711,17 @@ export default function AIAssistant() {
               {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
             </Button>
           </div>
-          <Button onClick={handleSendMessage} disabled={!inputValue.trim()} data-testid="send-button">
-            <Send className="w-4 h-4" />
+          <Button 
+            onClick={handleSendMessage} 
+            disabled={!inputValue.trim() || isTyping} 
+            data-testid="send-button"
+            className={`${isTyping ? 'bg-blue-500 text-white' : ''}`}
+          >
+            {isTyping ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
           </Button>
         </div>
       </div>

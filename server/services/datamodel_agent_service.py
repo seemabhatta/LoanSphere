@@ -40,6 +40,9 @@ class AgentContext:
     selected_tables: List[str] = field(default_factory=list)
     dictionary_content: Optional[str] = None
     available_tables: List[Dict] = field(default_factory=list)  # Store tables for selection
+    # Cache for expensive operations
+    databases_cache: Optional[Dict] = None
+    schemas_cache: Optional[Dict] = None
     
     def __post_init__(self):
         """Ensure lists are always initialized"""
@@ -422,10 +425,21 @@ Use the available tools to help users create comprehensive data dictionaries eff
         return f"✅ Connected to Snowflake using connection: {session.connection_id}"
     
     def _get_databases(self) -> str:
-        """Get list of available databases"""
+        """Get list of available databases (with caching)"""
+        context = self._get_current_context()
         session = self._get_current_session()
-        if not session:
+        if not context or not session:
             return "❌ No active session"
+        
+        # Check cache first (5 minute cache)
+        import time
+        if context.databases_cache and time.time() - context.databases_cache.get('timestamp', 0) < 300:
+            logger.info("Using cached databases list")
+            databases = context.databases_cache['databases']
+            database_list = []
+            for i, db in enumerate(databases, 1):
+                database_list.append(f"{i}. {db}")
+            return f"📊 Found {len(databases)} databases:\n" + "\n".join(database_list)
         
         try:
             from src.functions.metadata_functions import list_databases
@@ -439,6 +453,13 @@ Use the available tools to help users create comprehensive data dictionaries eff
             
             if result["status"] == "success":
                 databases = result["databases"]
+                
+                # Cache the result
+                context.databases_cache = {
+                    'databases': databases,
+                    'timestamp': time.time()
+                }
+                
                 database_list = []
                 for i, db in enumerate(databases, 1):
                     database_list.append(f"{i}. {db}")
