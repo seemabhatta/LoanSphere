@@ -19,15 +19,29 @@ def get_snowflake_connection(connection_id: str) -> Dict[str, Any]:
         if not conn:
             raise ValueError(f"Connection not found: {connection_id}")
         
-        return {
+        config = {
             'user': conn.username,
-            'password': conn.password,
             'account': conn.account,
             'warehouse': conn.warehouse,
             'database': conn.database,
             'schema': conn.schema,
             'role': conn.role
         }
+        
+        # Handle authentication based on type
+        if conn.authenticator == 'RSA' and conn.private_key:
+            # RSA key-pair authentication
+            import tempfile
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.pem', delete=False) as f:
+                f.write(conn.private_key.strip())
+                config['private_key_file'] = f.name
+        else:
+            # Traditional password authentication
+            config['password'] = conn.password
+            if conn.authenticator and conn.authenticator.strip():
+                config['authenticator'] = conn.authenticator.strip().lower()
+        
+        return config
     finally:
         db.close()
 
