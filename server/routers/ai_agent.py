@@ -17,6 +17,7 @@ router = APIRouter()
 
 # Global progress tracking for sessions
 _progress_streams = {}
+_progress_buffers = {}  # Buffer messages until SSE stream connects
 
 
 class ChatMessage(BaseModel):
@@ -120,6 +121,11 @@ async def start_datamodel_agent(request: DataModelStartRequest):
         session_id = datamodel_agent.start_session(request.connection_id)
         connection_info = datamodel_agent.get_connection_info(request.connection_id)
         
+        # SSE temporarily disabled
+        # if session_id not in _progress_buffers:
+        #     _progress_buffers[session_id] = []
+        #     logger.info(f"[SSE] Initialized progress buffer for new session {session_id}")
+        
         # Get auto-initialization response like DataMind CLI
         initialization_message = await datamodel_agent.get_initialization_response(session_id)
         
@@ -179,6 +185,16 @@ async def stream_datamodel_progress(session_id: str):
                 logger.info(f"[SSE] Using existing progress queue for session {session_id}")
             
             queue = _progress_streams[session_id]
+            
+            # Process any buffered messages first
+            if session_id in _progress_buffers:
+                buffered_messages = _progress_buffers[session_id]
+                logger.info(f"[SSE] Processing {len(buffered_messages)} buffered messages for session {session_id}")
+                for buffered_msg in buffered_messages:
+                    queue.put_nowait(buffered_msg)
+                # Clear the buffer after processing
+                del _progress_buffers[session_id]
+            
             logger.info(f"[SSE] Progress stream initialized, queue size: {queue.qsize()}")
             
             # Send initial connection message
@@ -186,29 +202,31 @@ async def stream_datamodel_progress(session_id: str):
             yield f"data: {connection_msg}\n\n"
             logger.info(f"[SSE] Sent connection message for session {session_id}")
             
-            # Keep the stream alive for a reasonable amount of time
-            max_idle_time = 300  # 5 minutes
-            idle_count = 0
-            
-            while idle_count < max_idle_time:
+            # Keep the stream alive indefinitely - no timeout
+            while True:
                 try:
                     # Wait for progress updates with timeout
-                    progress_data = await asyncio.wait_for(queue.get(), timeout=1.0)
+                    progress_data = await asyncio.wait_for(queue.get(), timeout=30.0)  # 30 second timeout between messages
                     progress_msg = json.dumps(progress_data)
                     yield f"data: {progress_msg}\n\n"
                     logger.info(f"[SSE] Sent progress message for session {session_id}: {progress_data.get('message', 'No message')}")
-                    idle_count = 0  # Reset idle counter when we get a message
+                    
+                    # If this is a completion message, close the stream after a delay
+                    if progress_data.get('type') == 'complete':
+                        logger.info(f"[SSE] Received completion message, will close stream in 30 seconds")
+                        await asyncio.sleep(30)  # Keep stream alive for 30 seconds after completion
+                        break
+                        
                 except asyncio.TimeoutError:
-                    # Send keep-alive ping and increment idle counter
+                    # Send keep-alive ping every 30 seconds
                     ping_msg = json.dumps({'type': 'ping', 'timestamp': asyncio.get_event_loop().time()})
                     yield f"data: {ping_msg}\n\n"
-                    logger.debug(f"[SSE] Sent ping for session {session_id}, idle count: {idle_count}")
-                    idle_count += 1
+                    # No idle counter - keep alive indefinitely
                 except Exception as e:
                     logger.error(f"[SSE] Error in progress stream: {e}")
                     break
             
-            logger.info(f"[SSE] Stream for session {session_id} timed out after {max_idle_time} seconds")
+            logger.info(f"[SSE] Stream for session {session_id} ended naturally")
                     
         except Exception as e:
             logger.error(f"[SSE] Progress stream error: {e}")
@@ -220,6 +238,9 @@ async def stream_datamodel_progress(session_id: str):
             if session_id in _progress_streams:
                 del _progress_streams[session_id]
                 logger.info(f"[SSE] Cleaned up stream for session {session_id}")
+            if session_id in _progress_buffers:
+                del _progress_buffers[session_id]
+                logger.info(f"[SSE] Cleaned up buffer for session {session_id}")
     
     return StreamingResponse(
         generate_progress_stream(),
@@ -237,22 +258,45 @@ def send_progress_update(session_id: str, progress_type: str, message: str, data
     """Helper function to send progress updates to SSE stream"""
     logger.info(f"[SSE] Attempting to send progress update for session {session_id}: {message}")
     
+    update = {
+        'type': progress_type,
+        'message': message,
+        'timestamp': asyncio.get_event_loop().time()
+    }
+    if data:
+        update.update(data)
+    
     if session_id in _progress_streams:
-        update = {
-            'type': progress_type,
-            'message': message,
-            'timestamp': asyncio.get_event_loop().time()
-        }
-        if data:
-            update.update(data)
-        
+        # Stream is active - send directly
         try:
             _progress_streams[session_id].put_nowait(update)
             logger.info(f"[SSE] Successfully queued progress update for session {session_id}")
         except Exception as e:
             logger.error(f"[SSE] Failed to queue progress update: {e}")
     else:
-        logger.warning(f"[SSE] No progress stream found for session: {session_id}. Available streams: {list(_progress_streams.keys())}")
+        # Stream not yet connected - buffer the message
+        if session_id not in _progress_buffers:
+            _progress_buffers[session_id] = []
+        _progress_buffers[session_id].append(update)
+        logger.info(f"[SSE] Buffered progress update for session {session_id}. Buffer size: {len(_progress_buffers[session_id])}")
+        logger.warning(f"[SSE] No active progress stream for session: {session_id}. Available streams: {list(_progress_streams.keys())}")
+
+
+@router.post("/datamodel/init-progress/{session_id}")
+async def initialize_progress_stream(session_id: str):
+    """Initialize progress tracking for a session (called before SSE connection)"""
+    logger.info(f"[SSE] Pre-initializing progress tracking for session {session_id}")
+    
+    # Create buffer if it doesn't exist
+    if session_id not in _progress_buffers:
+        _progress_buffers[session_id] = []
+        logger.info(f"[SSE] Created progress buffer for session {session_id}")
+    
+    return {
+        "status": "initialized", 
+        "session_id": session_id, 
+        "buffer_ready": True
+    }
 
 
 @router.post("/datamodel/test-progress/{session_id}")
@@ -263,7 +307,12 @@ async def test_progress_updates(session_id: str):
     # Send a test progress update
     send_progress_update(session_id, 'progress', 'Test progress message', {'test': True})
     
-    return {"status": "sent", "session_id": session_id, "available_streams": list(_progress_streams.keys())}
+    return {
+        "status": "sent", 
+        "session_id": session_id, 
+        "available_streams": list(_progress_streams.keys()),
+        "buffered_sessions": list(_progress_buffers.keys())
+    }
 
 
 @router.get("/datamodel/context", response_model=DataModelContextResponse)

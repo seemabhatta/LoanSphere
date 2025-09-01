@@ -4,20 +4,27 @@ export async function apiRequest(
   data?: unknown,
   options?: { timeout?: number }
 ): Promise<any> {
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
+  // Force direct connection to backend, bypassing Vite proxy
+  const baseUrl = 'http://localhost:8000';
   const fullUrl = url.startsWith('/') ? `${baseUrl}${url}` : `${baseUrl}/${url}`;
+  console.log('[API] Making DIRECT request to:', fullUrl);
+  console.log('[API] Base URL:', baseUrl);
+  console.log('[API] Original URL:', url);
   
   // Create an AbortController for timeout handling
   const controller = new AbortController();
-  const timeout = options?.timeout || 30000; // Default 30 second timeout for slow API responses
+  let timeoutId: NodeJS.Timeout | null = null;
   
-  // For Railway/production, increase timeouts significantly
-  const isProduction = window.location.hostname !== 'localhost';
-  const productionTimeout = isProduction ? Math.max(timeout, 600000) : timeout; // 10 minutes in production
-  
-  const timeoutId = setTimeout(() => controller.abort(), productionTimeout);
+  // TIMEOUT COMPLETELY DISABLED - let requests run indefinitely
+  // if (options?.timeout !== undefined) {
+  //   const timeout = options.timeout;
+  //   const isProduction = window.location.hostname !== 'localhost';
+  //   const productionTimeout = isProduction ? Math.max(timeout, 600000) : timeout;
+  //   timeoutId = setTimeout(() => controller.abort(), productionTimeout);
+  // }
   
   try {
+    console.log('[API] Starting fetch request...');
     const response = await fetch(fullUrl, {
       method,
       headers: {
@@ -28,8 +35,9 @@ export async function apiRequest(
       credentials: 'include',
       signal: controller.signal
     });
+    console.log('[API] Fetch completed successfully');
     
-    clearTimeout(timeoutId);
+    if (timeoutId) clearTimeout(timeoutId);
     
     if (!response.ok) {
       const errorText = await response.text();
@@ -44,10 +52,14 @@ export async function apiRequest(
     
     return await response.text();
   } catch (error: any) {
-    clearTimeout(timeoutId);
+    if (timeoutId) clearTimeout(timeoutId);
+    
+    console.log('[API] Fetch error:', error);
+    console.log('[API] Error name:', error.name);
+    console.log('[API] Error message:', error.message);
     
     if (error.name === 'AbortError') {
-      throw new Error(`Request timeout after ${timeout / 1000} seconds. The API is taking longer than expected to respond.`);
+      throw new Error(`Request timed out. The API is taking longer than expected to respond.`);
     }
     
     throw error;

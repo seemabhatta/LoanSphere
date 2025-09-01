@@ -77,9 +77,7 @@ export default function AIAssistant() {
   const [connections, setConnections] = useState<SnowflakeConnection[]>([]);
   const [selectedConnection, setSelectedConnection] = useState<string>('');
   const [connectionsLoading, setConnectionsLoading] = useState(false);
-  const [progressUpdates, setProgressUpdates] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const eventSourceRef = useRef<EventSource | null>(null);
   const { toast } = useToast();
 
   // Load Snowflake connections on mount and auto-connect if in @datamodel mode
@@ -190,94 +188,10 @@ export default function AIAssistant() {
   };
 
   // Connect to SSE stream for progress updates
-  const connectToProgressStream = (sessionId: string) => {
-    // Clean up any existing connection
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-    }
+  // SSE functionality temporarily disabled - using simple loading states instead
+  // const connectToProgressStream = (sessionId: string) => { ... }
 
-    const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
-    const sseUrl = `${baseUrl}/api/ai-agent/datamodel/progress/${sessionId}`;
-    console.log('[SSE] Connecting to:', sseUrl);
-    
-    const eventSource = new EventSource(sseUrl);
-    eventSourceRef.current = eventSource;
-
-    eventSource.onopen = () => {
-      console.log('[SSE] Connection opened for session:', sessionId);
-    };
-
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        console.log('[SSE] Received update:', data);
-
-        if (data.type === 'connected') {
-          console.log('[SSE] Stream connected successfully');
-          setTypingMessage('Connected to progress stream...');
-        } else if (data.type === 'ping') {
-          console.log('[SSE] Keep-alive ping received');
-        } else if (data.type === 'progress' || data.type === 'start') {
-          console.log('[SSE] Progress update:', data.message);
-          setProgressUpdates(prev => {
-            const updated = [...prev, data.message];
-            console.log('[SSE] Progress updates array:', updated);
-            return updated;
-          });
-          setTypingMessage(data.message);
-        } else if (data.type === 'complete') {
-          console.log('[SSE] Generation completed');
-          setProgressUpdates(prev => [...prev, data.message]);
-          setTypingMessage('Generation completed!');
-          // Close the connection after completion
-          setTimeout(() => {
-            if (eventSourceRef.current) {
-              eventSourceRef.current.close();
-              eventSourceRef.current = null;
-            }
-            setProgressUpdates([]);
-          }, 3000);
-        } else if (data.type === 'error') {
-          console.error('[SSE] Server error:', data.message);
-          setTypingMessage('Error in progress stream: ' + data.message);
-        }
-      } catch (e) {
-        console.error('[SSE] Error parsing message:', e, event.data);
-      }
-    };
-
-    eventSource.onerror = (error) => {
-      console.error('[SSE] Connection error:', error);
-      console.log('[SSE] ReadyState:', eventSource.readyState);
-      console.log('[SSE] Error event:', error);
-      
-      if (eventSource.readyState === EventSource.CLOSED) {
-        console.log('[SSE] Connection was closed');
-        setTypingMessage('Progress stream disconnected');
-      } else if (eventSource.readyState === EventSource.CONNECTING) {
-        console.log('[SSE] Connection is reconnecting...');
-        setTypingMessage('Reconnecting to progress stream...');
-      } else {
-        console.log('[SSE] Connection in unknown state');
-        setTypingMessage('Progress stream error');
-      }
-      
-      // Don't close immediately - let browser handle reconnection
-      if (eventSource.readyState === EventSource.CLOSED) {
-        eventSource.close();
-        eventSourceRef.current = null;
-      }
-    };
-  };
-
-  // Clean up SSE connection on component unmount
-  useEffect(() => {
-    return () => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-      }
-    };
-  }, []);
+  // SSE cleanup temporarily disabled
 
   // Helper to send a direct query (used by graph node clicks)
   const sendAgentQuery = async (query: string) => {
@@ -314,51 +228,7 @@ export default function AIAssistant() {
   };
 
   // Test SSE connection manually
-  const testSSEConnection = async () => {
-    if (!datamodelSessionId) {
-      toast({
-        title: 'No Session',
-        description: 'Please start a @datamodel session first',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    try {
-      console.log('[SSE TEST] Testing connection for session:', datamodelSessionId);
-      
-      // Connect to SSE stream first
-      connectToProgressStream(datamodelSessionId);
-      
-      // Wait a moment for connection to establish
-      setTimeout(async () => {
-        try {
-          const result = await apiRequest('POST', `/api/ai-agent/datamodel/test-progress/${datamodelSessionId}`, {});
-          console.log('[SSE TEST] Test endpoint result:', result);
-          
-          toast({
-            title: 'SSE Test',
-            description: `Test sent. Available streams: ${result.available_streams.length}`,
-          });
-        } catch (err: any) {
-          console.error('[SSE TEST] Error calling test endpoint:', err);
-          toast({
-            title: 'Test Failed',
-            description: err.message,
-            variant: 'destructive'
-          });
-        }
-      }, 1000);
-      
-    } catch (err: any) {
-      console.error('[SSE TEST] Error:', err);
-      toast({
-        title: 'SSE Test Failed',
-        description: err.message,
-        variant: 'destructive'
-      });
-    }
-  };
+  // SSE test functionality temporarily disabled
 
   const quickActions: QuickAction[] = agentMode === '@datamodel' ? [
     // @datamodel specific actions
@@ -489,34 +359,25 @@ export default function AIAssistant() {
     setInputValue('');
     setIsTyping(true);
 
-    // Detect if this is a dictionary/semantic model generation request
-    const isGenerationRequest = outgoing.toLowerCase().includes('generate') || 
-                               outgoing.toLowerCase().includes('dictionary') ||
-                               outgoing.toLowerCase().includes('semantic') ||
-                               outgoing.toLowerCase().includes('yaml');
-
-    if (isGenerationRequest) {
-      setTypingMessage('Starting semantic model generation...');
-      setProgressUpdates([]);
-      
-      // Connect to SSE stream BEFORE making the request to ensure we don't miss any updates
-      connectToProgressStream(datamodelSessionId);
-      
-      // Add a small delay to ensure SSE connection is established
-      await new Promise(resolve => setTimeout(resolve, 500));
-    } else {
-      setTypingMessage('Processing your request...');
-    }
-
-    const timeout = isGenerationRequest ? 300000 : 60000; // 5 minutes for generation, 1 minute for other operations
+    // SSE temporarily disabled - using simple loading states instead
+    
+    setTypingMessage('Processing your request...');
 
     try {
+      console.log('Making datamodel chat request with:', {
+        session_id: datamodelSessionId,
+        message: outgoing,
+        url: '/api/ai-agent/datamodel/chat'
+      });
+      
       const result = await apiRequest('POST', '/api/ai-agent/datamodel/chat', {
         session_id: datamodelSessionId,
         message: outgoing
-      }, { timeout });
+      }); // NO timeout - wait indefinitely
 
-      console.log('@datamodel agent response:', result);
+      console.log('@datamodel agent response received:', result);
+      console.log('@datamodel agent response type:', typeof result);
+      console.log('@datamodel agent response keys:', Object.keys(result || {}));
 
       const aiMessage: Message = {
         id: `${Date.now()}-assistant`,
@@ -527,6 +388,12 @@ export default function AIAssistant() {
       setMessages(prev => [...prev, aiMessage]);
     } catch (err: any) {
       console.error('@datamodel agent chat error:', err);
+      console.error('@datamodel agent full error details:', {
+        message: err?.message,
+        name: err?.name,
+        stack: err?.stack,
+        response: err?.response
+      });
       toast({
         title: '@datamodel Agent Error',
         description: err?.message || 'Failed to contact @datamodel agent.',
@@ -535,7 +402,7 @@ export default function AIAssistant() {
       const errMessage: Message = {
         id: `${Date.now()}-assistant-error`,
         type: 'assistant',
-        content: 'Sorry, I could not process your request right now.',
+        content: `Sorry, I could not process your request right now. Error: ${err?.message || 'Unknown error'}`,
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errMessage]);
@@ -677,13 +544,6 @@ export default function AIAssistant() {
                             <CheckCircle className="w-3 h-3" />
                             Connected
                           </div>
-                          <button
-                            onClick={testSSEConnection}
-                            className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
-                            title="Test SSE Connection"
-                          >
-                            Test SSE
-                          </button>
                         </>
                       ) : selectedConnection ? (
                         <div className="text-xs text-yellow-600 flex items-center gap-1">
@@ -838,17 +698,7 @@ export default function AIAssistant() {
                             {typingMessage}
                           </div>
                         )}
-                        {/* Show recent progress updates */}
-                        {progressUpdates.length > 0 && (
-                          <div className="max-h-32 overflow-y-auto">
-                            <div className="text-xs text-gray-500 mb-1">Recent progress:</div>
-                            {progressUpdates.slice(-5).map((update, index) => (
-                              <div key={index} className="text-xs text-gray-500 py-0.5 truncate" title={update}>
-                                • {update}
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                        {/* Progress updates temporarily disabled - using simple loading states */}
                       </div>
                     </div>
                   </div>
