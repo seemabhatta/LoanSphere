@@ -362,6 +362,29 @@ export default function AIAssistant() {
     // SSE temporarily disabled - using simple loading states instead
     
     setTypingMessage('Processing your request...');
+    
+    // Simple status polling for long-running operations
+    let statusInterval: NodeJS.Timeout | null = null;
+    if (outgoing.toLowerCase().includes('generate') || outgoing === '2' || outgoing.toLowerCase().includes('hmda')) {
+      setTypingMessage('Starting data analysis...');
+      let messageIndex = 0;
+      const statusMessages = [
+        'Analyzing table structures and collecting metadata...',
+        'Preparing AI analysis with chain-of-thought reasoning...',  
+        'Starting OpenAI analysis - this is where the magic happens...',
+        'AI is thinking through your data structure step by step...',
+        'Receiving AI response stream...',
+        'Parsing AI-generated semantic model...',
+        'Finalizing semantic model structure...'
+      ];
+      
+      statusInterval = setInterval(() => {
+        if (messageIndex < statusMessages.length) {
+          setTypingMessage(statusMessages[messageIndex]);
+          messageIndex++;
+        }
+      }, 30000); // Update every 30 seconds
+    }
 
     try {
       console.log('Making datamodel chat request with:', {
@@ -407,6 +430,10 @@ export default function AIAssistant() {
       };
       setMessages(prev => [...prev, errMessage]);
     } finally {
+      // Clear status polling interval
+      if (statusInterval) {
+        clearInterval(statusInterval);
+      }
       setIsTyping(false);
       setTypingMessage('');
     }

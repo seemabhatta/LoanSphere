@@ -4,10 +4,10 @@ export async function apiRequest(
   data?: unknown,
   options?: { timeout?: number }
 ): Promise<any> {
-  // Force direct connection to backend, bypassing Vite proxy
-  const baseUrl = 'http://localhost:8000';
+  // Use environment variable for API base URL, fallback to localhost for development
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:8000' : '');
   const fullUrl = url.startsWith('/') ? `${baseUrl}${url}` : `${baseUrl}/${url}`;
-  console.log('[API] Making DIRECT request to:', fullUrl);
+  console.log('[API] Making request to:', fullUrl);
   console.log('[API] Base URL:', baseUrl);
   console.log('[API] Original URL:', url);
   

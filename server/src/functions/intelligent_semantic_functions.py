@@ -116,18 +116,10 @@ def generate_intelligent_semantic_model(openai_client, snowflake_connection,
     
     # Helper function to send progress updates
     def send_progress(progress_type: str, message: str, step: str = None, data: dict = None):
-        if session_id:
-            try:
-                from routers.ai_agent import send_progress_update
-                send_progress_update(session_id, progress_type, message, {
-                    'step': step,
-                    'database': database_name,
-                    'schema': schema_name,
-                    'tables': table_names,
-                    **(data or {})
-                })
-            except Exception as e:
-                logger.error(f"Failed to send progress update: {e}")
+        # Log progress for user visibility - SSE disabled but keep useful logging
+        logger.info(f"[PROGRESS] {message}")
+        if step:
+            logger.info(f"[STEP] {step}")
     
     if not openai_client:
         return {
