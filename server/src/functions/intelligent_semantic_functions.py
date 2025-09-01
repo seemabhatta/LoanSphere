@@ -114,7 +114,7 @@ def generate_intelligent_semantic_model(openai_client, snowflake_connection,
     """
     logger.info("Using protobuf-validated semantic model generation")
     
-    # Helper function to send progress updates
+    # Helper function to send progress updates with dynamic messaging
     def send_progress(progress_type: str, message: str, step: str = None, data: dict = None):
         # Log progress for user visibility
         logger.info(f"[PROGRESS] {message}")
@@ -134,13 +134,48 @@ def generate_intelligent_semantic_model(openai_client, snowflake_connection,
             try:
                 from routers.ai_agent import update_job_progress
                 
+                # Try to generate dynamic progress message
+                dynamic_message = message  # Default fallback
+                
+                try:
+                    from utils.dynamic_progress import generate_dynamic_progress
+                    import asyncio
+                    
+                    # Extract session context for dynamic messaging
+                    session_context = {
+                        "current_database": database_name,
+                        "current_schema": schema_name,
+                        "connection_id": connection_id
+                    }
+                    
+                    # Generate dynamic message (non-blocking with timeout)
+                    async def get_dynamic_message():
+                        return await generate_dynamic_progress(
+                            "datamodel", openai_client, session_context, 
+                            f"Processing {len(table_names)} tables", data, step
+                        )
+                    
+                    # Try to get dynamic message with short timeout
+                    try:
+                        loop = asyncio.get_event_loop()
+                        if loop.is_running():
+                            task = asyncio.create_task(get_dynamic_message())
+                            dynamic_message = await asyncio.wait_for(task, timeout=2.0)
+                    except (asyncio.TimeoutError, Exception) as e:
+                        logger.debug(f"Dynamic progress timeout/error, using fallback: {e}")
+                        pass  # Use original message
+                        
+                except ImportError:
+                    logger.debug("Dynamic progress not available, using static message")
+                    pass
+                
                 # Map step to percentage
                 step_percentages = {
                     "1/5": 50, "2/5": 60, "3/5": 70, "4/5": 85, "5/5": 100
                 }
                 percentage = step_percentages.get(step, 70)
                 
-                update_job_progress(current_job_id, f"3/5 (AI)", message, percentage)
+                update_job_progress(current_job_id, f"3/5 (AI)", dynamic_message, percentage)
             except Exception as e:
                 logger.error(f"Failed to update job progress: {e}")
     
@@ -247,8 +282,10 @@ Generate a complete semantic model with intelligent classification of all column
         send_progress('progress', 'AI is now thinking through your data structure step by step...', '3/5')
         
         # Use streaming for real-time updates
+        import os
+        model_name = os.getenv("OPENAI_MODEL", "gpt-5")
         response_stream = openai_client.chat.completions.create(
-            model="gpt-4o",  # Use the best model for intelligence
+            model=model_name,
             messages=[
                 {"role": "system", "content": system_prompt + "\n\nAfter showing your <thinking> process, return your final response as a valid JSON object with the structure: {'name': 'model_name', 'tables': [...], 'relationships': [...], 'verified_queries': [...]}"},
                 {"role": "user", "content": user_prompt}

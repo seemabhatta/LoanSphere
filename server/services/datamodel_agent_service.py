@@ -192,7 +192,7 @@ class DataModelAgent:
                 logger.warning("OPENAI_API_KEY not found - agent will be limited")
                 return
             
-            model_name = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+            model_name = os.getenv("OPENAI_MODEL", "gpt-5")
             logger.info(f"Initializing @datamodel Agent with model: {model_name}")
             
             self.agent = Agent(

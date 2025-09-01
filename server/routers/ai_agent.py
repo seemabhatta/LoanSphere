@@ -429,32 +429,48 @@ async def start_async_datamodel_chat(request: DataModelChatRequest):
             # Set the current job ID for progress tracking through the call chain
             set_current_job_id(job_id)
             
+            # Initialize dynamic progress system
+            from utils.dynamic_progress import DynamicProgressManager, extract_session_context_from_agent
+            
             update_job_progress(job_id, "1/5", "Connecting to datamodel agent...", 10)
             logger.info(f"[JOB {job_id}] Getting datamodel agent...")
             datamodel_agent = get_datamodel_agent()
             logger.info(f"[JOB {job_id}] Datamodel agent retrieved successfully: {type(datamodel_agent)}")
             
-            update_job_progress(job_id, "2/5", "Processing your request...", 30, f"Message: {request.message}")
+            # Start with basic progress message, then try to enhance it dynamically (non-blocking)
+            update_job_progress(job_id, "2/5", "Processing your request...", 30)
             
-            # Determine operation type for better progress messaging
-            message_lower = request.message.lower()
-            if 'database' in message_lower:
-                update_job_progress(job_id, "3/5", "Connecting to Snowflake and listing databases...", 60)
-            elif 'schema' in message_lower or request.message in ['1', '2', '3']:
-                update_job_progress(job_id, "3/5", "Querying database metadata...", 60)
-            elif 'generate' in message_lower or request.message == '2':
-                update_job_progress(job_id, "3/5", "Starting AI semantic analysis...", 50)
-            else:
-                update_job_progress(job_id, "3/5", "Processing with datamodel agent...", 50)
+            # Try to generate dynamic progress message (fire-and-forget, cosmetic only)
+            try:
+                from utils.dynamic_progress import generate_dynamic_progress_fire_and_forget, extract_session_context_from_agent
+                openai_client = getattr(datamodel_agent, 'openai_client', None)
+                if openai_client:
+                    session_context = extract_session_context_from_agent(datamodel_agent)
+                    
+                    def update_dynamic_progress(message):
+                        """Callback to update progress with dynamic message"""
+                        update_job_progress(job_id, "2/5", message, 30)
+                    
+                    generate_dynamic_progress_fire_and_forget(
+                        "datamodel", openai_client, session_context, 
+                        request.message, None, "2/5", update_dynamic_progress
+                    )
+            except Exception as e:
+                logger.debug(f"Dynamic progress setup failed (non-critical): {e}")
+            
+            # Basic progress for step 3 - core business logic proceeds immediately
+            update_job_progress(job_id, "3/5", "Processing with datamodel agent...", 60)
             
             logger.info(f"[JOB {job_id}] About to call datamodel_agent.chat()")
             response = await datamodel_agent.chat(request.session_id, request.message)
             logger.info(f"[JOB {job_id}] Datamodel agent chat completed successfully")
             
-            update_job_progress(job_id, "4/5", "Gathering session context...", 80)
+            # Basic progress for step 4 - no blocking
+            update_job_progress(job_id, "4/5", "Gathering session context and results...", 80)
+                
             context = datamodel_agent.get_session_context(request.session_id)
             
-            update_job_progress(job_id, "5/5", "Finalizing response...", 95)
+            update_job_progress(job_id, "5/5", "Response completed successfully! 🎉", 95)
             result = DataModelChatResponse(
                 response=response,
                 session_id=request.session_id,

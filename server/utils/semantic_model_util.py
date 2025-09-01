@@ -90,8 +90,10 @@ def generate_structured_yaml_with_openai(table_data_prompt: str, openai_client) 
         raise Exception("Protobuf dependencies not available for structured generation")
         
     try:
+        import os
+        model_name = os.getenv("OPENAI_MODEL", "gpt-5")
         response = openai_client.beta.chat.completions.parse(
-            model="gpt-4o-mini",
+            model=model_name,
             messages=[
                 {"role": "system", "content": "You are a data dictionary generator. Generate a structured semantic model based on the provided table data. Classify columns as measures (numeric metrics), dimensions (categorical attributes), or time_dimensions (date/time fields). Include sample values, synonyms, and descriptions."},
                 {"role": "user", "content": table_data_prompt}

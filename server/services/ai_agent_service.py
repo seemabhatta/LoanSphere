@@ -801,8 +801,8 @@ class LoanSphereAgent:
         if not api_key:
             raise ValueError("OPENAI_API_KEY environment variable is required")
         
-        # Select model (configurable via OPENAI_MODEL). Defaults to gpt-4o.
-        model_name = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+        # Select model (configurable via OPENAI_MODEL). Defaults to gpt-5.
+        model_name = os.getenv("OPENAI_MODEL", "gpt-5")
         logger.info(f"Initializing LoanSphere Agent with model: {model_name}")
 
         # Create agent with instructions and tools
