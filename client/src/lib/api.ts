@@ -7,7 +7,8 @@ export async function apiRequest(
   // Use environment variable for API base URL, fallback to localhost for development
   const baseUrl = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:8000' : '');
   const fullUrl = url.startsWith('/') ? `${baseUrl}${url}` : `${baseUrl}/${url}`;
-  console.log('[API] Making request to:', fullUrl);
+  const isProduction = !import.meta.env.DEV;
+  console.log('[API] Making request to:', fullUrl, isProduction ? '(Production)' : '(Development)');
   console.log('[API] Base URL:', baseUrl);
   console.log('[API] Original URL:', url);
   
@@ -15,13 +16,10 @@ export async function apiRequest(
   const controller = new AbortController();
   let timeoutId: NodeJS.Timeout | null = null;
   
-  // TIMEOUT COMPLETELY DISABLED - let requests run indefinitely
-  // if (options?.timeout !== undefined) {
-  //   const timeout = options.timeout;
-  //   const isProduction = window.location.hostname !== 'localhost';
-  //   const productionTimeout = isProduction ? Math.max(timeout, 600000) : timeout;
-  //   timeoutId = setTimeout(() => controller.abort(), productionTimeout);
-  // }
+  // Standard timeout handling - same for all environments
+  if (options?.timeout !== undefined) {
+    timeoutId = setTimeout(() => controller.abort(), options.timeout);
+  }
   
   try {
     console.log('[API] Starting fetch request...');

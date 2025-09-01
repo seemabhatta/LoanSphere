@@ -363,40 +363,91 @@ export default function AIAssistant() {
     
     setTypingMessage('Processing your request...');
     
-    // Simple status polling for long-running operations
+    // Detect if this is a long-running operation that needs async processing
+    const isLongRunningOperation = outgoing.toLowerCase().includes('generate') || 
+                                  outgoing === '2' || 
+                                  outgoing.toLowerCase().includes('hmda') ||
+                                  outgoing.toLowerCase().includes('daily_revenue') ||
+                                  outgoing.toLowerCase().includes('product') ||
+                                  outgoing.toLowerCase().includes('region') ||
+                                  outgoing.toLowerCase().includes('mortgage');
+
     let statusInterval: NodeJS.Timeout | null = null;
-    if (outgoing.toLowerCase().includes('generate') || outgoing === '2' || outgoing.toLowerCase().includes('hmda')) {
-      setTypingMessage('Starting data analysis...');
-      let messageIndex = 0;
-      const statusMessages = [
-        'Analyzing table structures and collecting metadata...',
-        'Preparing AI analysis with chain-of-thought reasoning...',  
-        'Starting OpenAI analysis - this is where the magic happens...',
-        'AI is thinking through your data structure step by step...',
-        'Receiving AI response stream...',
-        'Parsing AI-generated semantic model...',
-        'Finalizing semantic model structure...'
-      ];
-      
-      statusInterval = setInterval(() => {
-        if (messageIndex < statusMessages.length) {
-          setTypingMessage(statusMessages[messageIndex]);
-          messageIndex++;
-        }
-      }, 30000); // Update every 30 seconds
-    }
+    let result;
 
     try {
-      console.log('Making datamodel chat request with:', {
-        session_id: datamodelSessionId,
-        message: outgoing,
-        url: '/api/ai-agent/datamodel/chat'
-      });
-      
-      const result = await apiRequest('POST', '/api/ai-agent/datamodel/chat', {
-        session_id: datamodelSessionId,
-        message: outgoing
-      }); // NO timeout - wait indefinitely
+      if (isLongRunningOperation) {
+        // Use async processing for long operations
+        console.log('Starting async datamodel chat request for:', outgoing);
+        setTypingMessage('Starting data analysis...');
+        
+        // Start the async job
+        const jobResponse = await apiRequest('POST', '/api/ai-agent/datamodel/chat/async', {
+          session_id: datamodelSessionId,
+          message: outgoing
+        }, { timeout: 30000 }); // Short timeout for job start
+        
+        const jobId = jobResponse.job_id;
+        console.log('Started async job:', jobId);
+        
+        // Set up status messages
+        let messageIndex = 0;
+        const statusMessages = [
+          'Analyzing table structures and collecting metadata...',
+          'Preparing AI analysis with chain-of-thought reasoning...',  
+          'Starting OpenAI analysis - this is where the magic happens...',
+          'AI is thinking through your data structure step by step...',
+          'Receiving AI response stream...',
+          'Parsing AI-generated semantic model...',
+          'Finalizing semantic model structure...'
+        ];
+        
+        statusInterval = setInterval(() => {
+          if (messageIndex < statusMessages.length) {
+            setTypingMessage(statusMessages[messageIndex]);
+            messageIndex++;
+          }
+        }, 30000);
+        
+        // Poll for completion
+        let attempts = 0;
+        const maxAttempts = 60; // 5 minutes max (5 second intervals)
+        
+        while (attempts < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+          attempts++;
+          
+          try {
+            const statusResponse = await apiRequest('GET', `/api/ai-agent/datamodel/job/${jobId}`, null, { timeout: 10000 });
+            console.log('Job status:', statusResponse.status);
+            
+            if (statusResponse.status === 'completed') {
+              result = statusResponse.result;
+              break;
+            } else if (statusResponse.status === 'failed') {
+              throw new Error(statusResponse.error || 'Async job failed');
+            }
+            // Continue polling if still processing
+          } catch (pollError) {
+            console.error('Error polling job status:', pollError);
+            // Continue trying for a bit longer
+          }
+        }
+        
+        if (!result) {
+          throw new Error('Operation timed out after 5 minutes');
+        }
+        
+      } else {
+        // Use synchronous processing for quick operations
+        console.log('Making synchronous datamodel chat request for:', outgoing);
+        setTypingMessage('Processing your request...');
+        
+        result = await apiRequest('POST', '/api/ai-agent/datamodel/chat', {
+          session_id: datamodelSessionId,
+          message: outgoing
+        }, { timeout: 30000 }); // 30 second timeout for quick operations
+      }
 
       console.log('@datamodel agent response received:', result);
       console.log('@datamodel agent response type:', typeof result);

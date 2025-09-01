@@ -19,6 +19,9 @@ router = APIRouter()
 _progress_streams = {}
 _progress_buffers = {}  # Buffer messages until SSE stream connects
 
+# Async job tracking
+_async_jobs = {}  # job_id -> {status, result, error}
+
 
 class ChatMessage(BaseModel):
     message: str
@@ -375,3 +378,76 @@ async def delete_datamodel_session(session_id: str):
     except Exception as e:
         logger.error(f"Error deleting @datamodel session: {e}")
         raise HTTPException(status_code=500, detail=f"Delete error: {str(e)}")
+
+
+# Async job processing endpoints
+@router.post("/datamodel/chat/async")
+async def start_async_datamodel_chat(request: DataModelChatRequest):
+    """Start async chat processing and return job ID"""
+    import asyncio
+    import uuid
+    
+    job_id = str(uuid.uuid4())
+    _async_jobs[job_id] = {
+        "status": "processing",
+        "result": None,
+        "error": None,
+        "started_at": asyncio.get_event_loop().time()
+    }
+    
+    # Start background task
+    async def process_chat():
+        try:
+            datamodel_agent = get_datamodel_agent()
+            response = await datamodel_agent.chat(request.session_id, request.message)
+            context = datamodel_agent.get_session_context(request.session_id)
+            
+            result = DataModelChatResponse(
+                response=response,
+                session_id=request.session_id,
+                context={
+                    "connection_id": context.connection_id,
+                    "current_database": context.current_database,
+                    "current_schema": context.current_schema,
+                    "selected_tables": context.selected_tables,
+                    "yaml_ready": bool(context.dictionary_content)
+                }
+            )
+            
+            _async_jobs[job_id]["status"] = "completed"
+            _async_jobs[job_id]["result"] = result.dict()
+            
+        except Exception as e:
+            logger.error(f"Error in async @datamodel chat: {e}")
+            _async_jobs[job_id]["status"] = "failed"
+            _async_jobs[job_id]["error"] = str(e)
+    
+    # Start the background task
+    asyncio.create_task(process_chat())
+    
+    return {"job_id": job_id, "status": "processing"}
+
+
+@router.get("/datamodel/job/{job_id}")
+async def get_async_job_status(job_id: str):
+    """Get status and result of async job"""
+    if job_id not in _async_jobs:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    job = _async_jobs[job_id]
+    
+    response = {
+        "job_id": job_id,
+        "status": job["status"]
+    }
+    
+    if job["status"] == "completed":
+        response["result"] = job["result"]
+        # Clean up completed job after returning result
+        del _async_jobs[job_id]
+    elif job["status"] == "failed":
+        response["error"] = job["error"]
+        # Clean up failed job after returning error
+        del _async_jobs[job_id]
+        
+    return response
