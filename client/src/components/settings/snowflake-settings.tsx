@@ -184,6 +184,8 @@ export default function SnowflakeSettings() {
                 <Label>Role</Label>
                 <Input value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} />
               </div>
+            </div>
+            <div className="grid grid-cols-1 gap-3">
               <div>
                 <Label>Authenticator</Label>
                 <Select value={form.authenticator} onValueChange={(v) => setForm({ ...form, authenticator: v })}>
@@ -191,7 +193,7 @@ export default function SnowflakeSettings() {
                   <SelectContent>
                     <SelectItem value="SNOWFLAKE">Username/Password</SelectItem>
                     <SelectItem value="USERNAME_PASSWORD_MFA">MFA</SelectItem>
-                    <SelectItem value="PAT">PAT</SelectItem>
+                    <SelectItem value="PAT">Personal Access Token (PAT)</SelectItem>
                     <SelectItem value="EXTERNALBROWSER">SSO/Browser</SelectItem>
                   </SelectContent>
                 </Select>

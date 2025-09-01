@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Loader2, TestTube, Database, Save, Snowflake, Settings2, CheckCircle, List, Edit, Trash2, Zap } from 'lucide-react'
 import { apiRequest } from '@/lib/api'
@@ -50,6 +51,7 @@ export default function IntegrationsPage() {
     account: '',
     username: '',
     password: '',
+    privateKey: '',
     database: '',
     schema: '',
     warehouse: '',
@@ -112,6 +114,7 @@ export default function IntegrationsPage() {
         account: form.account,
         username: form.username,
         password: form.password,
+        privateKey: form.privateKey,
         database: form.database,
         schema: form.schema,
         warehouse: form.warehouse,
@@ -143,6 +146,7 @@ export default function IntegrationsPage() {
         account: '',
         username: '',
         password: '',
+        privateKey: '',
         database: '',
         schema: '',
         warehouse: '',
@@ -174,6 +178,7 @@ export default function IntegrationsPage() {
         username: form.username,
         // Only include password if it was changed (not the masked placeholder)
         password: passwordChanged && form.password !== '********' ? form.password : undefined,
+        privateKey: form.privateKey || null,
         database: form.database || null,
         schema: form.schema || null,
         warehouse: form.warehouse || null,
@@ -233,6 +238,7 @@ export default function IntegrationsPage() {
       account: '',
       username: '',
       password: '',
+      privateKey: '',
       database: '',
       schema: '',
       warehouse: '',
@@ -581,6 +587,39 @@ export default function IntegrationsPage() {
                 placeholder="nl2sql_service_role"
               />
             </div>
+            
+            <div>
+              <Label htmlFor="authenticator" className="body-text">Authenticator</Label>
+              <Select value={form.authenticator} onValueChange={(value) => setForm({ ...form, authenticator: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select authentication method" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="SNOWFLAKE">Username/Password</SelectItem>
+                  <SelectItem value="USERNAME_PASSWORD_MFA">MFA</SelectItem>
+                  <SelectItem value="RSA">RSA Key-Pair (Recommended)</SelectItem>
+                  <SelectItem value="PAT">Personal Access Token (PAT)</SelectItem>
+                  <SelectItem value="EXTERNALBROWSER">SSO/Browser</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Show private key field for RSA authentication */}
+            {form.authenticator === 'RSA' && (
+              <div className="col-span-2">
+                <Label htmlFor="privateKey" className="body-text">RSA Private Key</Label>
+                <textarea
+                  id="privateKey"
+                  value={form.privateKey || ''}
+                  onChange={(e) => setForm({ ...form, privateKey: e.target.value })}
+                  placeholder="-----BEGIN PRIVATE KEY-----&#10;...&#10;-----END PRIVATE KEY-----"
+                  className="w-full h-32 p-2 border rounded text-sm font-mono"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Paste your RSA private key here. This will be stored securely.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Connection Options */}

@@ -29,10 +29,20 @@ def list_connections(db: Session = Depends(get_db)) -> List[dict]:
 
 @router.post("/snowflake/connections")
 def create_connection(payload: dict, db: Session = Depends(get_db)) -> dict:
-    required = ['name','account','username','password']
+    # Basic required fields
+    required = ['name','account','username']
     for r in required:
         if r not in payload or not payload[r]:
             raise HTTPException(status_code=400, detail=f"Missing field: {r}")
+    
+    # Authentication-specific validation
+    authenticator = payload.get('authenticator', 'SNOWFLAKE')
+    if authenticator == 'RSA':
+        if not payload.get('privateKey'):
+            raise HTTPException(status_code=400, detail="Missing field: privateKey (required for RSA authentication)")
+    else:
+        if not payload.get('password'):
+            raise HTTPException(status_code=400, detail="Missing field: password")
 
     conn = SnowflakeConnectionModel(
         user_id='default',
@@ -40,11 +50,12 @@ def create_connection(payload: dict, db: Session = Depends(get_db)) -> dict:
         account=payload['account'],
         username=payload['username'],
         password=payload.get('password'),
+        private_key=payload.get('privateKey'),
         database=payload.get('database'),
         schema=payload.get('schema'),
         warehouse=payload.get('warehouse'),
         role=payload.get('role'),
-        authenticator=payload.get('authenticator', 'SNOWFLAKE'),
+        authenticator=authenticator,
         is_default=bool(payload.get('isDefault', False)),
         is_active=bool(payload.get('isActive', True))
     )
@@ -67,8 +78,14 @@ def test_connection(conn_id: str, db: Session = Depends(get_db)) -> dict:
         missing_params.append("account")
     if not conn.username or conn.username.strip() == '':
         missing_params.append("username")
-    if not conn.password or conn.password.strip() == '':
-        missing_params.append("password")
+    
+    # Authentication-specific validation
+    if conn.authenticator == 'RSA':
+        if not conn.private_key or conn.private_key.strip() == '':
+            missing_params.append("private_key")
+    else:
+        if not conn.password or conn.password.strip() == '':
+            missing_params.append("password")
     
     if missing_params:
         return {
@@ -103,9 +120,40 @@ def test_connection(conn_id: str, db: Session = Depends(get_db)) -> dict:
         # Prepare connection configuration
         connection_config = {
             'user': conn.username.strip(),
-            'password': conn.password.strip(),
             'account': conn.account.strip(),
         }
+        
+        # Handle authentication - different authentication methods
+        if conn.authenticator and conn.authenticator.strip() == 'RSA':
+            # RSA key-pair authentication
+            if conn.private_key and conn.private_key.strip():
+                import tempfile
+                # Save private key to temporary file
+                with tempfile.NamedTemporaryFile(mode='w', suffix='.pem', delete=False) as f:
+                    f.write(conn.private_key.strip())
+                    connection_config['private_key_file'] = f.name
+                # Remove password from config for RSA
+                connection_config.pop('password', None)
+                print(f"DEBUG: Using RSA key-pair authentication")
+            else:
+                return {
+                    "success": False,
+                    "message": "RSA authentication selected but no private key provided"
+                }
+        elif conn.authenticator and conn.authenticator.strip() == 'PAT':
+            # For PAT tokens, try using token parameter
+            connection_config['token'] = conn.password.strip()
+            connection_config['authenticator'] = 'oauth'
+            print(f"DEBUG: Using PAT authentication (oauth + token)")
+            
+        elif conn.authenticator and conn.authenticator.strip() == 'oauth':
+            connection_config['token'] = conn.password.strip()
+            connection_config['authenticator'] = 'oauth'
+        else:
+            # Traditional username/password authentication
+            connection_config['password'] = conn.password.strip()
+            if conn.authenticator and conn.authenticator.strip():
+                connection_config['authenticator'] = conn.authenticator.strip().lower()
         
         # Add optional parameters if they exist
         if conn.warehouse and conn.warehouse.strip():
@@ -116,8 +164,6 @@ def test_connection(conn_id: str, db: Session = Depends(get_db)) -> dict:
             connection_config['schema'] = conn.schema.strip()
         if conn.role and conn.role.strip():
             connection_config['role'] = conn.role.strip()
-        if conn.authenticator and conn.authenticator.strip():
-            connection_config['authenticator'] = conn.authenticator.strip().lower()
         
         # Set connection timeout
         connection_config['connection_timeout'] = 30
@@ -208,6 +254,9 @@ def update_connection(conn_id: str, payload: dict, db: Session = Depends(get_db)
     # Only update password if explicitly provided and not None/undefined
     if 'password' in payload and payload['password'] is not None and payload['password'].strip():
         conn.password = payload['password']
+    # Only update private key if explicitly provided
+    if 'privateKey' in payload and payload['privateKey'] is not None:
+        conn.private_key = payload['privateKey'].strip() if payload['privateKey'].strip() else None
     conn.database = payload.get('database')
     conn.schema = payload.get('schema')
     conn.warehouse = payload.get('warehouse')

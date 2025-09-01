@@ -17,15 +17,43 @@ def get_snowflake_connection_config(connection_id: str) -> Dict[str, Any]:
         if not conn:
             raise ValueError(f"Connection not found: {connection_id}")
         
-        return {
+        # Build connection config based on authenticator type
+        config = {
             'user': conn.username,
-            'password': conn.password,
             'account': conn.account,
             'warehouse': conn.warehouse,
             'database': conn.database,
             'schema': conn.schema,
             'role': conn.role
         }
+        
+        # Handle different authentication types
+        if conn.authenticator == 'RSA':
+            # Use RSA key-pair authentication
+            if conn.private_key:
+                import tempfile
+                # Save private key to temporary file
+                with tempfile.NamedTemporaryFile(mode='w', suffix='.pem', delete=False) as f:
+                    f.write(conn.private_key)
+                    config['private_key_file'] = f.name
+                # Remove password from config for RSA
+                config.pop('password', None)
+            else:
+                raise ValueError("RSA authentication selected but no private key provided")
+        elif conn.authenticator == 'PAT':
+            # Use Personal Access Token - Snowflake requires 'oauth' authenticator with 'token' parameter
+            config['token'] = conn.password  # PAT stored in password field
+            config['authenticator'] = 'oauth'
+        elif conn.authenticator == 'oauth':
+            # Direct oauth authentication
+            config['token'] = conn.password
+            config['authenticator'] = 'oauth'
+        else:
+            # Use username/password
+            config['password'] = conn.password
+            config['authenticator'] = conn.authenticator or 'snowflake'
+        
+        return config
     finally:
         db.close()
 

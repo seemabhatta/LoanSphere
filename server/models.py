@@ -168,6 +168,7 @@ class SnowflakeConnectionModel(Base):
     account = Column(String, nullable=False)
     username = Column(String, nullable=False)
     password = Column(String)  # stored hashed/encrypted in real systems
+    private_key = Column(Text)  # RSA private key for key-pair authentication
     database = Column(String)
     schema = Column(String)
     warehouse = Column(String)
