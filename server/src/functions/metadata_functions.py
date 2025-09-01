@@ -186,6 +186,54 @@ def list_tables(snowflake_connection, database_name: str, schema_name: str) -> D
         }
 
 
+def list_stages(snowflake_connection, database_name: str, schema_name: str) -> Dict[str, Any]:
+    """
+    List stages in a schema using pre-established connection
+    """
+    try:
+        cursor = snowflake_connection.cursor()
+        
+        try:
+            cursor.execute(f"SHOW STAGES IN SCHEMA {database_name}.{schema_name}")
+            stages = []
+            for row in cursor.fetchall():
+                stage_info = {
+                    'name': row[1],  # Stage name
+                    'database_name': row[2] if len(row) > 2 else database_name,
+                    'schema_name': row[3] if len(row) > 3 else schema_name,
+                    'type': row[4] if len(row) > 4 else 'INTERNAL',
+                    'url': row[5] if len(row) > 5 else None,
+                    'comment': row[6] if len(row) > 6 else None
+                }
+                stages.append(stage_info)
+            
+            # Sort by stage name for consistent ordering
+            stages.sort(key=lambda x: x['name'])
+            
+            logger.info(f"Listed {len(stages)} stages in {database_name}.{schema_name}")
+            
+            return {
+                "status": "success",
+                "stages": stages,
+                "database": database_name,
+                "schema": schema_name,
+                "count": len(stages)
+            }
+            
+        finally:
+            cursor.close()
+            # Don't close connection - it's reused
+            
+    except Exception as e:
+        logger.error(f"Error listing stages in {database_name}.{schema_name}: {e}")
+        return {
+            "status": "error",
+            "error": str(e),
+            "database": database_name,
+            "schema": schema_name
+        }
+
+
 def get_table_columns(connection_id: str, database_name: str, schema_name: str, table_name: str) -> Dict[str, Any]:
     """
     Get detailed column information for a table

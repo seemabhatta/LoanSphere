@@ -347,6 +347,11 @@ Use the available tools to help users create comprehensive data dictionaries eff
             return self._upload_to_stage(stage_name, filename)
             
         @function_tool
+        def get_stages() -> str:
+            """Get stages in the current database and schema"""
+            return self._get_stages()
+            
+        @function_tool
         def get_current_context() -> str:
             """Get current agent context and state"""
             return self.get_current_context_info()
@@ -363,6 +368,7 @@ Use the available tools to help users create comprehensive data dictionaries eff
             get_schemas,
             select_schema,
             get_tables,
+            get_stages,
             select_tables,
             generate_yaml_dictionary,
             save_dictionary,
@@ -526,6 +532,47 @@ Use the available tools to help users create comprehensive data dictionaries eff
         except Exception as e:
             logger.error(f"Error getting tables: {e}")
             return f"❌ Error getting tables: {str(e)}"
+    
+    def _get_stages(self) -> str:
+        """Get stages in the current database and schema"""
+        context = self._get_current_context()
+        session = self._get_current_session()
+        if not context or not session:
+            return "❌ No active session"
+        
+        if not context.current_database or not context.current_schema:
+            return "❌ Database and schema must be selected first."
+        
+        try:
+            from src.functions.metadata_functions import list_stages
+            
+            # Get or create connection lazily
+            snowflake_connection = session.get_snowflake_connection()
+            if not snowflake_connection:
+                return "❌ Failed to establish Snowflake connection. Please check your connection settings."
+            
+            result = list_stages(
+                snowflake_connection,
+                context.current_database,
+                context.current_schema
+            )
+            
+            if result["status"] == "success":
+                stages = result["stages"]
+                if stages:
+                    stage_list = []
+                    for i, stage in enumerate(stages, 1):
+                        stage_list.append(f"{i}. **{stage['name']}** ({stage['type']})")
+                    
+                    return f"📦 Found {len(stages)} stages in {context.current_database}.{context.current_schema}:\n" + "\n".join(stage_list)
+                else:
+                    return f"📦 No stages found in {context.current_database}.{context.current_schema}"
+            else:
+                return f"❌ Failed to get stages: {result.get('error', 'Unknown error')}"
+                
+        except Exception as e:
+            logger.error(f"Error getting stages: {e}")
+            return f"❌ Error getting stages: {str(e)}"
     
     def _select_tables(self, table_selection: str) -> str:
         """Select tables for dictionary generation"""
