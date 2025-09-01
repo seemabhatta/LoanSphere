@@ -212,6 +212,8 @@ async def stream_datamodel_progress(session_id: str):
 
 def send_progress_update(session_id: str, progress_type: str, message: str, data: dict = None):
     """Helper function to send progress updates to SSE stream"""
+    logger.info(f"[SSE] Attempting to send progress update for session {session_id}: {message}")
+    
     if session_id in _progress_streams:
         update = {
             'type': progress_type,
@@ -223,8 +225,22 @@ def send_progress_update(session_id: str, progress_type: str, message: str, data
         
         try:
             _progress_streams[session_id].put_nowait(update)
+            logger.info(f"[SSE] Successfully queued progress update for session {session_id}")
         except Exception as e:
-            logger.error(f"Failed to send progress update: {e}")
+            logger.error(f"[SSE] Failed to queue progress update: {e}")
+    else:
+        logger.warning(f"[SSE] No progress stream found for session: {session_id}. Available streams: {list(_progress_streams.keys())}")
+
+
+@router.post("/datamodel/test-progress/{session_id}")
+async def test_progress_updates(session_id: str):
+    """Test endpoint to manually send progress updates"""
+    logger.info(f"[SSE TEST] Testing progress updates for session {session_id}")
+    
+    # Send a test progress update
+    send_progress_update(session_id, 'progress', 'Test progress message', {'test': True})
+    
+    return {"status": "sent", "session_id": session_id, "available_streams": list(_progress_streams.keys())}
 
 
 @router.get("/datamodel/context", response_model=DataModelContextResponse)

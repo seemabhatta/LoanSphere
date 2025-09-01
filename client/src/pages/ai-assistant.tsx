@@ -201,18 +201,29 @@ export default function AIAssistant() {
     eventSourceRef.current = eventSource;
 
     eventSource.onopen = () => {
-      console.log('SSE connection opened for session:', sessionId);
+      console.log('[SSE] Connection opened for session:', sessionId);
     };
 
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        console.log('SSE progress update:', data);
+        console.log('[SSE] Received update:', data);
 
-        if (data.type === 'progress' || data.type === 'start') {
-          setProgressUpdates(prev => [...prev, data.message]);
+        if (data.type === 'connected') {
+          console.log('[SSE] Stream connected successfully');
+          setTypingMessage('Connected to progress stream...');
+        } else if (data.type === 'ping') {
+          console.log('[SSE] Keep-alive ping received');
+        } else if (data.type === 'progress' || data.type === 'start') {
+          console.log('[SSE] Progress update:', data.message);
+          setProgressUpdates(prev => {
+            const updated = [...prev, data.message];
+            console.log('[SSE] Progress updates array:', updated);
+            return updated;
+          });
           setTypingMessage(data.message);
         } else if (data.type === 'complete') {
+          console.log('[SSE] Generation completed');
           setProgressUpdates(prev => [...prev, data.message]);
           setTypingMessage('Generation completed!');
           // Close the connection after completion
@@ -223,14 +234,25 @@ export default function AIAssistant() {
             }
             setProgressUpdates([]);
           }, 3000);
+        } else if (data.type === 'error') {
+          console.error('[SSE] Server error:', data.message);
+          setTypingMessage('Error in progress stream: ' + data.message);
         }
       } catch (e) {
-        console.error('Error parsing SSE message:', e);
+        console.error('[SSE] Error parsing message:', e, event.data);
       }
     };
 
     eventSource.onerror = (error) => {
-      console.error('SSE connection error:', error);
+      console.error('[SSE] Connection error:', error);
+      console.log('[SSE] ReadyState:', eventSource.readyState);
+      
+      if (eventSource.readyState === EventSource.CLOSED) {
+        console.log('[SSE] Connection was closed');
+      } else if (eventSource.readyState === EventSource.CONNECTING) {
+        console.log('[SSE] Connection is reconnecting...');
+      }
+      
       eventSource.close();
       eventSourceRef.current = null;
     };
@@ -276,6 +298,53 @@ export default function AIAssistant() {
     } finally {
       setIsTyping(false);
       setTypingMessage('');
+    }
+  };
+
+  // Test SSE connection manually
+  const testSSEConnection = async () => {
+    if (!datamodelSessionId) {
+      toast({
+        title: 'No Session',
+        description: 'Please start a @datamodel session first',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      console.log('[SSE TEST] Testing connection for session:', datamodelSessionId);
+      
+      // Connect to SSE stream first
+      connectToProgressStream(datamodelSessionId);
+      
+      // Wait a moment for connection to establish
+      setTimeout(async () => {
+        try {
+          const result = await apiRequest('POST', `/api/ai-agent/datamodel/test-progress/${datamodelSessionId}`, {});
+          console.log('[SSE TEST] Test endpoint result:', result);
+          
+          toast({
+            title: 'SSE Test',
+            description: `Test sent. Available streams: ${result.available_streams.length}`,
+          });
+        } catch (err: any) {
+          console.error('[SSE TEST] Error calling test endpoint:', err);
+          toast({
+            title: 'Test Failed',
+            description: err.message,
+            variant: 'destructive'
+          });
+        }
+      }, 1000);
+      
+    } catch (err: any) {
+      console.error('[SSE TEST] Error:', err);
+      toast({
+        title: 'SSE Test Failed',
+        description: err.message,
+        variant: 'destructive'
+      });
     }
   };
 
@@ -588,10 +657,19 @@ export default function AIAssistant() {
                     {/* Connection Status Indicator */}
                     <div className="flex items-center gap-1">
                       {datamodelSessionId ? (
-                        <div className="text-xs text-green-600 flex items-center gap-1">
-                          <CheckCircle className="w-3 h-3" />
-                          Connected
-                        </div>
+                        <>
+                          <div className="text-xs text-green-600 flex items-center gap-1">
+                            <CheckCircle className="w-3 h-3" />
+                            Connected
+                          </div>
+                          <button
+                            onClick={testSSEConnection}
+                            className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                            title="Test SSE Connection"
+                          >
+                            Test SSE
+                          </button>
+                        </>
                       ) : selectedConnection ? (
                         <div className="text-xs text-yellow-600 flex items-center gap-1">
                           <AlertCircle className="w-3 h-3" />
