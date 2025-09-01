@@ -388,26 +388,10 @@ export default function AIAssistant() {
         const jobId = jobResponse.job_id;
         console.log('Started async job:', jobId);
         
-        // Set up status messages
-        let messageIndex = 0;
-        const statusMessages = [
-          'Analyzing table structures and collecting metadata...',
-          'Preparing AI analysis with chain-of-thought reasoning...',  
-          'Starting OpenAI analysis - this is where the magic happens...',
-          'AI is thinking through your data structure step by step...',
-          'Receiving AI response stream...',
-          'Parsing AI-generated semantic model...',
-          'Finalizing semantic model structure...'
-        ];
+        // Real-time progress will update the message, no need for generic status messages
+        // statusInterval is kept for compatibility but won't override real progress
         
-        statusInterval = setInterval(() => {
-          if (messageIndex < statusMessages.length) {
-            setTypingMessage(statusMessages[messageIndex]);
-            messageIndex++;
-          }
-        }, 30000);
-        
-        // Poll for completion
+        // Poll for completion with real-time progress
         let attempts = 0;
         const maxAttempts = 60; // 5 minutes max (5 second intervals)
         
@@ -417,7 +401,20 @@ export default function AIAssistant() {
           
           try {
             const statusResponse = await apiRequest('GET', `/api/ai-agent/datamodel/job/${jobId}`, null, { timeout: 10000 });
-            console.log('Job status:', statusResponse.status);
+            console.log('Job status:', statusResponse.status, 'Progress:', statusResponse.progress);
+            
+            // Update UI with real-time progress
+            if (statusResponse.progress) {
+              const progress = statusResponse.progress;
+              let progressMessage = `${progress.step} - ${progress.message}`;
+              if (progress.percentage) {
+                progressMessage += ` (${progress.percentage}%)`;
+              }
+              if (progress.details) {
+                progressMessage += ` - ${progress.details}`;
+              }
+              setTypingMessage(progressMessage);
+            }
             
             if (statusResponse.status === 'completed') {
               result = statusResponse.result;

@@ -20,7 +20,29 @@ _progress_streams = {}
 _progress_buffers = {}  # Buffer messages until SSE stream connects
 
 # Async job tracking
-_async_jobs = {}  # job_id -> {status, result, error}
+_async_jobs = {}  # job_id -> {status, result, error, progress}
+_current_job_id = None  # Thread-local job ID for progress tracking
+
+def update_job_progress(job_id: str, step: str, message: str, percentage: int, details: str = None):
+    """Update progress for an async job"""
+    if job_id in _async_jobs:
+        _async_jobs[job_id]["progress"] = {
+            "step": step,
+            "message": message,
+            "percentage": percentage,
+            "details": details,
+            "updated_at": asyncio.get_event_loop().time()
+        }
+        logger.info(f"[JOB {job_id}] {step}: {message} ({percentage}%)")
+
+def get_current_job_id():
+    """Get the current job ID for progress tracking"""
+    return _current_job_id
+
+def set_current_job_id(job_id: str):
+    """Set the current job ID for progress tracking"""
+    global _current_job_id
+    _current_job_id = job_id
 
 
 class ChatMessage(BaseModel):
@@ -392,16 +414,83 @@ async def start_async_datamodel_chat(request: DataModelChatRequest):
         "status": "processing",
         "result": None,
         "error": None,
-        "started_at": asyncio.get_event_loop().time()
+        "started_at": asyncio.get_event_loop().time(),
+        "progress": {
+            "step": "1/5",
+            "message": "Initializing request...",
+            "percentage": 0,
+            "details": None
+        }
     }
     
     # Start background task
     async def process_chat():
         try:
+            # Set the current job ID for progress tracking through the call chain
+            set_current_job_id(job_id)
+            
+            update_job_progress(job_id, "1/5", "Connecting to datamodel agent...", 10)
             datamodel_agent = get_datamodel_agent()
+            
+            update_job_progress(job_id, "2/5", "Processing your request...", 30, f"Message: {request.message}")
+            
+            # Generate dynamic progress message based on operation context
+            try:
+                from utils.dynamic_progress import generate_contextual_progress
+                from services.datamodel_agent_service import get_datamodel_agent
+                
+                # Get OpenAI client for dynamic messages
+                try:
+                    agent = get_datamodel_agent()
+                    openai_client = getattr(agent, 'openai_client', None)
+                except:
+                    openai_client = None
+                
+                # Determine operation type and context
+                message_lower = request.message.lower()
+                if 'database' in message_lower:
+                    operation_type = "database_listing"
+                    context = "Snowflake database connection"
+                elif 'schema' in message_lower:
+                    operation_type = "schema_analysis" 
+                    context = "database schema metadata"
+                elif request.message in ['1', '2', '3', '4', '5']:
+                    operation_type = "table_selection"
+                    context = f"table option {request.message}"
+                elif 'generate' in message_lower:
+                    operation_type = "semantic_generation"
+                    context = "AI semantic model generation"
+                else:
+                    operation_type = "data_processing"
+                    context = f"request: {request.message}"
+                
+                # Generate contextual progress message
+                if openai_client:
+                    progress_message = await generate_contextual_progress(
+                        operation_type, context, 3, 5, "datamodel", openai_client
+                    )
+                    update_job_progress(job_id, "3/5", progress_message, 60)
+                else:
+                    # Fallback to static messages
+                    if 'database' in message_lower:
+                        update_job_progress(job_id, "3/5", "Connecting to Snowflake and listing databases...", 60)
+                    elif 'schema' in message_lower or request.message in ['1', '2', '3']:
+                        update_job_progress(job_id, "3/5", "Querying database metadata...", 60)
+                    elif 'generate' in message_lower or request.message == '2':
+                        update_job_progress(job_id, "3/5", "Starting AI semantic analysis...", 50)
+                    else:
+                        update_job_progress(job_id, "3/5", "Processing with datamodel agent...", 50)
+                        
+            except Exception as e:
+                logger.error(f"Failed to generate dynamic progress: {e}")
+                update_job_progress(job_id, "3/5", "Processing with datamodel agent...", 50)
+            
             response = await datamodel_agent.chat(request.session_id, request.message)
+            
+            update_job_progress(job_id, "4/5", "Gathering session context...", 80)
             context = datamodel_agent.get_session_context(request.session_id)
             
+            update_job_progress(job_id, "5/5", "Finalizing response...", 95)
             result = DataModelChatResponse(
                 response=response,
                 session_id=request.session_id,
@@ -414,6 +503,7 @@ async def start_async_datamodel_chat(request: DataModelChatRequest):
                 }
             )
             
+            update_job_progress(job_id, "5/5", "Completed successfully!", 100)
             _async_jobs[job_id]["status"] = "completed"
             _async_jobs[job_id]["result"] = result.dict()
             
@@ -421,6 +511,9 @@ async def start_async_datamodel_chat(request: DataModelChatRequest):
             logger.error(f"Error in async @datamodel chat: {e}")
             _async_jobs[job_id]["status"] = "failed"
             _async_jobs[job_id]["error"] = str(e)
+        finally:
+            # Clear the job ID when done
+            set_current_job_id(None)
     
     # Start the background task
     asyncio.create_task(process_chat())
@@ -438,7 +531,8 @@ async def get_async_job_status(job_id: str):
     
     response = {
         "job_id": job_id,
-        "status": job["status"]
+        "status": job["status"],
+        "progress": job.get("progress", {})
     }
     
     if job["status"] == "completed":

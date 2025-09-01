@@ -108,7 +108,7 @@ def collect_table_intelligence_data(snowflake_connection, database_name: str, sc
 def generate_intelligent_semantic_model(openai_client, snowflake_connection, 
                                        table_names: List[str], database_name: str, 
                                        schema_name: str, connection_id: str = "session",
-                                       session_id: str = None) -> Dict[str, Any]:
+                                       session_id: str = None, job_id: str = None) -> Dict[str, Any]:
     """
     Generate intelligent semantic model using OpenAI structured output with LLM-powered analysis.
     """
@@ -116,10 +116,33 @@ def generate_intelligent_semantic_model(openai_client, snowflake_connection,
     
     # Helper function to send progress updates
     def send_progress(progress_type: str, message: str, step: str = None, data: dict = None):
-        # Log progress for user visibility - SSE disabled but keep useful logging
+        # Log progress for user visibility
         logger.info(f"[PROGRESS] {message}")
         if step:
             logger.info(f"[STEP] {step}")
+        
+        # Update async job progress if job_id is available
+        current_job_id = job_id
+        if not current_job_id:
+            try:
+                from routers.ai_agent import get_current_job_id
+                current_job_id = get_current_job_id()
+            except Exception:
+                pass
+                
+        if current_job_id and progress_type in ['start', 'progress', 'complete']:
+            try:
+                from routers.ai_agent import update_job_progress
+                
+                # Map step to percentage
+                step_percentages = {
+                    "1/5": 50, "2/5": 60, "3/5": 70, "4/5": 85, "5/5": 100
+                }
+                percentage = step_percentages.get(step, 70)
+                
+                update_job_progress(current_job_id, f"3/5 (AI)", message, percentage)
+            except Exception as e:
+                logger.error(f"Failed to update job progress: {e}")
     
     if not openai_client:
         return {
