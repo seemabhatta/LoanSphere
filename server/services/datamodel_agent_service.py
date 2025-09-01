@@ -701,7 +701,8 @@ Use the available tools to help users create comprehensive data dictionaries eff
                 context.selected_tables,
                 context.current_database,
                 context.current_schema,
-                session.connection_id
+                session.connection_id,
+                session.session_id  # Pass session_id for progress updates
             )
             
             if result["status"] == "success":

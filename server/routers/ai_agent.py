@@ -3,14 +3,20 @@ AI Agent Router for LoanSphere
 Provides chat endpoint for conversational AI interface to query loan data
 """
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, AsyncGenerator
 from loguru import logger
+import asyncio
+import json
 
 from services.ai_agent_service import get_ai_agent
 from services.datamodel_agent_service import get_datamodel_agent
 
 router = APIRouter()
+
+# Global progress tracking for sessions
+_progress_streams = {}
 
 
 class ChatMessage(BaseModel):
@@ -155,6 +161,70 @@ async def chat_datamodel_agent(request: DataModelChatRequest):
     except Exception as e:
         logger.error(f"Error in @datamodel agent chat: {e}")
         raise HTTPException(status_code=500, detail=f"Chat error: {str(e)}")
+
+
+@router.get("/datamodel/progress/{session_id}")
+async def stream_datamodel_progress(session_id: str):
+    """Stream real-time progress updates for @datamodel operations"""
+    
+    async def generate_progress_stream():
+        """Generate SSE stream for progress updates"""
+        try:
+            # Initialize progress stream for this session
+            if session_id not in _progress_streams:
+                _progress_streams[session_id] = asyncio.Queue()
+            
+            queue = _progress_streams[session_id]
+            
+            # Send initial connection message
+            yield f"data: {json.dumps({'type': 'connected', 'session_id': session_id, 'message': 'Progress stream connected'})}\n\n"
+            
+            while True:
+                try:
+                    # Wait for progress updates with timeout
+                    progress_data = await asyncio.wait_for(queue.get(), timeout=1.0)
+                    yield f"data: {json.dumps(progress_data)}\n\n"
+                except asyncio.TimeoutError:
+                    # Send keep-alive ping
+                    yield f"data: {json.dumps({'type': 'ping', 'timestamp': asyncio.get_event_loop().time()})}\n\n"
+                except Exception as e:
+                    logger.error(f"Error in progress stream: {e}")
+                    break
+                    
+        except Exception as e:
+            logger.error(f"Progress stream error: {e}")
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+        finally:
+            # Clean up
+            if session_id in _progress_streams:
+                del _progress_streams[session_id]
+    
+    return StreamingResponse(
+        generate_progress_stream(),
+        media_type="text/plain",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "Content-Type": "text/event-stream",
+        }
+    )
+
+
+def send_progress_update(session_id: str, progress_type: str, message: str, data: dict = None):
+    """Helper function to send progress updates to SSE stream"""
+    if session_id in _progress_streams:
+        update = {
+            'type': progress_type,
+            'message': message,
+            'timestamp': asyncio.get_event_loop().time()
+        }
+        if data:
+            update.update(data)
+        
+        try:
+            _progress_streams[session_id].put_nowait(update)
+        except Exception as e:
+            logger.error(f"Failed to send progress update: {e}")
 
 
 @router.get("/datamodel/context", response_model=DataModelContextResponse)

@@ -77,7 +77,9 @@ export default function AIAssistant() {
   const [connections, setConnections] = useState<SnowflakeConnection[]>([]);
   const [selectedConnection, setSelectedConnection] = useState<string>('');
   const [connectionsLoading, setConnectionsLoading] = useState(false);
+  const [progressUpdates, setProgressUpdates] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const eventSourceRef = useRef<EventSource | null>(null);
   const { toast } = useToast();
 
   // Load Snowflake connections on mount and auto-connect if in @datamodel mode
@@ -186,6 +188,62 @@ export default function AIAssistant() {
       setTypingMessage('');
     }
   };
+
+  // Connect to SSE stream for progress updates
+  const connectToProgressStream = (sessionId: string) => {
+    // Clean up any existing connection
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+    }
+
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
+    const eventSource = new EventSource(`${baseUrl}/api/ai-agent/datamodel/progress/${sessionId}`);
+    eventSourceRef.current = eventSource;
+
+    eventSource.onopen = () => {
+      console.log('SSE connection opened for session:', sessionId);
+    };
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log('SSE progress update:', data);
+
+        if (data.type === 'progress' || data.type === 'start') {
+          setProgressUpdates(prev => [...prev, data.message]);
+          setTypingMessage(data.message);
+        } else if (data.type === 'complete') {
+          setProgressUpdates(prev => [...prev, data.message]);
+          setTypingMessage('Generation completed!');
+          // Close the connection after completion
+          setTimeout(() => {
+            if (eventSourceRef.current) {
+              eventSourceRef.current.close();
+              eventSourceRef.current = null;
+            }
+            setProgressUpdates([]);
+          }, 3000);
+        }
+      } catch (e) {
+        console.error('Error parsing SSE message:', e);
+      }
+    };
+
+    eventSource.onerror = (error) => {
+      console.error('SSE connection error:', error);
+      eventSource.close();
+      eventSourceRef.current = null;
+    };
+  };
+
+  // Clean up SSE connection on component unmount
+  useEffect(() => {
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
+    };
+  }, []);
 
   // Helper to send a direct query (used by graph node clicks)
   const sendAgentQuery = async (query: string) => {
@@ -357,26 +415,11 @@ export default function AIAssistant() {
                                outgoing.toLowerCase().includes('yaml');
 
     if (isGenerationRequest) {
-      setTypingMessage('Generating semantic model... This may take several minutes');
+      setTypingMessage('Starting semantic model generation...');
+      setProgressUpdates([]);
       
-      // Add progress updates for long operations
-      const progressMessages = [
-        'Analyzing table structure and relationships...',
-        'Generating measures and dimensions...',
-        'Creating AI-powered semantic model...',
-        'Finalizing YAML dictionary...'
-      ];
-      
-      let messageIndex = 1;
-      const progressInterval = setInterval(() => {
-        if (messageIndex < progressMessages.length) {
-          setTypingMessage(progressMessages[messageIndex]);
-          messageIndex++;
-        }
-      }, 45000); // Update every 45 seconds
-      
-      // Clean up interval
-      setTimeout(() => clearInterval(progressInterval), timeout - 5000);
+      // Connect to SSE stream for real-time progress updates
+      connectToProgressStream(datamodelSessionId);
     } else {
       setTypingMessage('Processing your request...');
     }
@@ -686,20 +729,31 @@ export default function AIAssistant() {
               {/* Typing indicator */}
               {isTyping && (
                 <div className="flex justify-start">
-                  <div className="bg-gray-100 rounded-lg p-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-md flex items-center justify-center">
+                  <div className="bg-gray-100 rounded-lg p-4 max-w-[80%]">
+                    <div className="flex items-start space-x-3">
+                      <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5">
                         <Bot className="w-3 h-3 text-white" />
                       </div>
-                      <div className="flex flex-col">
+                      <div className="flex flex-col min-w-0">
                         <div className="flex space-x-1 mb-2">
                           <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
                           <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
                           <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                         </div>
                         {typingMessage && (
-                          <div className="text-xs text-gray-500">
+                          <div className="text-xs text-gray-600 font-medium mb-2">
                             {typingMessage}
+                          </div>
+                        )}
+                        {/* Show recent progress updates */}
+                        {progressUpdates.length > 0 && (
+                          <div className="max-h-32 overflow-y-auto">
+                            <div className="text-xs text-gray-500 mb-1">Recent progress:</div>
+                            {progressUpdates.slice(-5).map((update, index) => (
+                              <div key={index} className="text-xs text-gray-500 py-0.5 truncate" title={update}>
+                                • {update}
+                              </div>
+                            ))}
                           </div>
                         )}
                       </div>
