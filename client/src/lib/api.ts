@@ -11,7 +11,11 @@ export async function apiRequest(
   const controller = new AbortController();
   const timeout = options?.timeout || 30000; // Default 30 second timeout for slow API responses
   
-  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  // For Railway/production, increase timeouts significantly
+  const isProduction = window.location.hostname !== 'localhost';
+  const productionTimeout = isProduction ? Math.max(timeout, 600000) : timeout; // 10 minutes in production
+  
+  const timeoutId = setTimeout(() => controller.abort(), productionTimeout);
   
   try {
     const response = await fetch(fullUrl, {

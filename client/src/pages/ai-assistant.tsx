@@ -349,13 +349,45 @@ export default function AIAssistant() {
     const outgoing = inputValue;
     setInputValue('');
     setIsTyping(true);
-    setTypingMessage('Processing your request...');
+
+    // Detect if this is a dictionary/semantic model generation request
+    const isGenerationRequest = outgoing.toLowerCase().includes('generate') || 
+                               outgoing.toLowerCase().includes('dictionary') ||
+                               outgoing.toLowerCase().includes('semantic') ||
+                               outgoing.toLowerCase().includes('yaml');
+
+    if (isGenerationRequest) {
+      setTypingMessage('Generating semantic model... This may take several minutes');
+      
+      // Add progress updates for long operations
+      const progressMessages = [
+        'Analyzing table structure and relationships...',
+        'Generating measures and dimensions...',
+        'Creating AI-powered semantic model...',
+        'Finalizing YAML dictionary...'
+      ];
+      
+      let messageIndex = 1;
+      const progressInterval = setInterval(() => {
+        if (messageIndex < progressMessages.length) {
+          setTypingMessage(progressMessages[messageIndex]);
+          messageIndex++;
+        }
+      }, 45000); // Update every 45 seconds
+      
+      // Clean up interval
+      setTimeout(() => clearInterval(progressInterval), timeout - 5000);
+    } else {
+      setTypingMessage('Processing your request...');
+    }
+
+    const timeout = isGenerationRequest ? 300000 : 60000; // 5 minutes for generation, 1 minute for other operations
 
     try {
       const result = await apiRequest('POST', '/api/ai-agent/datamodel/chat', {
         session_id: datamodelSessionId,
         message: outgoing
-      }, { timeout: 60000 }); // 60 second timeout for complex datamodel operations
+      }, { timeout });
 
       console.log('@datamodel agent response:', result);
 

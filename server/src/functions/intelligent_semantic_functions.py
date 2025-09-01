@@ -120,20 +120,33 @@ def generate_intelligent_semantic_model(openai_client, snowflake_connection,
         }
     
     try:
-        logger.info(f"Generating intelligent semantic model for {len(table_names)} tables")
+        logger.info(f"🚀 [PROGRESS] Starting intelligent semantic model generation for {len(table_names)} tables")
         
-        # Collect comprehensive table intelligence data
+        # Step 1: Collect comprehensive table intelligence data
+        logger.info("📊 [PROGRESS] Step 1/5: Analyzing table structures and collecting metadata...")
         intelligence_data = collect_table_intelligence_data(
             snowflake_connection, database_name, schema_name, table_names
         )
         
-        # Debug logging for data collection
-        logger.info(f"Collected intelligence data for {len(intelligence_data.get('tables', []))} tables")
+        # Progress logging for data collection
+        logger.info(f"✅ [PROGRESS] Collected intelligence data for {len(intelligence_data.get('tables', []))} tables")
         for table in intelligence_data.get('tables', [])[:1]:  # Log first table only
-            logger.info(f"Table {table.get('name')} has {len(table.get('columns', []))} columns")
+            logger.info(f"📋 [PROGRESS] Table {table.get('name')} has {len(table.get('columns', []))} columns")
         
-        # Create detailed prompt for LLM analysis
+        # Step 2: Prepare AI analysis
+        logger.info("🤖 [PROGRESS] Step 2/5: Preparing AI analysis with chain-of-thought reasoning...")
+        
+        # Create detailed prompt for LLM analysis with reasoning chain
         system_prompt = """You are an expert data analyst and semantic modeling specialist. 
+
+IMPORTANT: Before generating the final semantic model, please show your step-by-step thinking process using this format:
+
+<thinking>
+1. **Table Analysis**: First, I'll examine each table structure...
+2. **Column Classification**: Next, I'll identify measures, dimensions, and time fields...
+3. **Relationship Detection**: Then, I'll look for relationships between tables...
+4. **Semantic Modeling**: Finally, I'll create the comprehensive model...
+</thinking>
 
 Your task is to analyze database table structures and generate a comprehensive semantic model that categorizes columns into:
 
@@ -191,33 +204,82 @@ Columns:
 
 Generate a complete semantic model with intelligent classification of all columns into measures, dimensions, and time dimensions. Include meaningful descriptions, synonyms, and relationships."""
 
-        # Use OpenAI regular completion with JSON format
-        logger.info("Calling OpenAI for intelligent semantic model generation")
-        response = openai_client.chat.completions.create(
+        # Step 3: Call OpenAI with streaming and reasoning
+        logger.info("🧠 [PROGRESS] Step 3/5: Starting OpenAI analysis - this is where the magic happens...")
+        logger.info("💭 [PROGRESS] AI is now thinking through your data structure step by step...")
+        
+        # Use streaming for real-time updates
+        response_stream = openai_client.chat.completions.create(
             model="gpt-4o",  # Use the best model for intelligence
             messages=[
-                {"role": "system", "content": system_prompt + "\n\nReturn your response as a valid JSON object with the structure: {'name': 'model_name', 'tables': [...], 'relationships': [...], 'verified_queries': [...]}"},
+                {"role": "system", "content": system_prompt + "\n\nAfter showing your <thinking> process, return your final response as a valid JSON object with the structure: {'name': 'model_name', 'tables': [...], 'relationships': [...], 'verified_queries': [...]}"},
                 {"role": "user", "content": user_prompt}
             ],
-            temperature=0.1  # Lower temperature for more consistent results
+            temperature=0.1,  # Lower temperature for more consistent results
+            stream=True  # Enable streaming for real-time updates
         )
         
-        if not response.choices[0].message.content:
+        # Process streaming response and extract reasoning
+        full_response = ""
+        thinking_content = ""
+        in_thinking = False
+        
+        logger.info("📡 [PROGRESS] Receiving AI response stream...")
+        for chunk in response_stream:
+            if chunk.choices[0].delta.content:
+                content = chunk.choices[0].delta.content
+                full_response += content
+                
+                # Extract thinking process
+                if "<thinking>" in content:
+                    in_thinking = True
+                    logger.info("🤔 [AI THINKING] AI has started reasoning process...")
+                elif "</thinking>" in content:
+                    in_thinking = False
+                    logger.info("✅ [AI THINKING] AI completed reasoning, generating final model...")
+                elif in_thinking:
+                    thinking_content += content
+                    # Log interesting parts of thinking in real-time
+                    if any(keyword in content.lower() for keyword in ["analyzing", "examining", "identifying", "detecting", "creating"]):
+                        logger.info(f"💡 [AI THINKING] {content.strip()}")
+        
+        # Log the complete thinking process
+        if thinking_content.strip():
+            logger.info("🧠 [AI REASONING] Complete thinking process:")
+            for line in thinking_content.strip().split('\n'):
+                if line.strip():
+                    logger.info(f"  💭 {line.strip()}")
+        
+        if not full_response.strip():
             raise Exception("OpenAI response was empty")
         
-        # Parse JSON response
+        # Step 4: Parse AI response
+        logger.info("🔍 [PROGRESS] Step 4/5: Parsing AI-generated semantic model...")
+        
+        # Parse JSON response (extract JSON from the full response)
         import json
+        import re
+        
         try:
-            semantic_model_dict = json.loads(response.choices[0].message.content)
-        except json.JSONDecodeError as e:
-            # Fallback: try to extract JSON from markdown code blocks
-            import re
-            content = response.choices[0].message.content
-            json_match = re.search(r'```json\s*(\{.*?\})\s*```', content, re.DOTALL)
+            # First try to find JSON in the response
+            json_match = re.search(r'\{.*\}', full_response, re.DOTALL)
             if json_match:
-                semantic_model_dict = json.loads(json_match.group(1))
+                semantic_model_dict = json.loads(json_match.group(0))
             else:
-                raise Exception(f"Failed to parse JSON response: {e}")
+                # Fallback: try to extract JSON from markdown code blocks
+                json_match = re.search(r'```json\s*(\{.*?\})\s*```', full_response, re.DOTALL)
+                if json_match:
+                    semantic_model_dict = json.loads(json_match.group(1))
+                else:
+                    raise json.JSONDecodeError("No JSON found in response", full_response, 0)
+                    
+        except json.JSONDecodeError as e:
+            logger.error(f"❌ [ERROR] Failed to parse AI response as JSON: {e}")
+            logger.error(f"📄 [ERROR] Response content: {full_response[:500]}...")
+            raise Exception(f"Failed to parse AI response: {str(e)}")
+        
+        # Step 5: Finalize semantic model
+        logger.info("🎯 [PROGRESS] Step 5/5: Finalizing semantic model structure...")
         
         # Ensure the model name is set
         if not semantic_model_dict.get('name'):
@@ -249,7 +311,10 @@ Generate a complete semantic model with intelligent classification of all column
         total_time_dimensions = sum(len(table.get('time_dimensions', [])) for table in semantic_model_dict.get('tables', []))
         total_relationships = len(semantic_model_dict.get('relationships', []))
         
-        logger.info(f"Generated intelligent semantic model: {total_measures} measures, {total_dimensions} dimensions, {total_time_dimensions} time dims, {total_relationships} relationships")
+        # Final success logging
+        logger.info(f"🎉 [SUCCESS] Generated intelligent semantic model!")
+        logger.info(f"📊 [RESULTS] Summary: {total_measures} measures, {total_dimensions} dimensions, {total_time_dimensions} time dims, {total_relationships} relationships")
+        logger.info(f"✅ [COMPLETE] Semantic model generation completed successfully for {total_tables} tables")
         
         return {
             "status": "success",
