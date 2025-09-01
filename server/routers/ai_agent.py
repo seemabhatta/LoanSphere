@@ -169,42 +169,57 @@ async def stream_datamodel_progress(session_id: str):
     
     async def generate_progress_stream():
         """Generate SSE stream for progress updates"""
+        logger.info(f"[SSE] Starting progress stream for session {session_id}")
         try:
             # Initialize progress stream for this session
             if session_id not in _progress_streams:
                 _progress_streams[session_id] = asyncio.Queue()
+                logger.info(f"[SSE] Created new progress queue for session {session_id}")
+            else:
+                logger.info(f"[SSE] Using existing progress queue for session {session_id}")
             
             queue = _progress_streams[session_id]
+            logger.info(f"[SSE] Progress stream initialized, queue size: {queue.qsize()}")
             
             # Send initial connection message
             connection_msg = json.dumps({'type': 'connected', 'session_id': session_id, 'message': 'Progress stream connected'})
             yield f"data: {connection_msg}\n\n"
             logger.info(f"[SSE] Sent connection message for session {session_id}")
             
-            while True:
+            # Keep the stream alive for a reasonable amount of time
+            max_idle_time = 300  # 5 minutes
+            idle_count = 0
+            
+            while idle_count < max_idle_time:
                 try:
                     # Wait for progress updates with timeout
                     progress_data = await asyncio.wait_for(queue.get(), timeout=1.0)
                     progress_msg = json.dumps(progress_data)
                     yield f"data: {progress_msg}\n\n"
                     logger.info(f"[SSE] Sent progress message for session {session_id}: {progress_data.get('message', 'No message')}")
+                    idle_count = 0  # Reset idle counter when we get a message
                 except asyncio.TimeoutError:
-                    # Send keep-alive ping
+                    # Send keep-alive ping and increment idle counter
                     ping_msg = json.dumps({'type': 'ping', 'timestamp': asyncio.get_event_loop().time()})
                     yield f"data: {ping_msg}\n\n"
-                    logger.debug(f"[SSE] Sent ping for session {session_id}")
+                    logger.debug(f"[SSE] Sent ping for session {session_id}, idle count: {idle_count}")
+                    idle_count += 1
                 except Exception as e:
-                    logger.error(f"Error in progress stream: {e}")
+                    logger.error(f"[SSE] Error in progress stream: {e}")
                     break
+            
+            logger.info(f"[SSE] Stream for session {session_id} timed out after {max_idle_time} seconds")
                     
         except Exception as e:
             logger.error(f"[SSE] Progress stream error: {e}")
             error_msg = json.dumps({'type': 'error', 'message': str(e)})
             yield f"data: {error_msg}\n\n"
         finally:
-            # Clean up
+            # Clean up - but only if the stream was actually closed by the client
+            logger.info(f"[SSE] Stream for session {session_id} ended, cleaning up")
             if session_id in _progress_streams:
                 del _progress_streams[session_id]
+                logger.info(f"[SSE] Cleaned up stream for session {session_id}")
     
     return StreamingResponse(
         generate_progress_stream(),
