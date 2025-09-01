@@ -173,9 +173,11 @@ class DataModelAgent:
     def __init__(self):
         self.sessions: Dict[str, DataModelAgentSession] = {}
         self.agent = None
+        self.openai_client = None
         
         if AGENTS_AVAILABLE:
             self._init_agent()
+            self._init_openai_client()
         else:
             logger.warning("OpenAI Agent SDK not available - using fallback mode")
     
@@ -201,6 +203,22 @@ class DataModelAgent:
             logger.error(f"Failed to initialize @datamodel agent: {e}")
             self.agent = None
     
+    def _init_openai_client(self):
+        """Initialize OpenAI client for structured output generation"""
+        try:
+            api_key = os.getenv("OPENAI_API_KEY")
+            if not api_key:
+                logger.warning("OPENAI_API_KEY not found - structured generation will be limited")
+                return
+            
+            from openai import OpenAI
+            self.openai_client = OpenAI(api_key=api_key)
+            logger.info("OpenAI client initialized for structured semantic model generation")
+            
+        except Exception as e:
+            logger.error(f"Failed to initialize OpenAI client: {e}")
+            self.openai_client = None
+    
     def _get_agent_instructions(self) -> str:
         """Get agent instructions - complete copy from DataMind CLI"""
         return """
@@ -210,10 +228,9 @@ Your capabilities:
 1. Connect to Snowflake databases
 2. Browse database structures (databases, schemas, tables, stages)
 3. Select tables for dictionary generation
-4. Generate comprehensive YAML data dictionaries
-5. Generate enhanced semantic models with measures, dimensions, and relationships
-6. Save dictionaries to local files
-7. Upload dictionaries to Snowflake stages
+4. Generate AI-powered intelligent semantic models with LLM analysis
+5. Save dictionaries to local files
+6. Upload dictionaries to Snowflake stages
 
 IMPORTANT BEHAVIORAL GUIDELINES:
 - Be conversational and flexible - users can express their intent in ANY way
@@ -286,8 +303,10 @@ EFFICIENCY RULES:
 
 Dictionary Generation Guidelines:
 - Always show progress when generating dictionaries
-- Offer both basic YAML dictionaries and enhanced semantic models
-- Semantic models include measures (numeric metrics), dimensions (categorical data), time dimensions, and relationships
+- All dictionary generation uses AI-powered intelligent semantic modeling with LLM analysis
+- Semantic models use GPT intelligence for superior column classification, business-friendly descriptions, and automatic relationship detection
+- Models include measures (numeric metrics), dimensions (categorical data), time dimensions, and relationships
+- Generated with structured output validation to ensure schema compliance
 - Provide clear feedback on what tables are being processed
 - Offer to save locally and upload to stage
 - Show preview of generated content when helpful
@@ -336,13 +355,8 @@ Use the available tools to help users create comprehensive data dictionaries eff
             
         @function_tool
         def generate_yaml_dictionary(output_filename: str = None) -> str:
-            """Generate YAML data dictionary from selected tables"""
-            return self._generate_yaml_dictionary(output_filename)
-            
-        @function_tool
-        def generate_semantic_model(output_filename: str = None) -> str:
-            """Generate enhanced semantic model with measures, dimensions, and relationships"""
-            return self._generate_semantic_model(output_filename)
+            """Generate AI-powered intelligent semantic model with LLM analysis and structured output"""
+            return self._generate_intelligent_semantic_model(output_filename)
             
         @function_tool
         def save_dictionary(filename: str) -> str:
@@ -379,7 +393,6 @@ Use the available tools to help users create comprehensive data dictionaries eff
             get_stages,
             select_tables,
             generate_yaml_dictionary,
-            generate_semantic_model,
             save_dictionary,
             upload_to_stage,
             get_current_context,
@@ -634,8 +647,8 @@ Use the available tools to help users create comprehensive data dictionaries eff
         
         return f"✅ Selected {len(selected_tables)} table(s): {', '.join(selected_tables)}"
     
-    def _generate_yaml_dictionary(self, output_filename: Optional[str] = None) -> str:
-        """Generate YAML data dictionary from selected tables"""
+    def _generate_intelligent_semantic_model(self, output_filename: Optional[str] = None) -> str:
+        """Generate AI-powered intelligent semantic model using LLM analysis and structured output"""
         context = self._get_current_context()
         session = self._get_current_session()
         if not context or not session:
@@ -644,54 +657,19 @@ Use the available tools to help users create comprehensive data dictionaries eff
         if not context.selected_tables:
             return "❌ No tables selected. Please select tables first."
         
+        if not self.openai_client:
+            return "❌ OpenAI client not available. Intelligent generation requires OPENAI_API_KEY to be configured."
+        
         try:
-            from src.functions.dictionary_functions import generate_data_dictionary_with_connection
+            from src.functions.intelligent_semantic_functions import generate_intelligent_semantic_model
             
             # Get or create connection lazily
             snowflake_connection = session.get_snowflake_connection()
             if not snowflake_connection:
                 return "❌ Failed to establish Snowflake connection. Please check your connection settings."
             
-            result = generate_data_dictionary_with_connection(
-                snowflake_connection,
-                context.selected_tables,
-                context.current_database,
-                context.current_schema,
-                session.connection_id
-            )
-            
-            if result["status"] == "success":
-                context.dictionary_content = result["yaml_dictionary"]
-                session.update_activity()
-                
-                tables_processed = result.get("tables_processed", len(context.selected_tables))
-                return f"✅ Generated YAML dictionary for {tables_processed} table(s)! Dictionary is ready for download."
-            else:
-                return f"❌ Failed to generate dictionary: {result.get('error', 'Unknown error')}"
-                
-        except Exception as e:
-            logger.error(f"Error generating YAML dictionary: {e}")
-            return f"❌ Error generating dictionary: {str(e)}"
-    
-    def _generate_semantic_model(self, output_filename: Optional[str] = None) -> str:
-        """Generate enhanced semantic model with measures, dimensions, and relationships"""
-        context = self._get_current_context()
-        session = self._get_current_session()
-        if not context or not session:
-            return "❌ No active session"
-        
-        if not context.selected_tables:
-            return "❌ No tables selected. Please select tables first."
-        
-        try:
-            from src.functions.semantic_dictionary_functions import generate_semantic_model_dictionary
-            
-            # Get or create connection lazily
-            snowflake_connection = session.get_snowflake_connection()
-            if not snowflake_connection:
-                return "❌ Failed to establish Snowflake connection. Please check your connection settings."
-            
-            result = generate_semantic_model_dictionary(
+            result = generate_intelligent_semantic_model(
+                self.openai_client,
                 snowflake_connection,
                 context.selected_tables,
                 context.current_database,
@@ -707,18 +685,22 @@ Use the available tools to help users create comprehensive data dictionaries eff
                 total_measures = result.get("total_measures", 0)
                 total_dimensions = result.get("total_dimensions", 0)
                 total_time_dims = result.get("total_time_dimensions", 0)
-                validation_status = result.get("validation", {}).get("status", "unknown")
+                total_relationships = result.get("total_relationships", 0)
                 
-                return f"✅ Generated semantic model for {tables_processed} table(s)!\n" + \
-                       f"📊 Found {total_measures} measures, {total_dimensions} dimensions, {total_time_dims} time dimensions\n" + \
-                       f"✓ Schema validation: {validation_status}\n" + \
+                return f"🧠✅ Generated intelligent semantic model for {tables_processed} table(s)!\n" + \
+                       f"📊 AI Analysis Results:\n" + \
+                       f"   • {total_measures} measures (numeric metrics)\n" + \
+                       f"   • {total_dimensions} dimensions (categorical data)\n" + \
+                       f"   • {total_time_dims} time dimensions (temporal fields)\n" + \
+                       f"   • {total_relationships} relationships detected\n" + \
+                       f"🎯 Generated with LLM intelligence and structured output validation\n" + \
                        f"Ready for download or upload to stage."
             else:
-                return f"❌ Failed to generate semantic model: {result.get('error', 'Unknown error')}"
+                return f"❌ Failed to generate intelligent semantic model: {result.get('error', 'Unknown error')}"
                 
         except Exception as e:
-            logger.error(f"Error generating semantic model: {e}")
-            return f"❌ Error generating semantic model: {str(e)}"
+            logger.error(f"Error generating intelligent semantic model: {e}")
+            return f"❌ Error generating intelligent semantic model: {str(e)}"
     
     def _save_dictionary(self, filename: str) -> str:
         """Save the generated dictionary to a file"""

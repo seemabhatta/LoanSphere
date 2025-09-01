@@ -12,12 +12,21 @@ from loguru import logger
 try:
     from google.protobuf.json_format import ParseDict
     from utils.schema.semantic_model_pb2 import SemanticModel
-    from protobuf_to_pydantic import msg_to_pydantic_model
-    from utils.schema.semantic_model_pb2 import SemanticModel as ProtoSemanticModel
     PROTOBUF_AVAILABLE = True
     
-    # Auto-generate Pydantic model from protobuf schema
-    PydanticSemanticModel = msg_to_pydantic_model(ProtoSemanticModel)
+    # Create a simple Pydantic model manually instead of using protobuf-to-pydantic
+    try:
+        from pydantic import BaseModel
+        from typing import List, Optional
+        
+        class PydanticSemanticModel(BaseModel):
+            name: str
+            tables: List[dict] = []
+            relationships: List[dict] = []
+            verified_queries: List[dict] = []
+            
+    except ImportError:
+        PydanticSemanticModel = None
     
 except ImportError as e:
     logger.warning(f"Protobuf dependencies not available: {e}")
