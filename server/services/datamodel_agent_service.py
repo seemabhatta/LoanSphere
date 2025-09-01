@@ -645,7 +645,13 @@ Use the available tools to help users create comprehensive data dictionaries eff
         context.selected_tables = selected_tables
         session.update_activity()
         
-        return f"✅ Selected {len(selected_tables)} table(s): {', '.join(selected_tables)}"
+        # Auto-generate dictionary after selection (matching DataMind behavior)
+        try:
+            generation_result = self._generate_intelligent_semantic_model()
+            return f"✅ Selected {len(selected_tables)} table(s): {', '.join(selected_tables)}\n\n" + generation_result
+        except Exception as e:
+            logger.error(f"Error auto-generating after selection: {e}")
+            return f"✅ Selected {len(selected_tables)} table(s): {', '.join(selected_tables)}\n❌ Auto-generation failed: {str(e)}\nPlease try 'generate_yaml_dictionary()' manually."
     
     def _generate_intelligent_semantic_model(self, output_filename: Optional[str] = None) -> str:
         """Generate AI-powered intelligent semantic model using LLM analysis and structured output"""
