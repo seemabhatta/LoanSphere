@@ -430,62 +430,26 @@ async def start_async_datamodel_chat(request: DataModelChatRequest):
             set_current_job_id(job_id)
             
             update_job_progress(job_id, "1/5", "Connecting to datamodel agent...", 10)
+            logger.info(f"[JOB {job_id}] Getting datamodel agent...")
             datamodel_agent = get_datamodel_agent()
+            logger.info(f"[JOB {job_id}] Datamodel agent retrieved successfully: {type(datamodel_agent)}")
             
             update_job_progress(job_id, "2/5", "Processing your request...", 30, f"Message: {request.message}")
             
-            # Generate dynamic progress message based on operation context
-            try:
-                from utils.dynamic_progress import generate_contextual_progress
-                from services.datamodel_agent_service import get_datamodel_agent
-                
-                # Get OpenAI client for dynamic messages
-                try:
-                    agent = get_datamodel_agent()
-                    openai_client = getattr(agent, 'openai_client', None)
-                except:
-                    openai_client = None
-                
-                # Determine operation type and context
-                message_lower = request.message.lower()
-                if 'database' in message_lower:
-                    operation_type = "database_listing"
-                    context = "Snowflake database connection"
-                elif 'schema' in message_lower:
-                    operation_type = "schema_analysis" 
-                    context = "database schema metadata"
-                elif request.message in ['1', '2', '3', '4', '5']:
-                    operation_type = "table_selection"
-                    context = f"table option {request.message}"
-                elif 'generate' in message_lower:
-                    operation_type = "semantic_generation"
-                    context = "AI semantic model generation"
-                else:
-                    operation_type = "data_processing"
-                    context = f"request: {request.message}"
-                
-                # Generate contextual progress message
-                if openai_client:
-                    progress_message = await generate_contextual_progress(
-                        operation_type, context, 3, 5, "datamodel", openai_client
-                    )
-                    update_job_progress(job_id, "3/5", progress_message, 60)
-                else:
-                    # Fallback to static messages
-                    if 'database' in message_lower:
-                        update_job_progress(job_id, "3/5", "Connecting to Snowflake and listing databases...", 60)
-                    elif 'schema' in message_lower or request.message in ['1', '2', '3']:
-                        update_job_progress(job_id, "3/5", "Querying database metadata...", 60)
-                    elif 'generate' in message_lower or request.message == '2':
-                        update_job_progress(job_id, "3/5", "Starting AI semantic analysis...", 50)
-                    else:
-                        update_job_progress(job_id, "3/5", "Processing with datamodel agent...", 50)
-                        
-            except Exception as e:
-                logger.error(f"Failed to generate dynamic progress: {e}")
+            # Determine operation type for better progress messaging
+            message_lower = request.message.lower()
+            if 'database' in message_lower:
+                update_job_progress(job_id, "3/5", "Connecting to Snowflake and listing databases...", 60)
+            elif 'schema' in message_lower or request.message in ['1', '2', '3']:
+                update_job_progress(job_id, "3/5", "Querying database metadata...", 60)
+            elif 'generate' in message_lower or request.message == '2':
+                update_job_progress(job_id, "3/5", "Starting AI semantic analysis...", 50)
+            else:
                 update_job_progress(job_id, "3/5", "Processing with datamodel agent...", 50)
             
+            logger.info(f"[JOB {job_id}] About to call datamodel_agent.chat()")
             response = await datamodel_agent.chat(request.session_id, request.message)
+            logger.info(f"[JOB {job_id}] Datamodel agent chat completed successfully")
             
             update_job_progress(job_id, "4/5", "Gathering session context...", 80)
             context = datamodel_agent.get_session_context(request.session_id)
