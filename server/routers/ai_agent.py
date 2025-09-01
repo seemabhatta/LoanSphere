@@ -177,23 +177,30 @@ async def stream_datamodel_progress(session_id: str):
             queue = _progress_streams[session_id]
             
             # Send initial connection message
-            yield f"data: {json.dumps({'type': 'connected', 'session_id': session_id, 'message': 'Progress stream connected'})}\n\n"
+            connection_msg = json.dumps({'type': 'connected', 'session_id': session_id, 'message': 'Progress stream connected'})
+            yield f"data: {connection_msg}\n\n"
+            logger.info(f"[SSE] Sent connection message for session {session_id}")
             
             while True:
                 try:
                     # Wait for progress updates with timeout
                     progress_data = await asyncio.wait_for(queue.get(), timeout=1.0)
-                    yield f"data: {json.dumps(progress_data)}\n\n"
+                    progress_msg = json.dumps(progress_data)
+                    yield f"data: {progress_msg}\n\n"
+                    logger.info(f"[SSE] Sent progress message for session {session_id}: {progress_data.get('message', 'No message')}")
                 except asyncio.TimeoutError:
                     # Send keep-alive ping
-                    yield f"data: {json.dumps({'type': 'ping', 'timestamp': asyncio.get_event_loop().time()})}\n\n"
+                    ping_msg = json.dumps({'type': 'ping', 'timestamp': asyncio.get_event_loop().time()})
+                    yield f"data: {ping_msg}\n\n"
+                    logger.debug(f"[SSE] Sent ping for session {session_id}")
                 except Exception as e:
                     logger.error(f"Error in progress stream: {e}")
                     break
                     
         except Exception as e:
-            logger.error(f"Progress stream error: {e}")
-            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+            logger.error(f"[SSE] Progress stream error: {e}")
+            error_msg = json.dumps({'type': 'error', 'message': str(e)})
+            yield f"data: {error_msg}\n\n"
         finally:
             # Clean up
             if session_id in _progress_streams:
@@ -201,11 +208,12 @@ async def stream_datamodel_progress(session_id: str):
     
     return StreamingResponse(
         generate_progress_stream(),
-        media_type="text/plain",
+        media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
-            "Content-Type": "text/event-stream",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "Cache-Control",
         }
     )
 

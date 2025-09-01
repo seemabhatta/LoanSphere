@@ -197,7 +197,10 @@ export default function AIAssistant() {
     }
 
     const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
-    const eventSource = new EventSource(`${baseUrl}/api/ai-agent/datamodel/progress/${sessionId}`);
+    const sseUrl = `${baseUrl}/api/ai-agent/datamodel/progress/${sessionId}`;
+    console.log('[SSE] Connecting to:', sseUrl);
+    
+    const eventSource = new EventSource(sseUrl);
     eventSourceRef.current = eventSource;
 
     eventSource.onopen = () => {
@@ -246,15 +249,24 @@ export default function AIAssistant() {
     eventSource.onerror = (error) => {
       console.error('[SSE] Connection error:', error);
       console.log('[SSE] ReadyState:', eventSource.readyState);
+      console.log('[SSE] Error event:', error);
       
       if (eventSource.readyState === EventSource.CLOSED) {
         console.log('[SSE] Connection was closed');
+        setTypingMessage('Progress stream disconnected');
       } else if (eventSource.readyState === EventSource.CONNECTING) {
         console.log('[SSE] Connection is reconnecting...');
+        setTypingMessage('Reconnecting to progress stream...');
+      } else {
+        console.log('[SSE] Connection in unknown state');
+        setTypingMessage('Progress stream error');
       }
       
-      eventSource.close();
-      eventSourceRef.current = null;
+      // Don't close immediately - let browser handle reconnection
+      if (eventSource.readyState === EventSource.CLOSED) {
+        eventSource.close();
+        eventSourceRef.current = null;
+      }
     };
   };
 
@@ -487,8 +499,11 @@ export default function AIAssistant() {
       setTypingMessage('Starting semantic model generation...');
       setProgressUpdates([]);
       
-      // Connect to SSE stream for real-time progress updates
+      // Connect to SSE stream BEFORE making the request to ensure we don't miss any updates
       connectToProgressStream(datamodelSessionId);
+      
+      // Add a small delay to ensure SSE connection is established
+      await new Promise(resolve => setTimeout(resolve, 500));
     } else {
       setTypingMessage('Processing your request...');
     }
