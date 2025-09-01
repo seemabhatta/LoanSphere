@@ -129,6 +129,11 @@ def generate_intelligent_semantic_model(openai_client, snowflake_connection,
             snowflake_connection, database_name, schema_name, table_names
         )
         
+        # Debug logging for data collection
+        logger.info(f"Collected intelligence data for {len(intelligence_data.get('tables', []))} tables")
+        for table in intelligence_data.get('tables', [])[:1]:  # Log first table only
+            logger.info(f"Table {table.get('name')} has {len(table.get('columns', []))} columns")
+        
         # Create detailed prompt for LLM analysis
         system_prompt = """You are an expert data analyst and semantic modeling specialist. 
 
@@ -219,6 +224,15 @@ Generate a complete semantic model with intelligent classification of all column
         # Ensure the model name is set
         if not semantic_model_dict.get('name'):
             semantic_model_dict['name'] = f"{database_name}_{schema_name}_intelligent_semantic_model"
+        
+        # Debug logging
+        logger.info(f"OpenAI response structure: {list(semantic_model_dict.keys())}")
+        if 'tables' in semantic_model_dict:
+            logger.info(f"Number of tables in response: {len(semantic_model_dict['tables'])}")
+            for i, table in enumerate(semantic_model_dict.get('tables', [])[:1]):  # Log first table only
+                logger.info(f"Table {i} keys: {list(table.keys()) if isinstance(table, dict) else 'Not a dict'}")
+        else:
+            logger.warning("No 'tables' key in OpenAI response!")
         
         # Convert to YAML
         yaml_content = yaml.dump(
