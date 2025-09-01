@@ -67,6 +67,7 @@ export default function AIAssistant() {
   const [inputValue, setInputValue] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [typingMessage, setTypingMessage] = useState('');
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [datamodelSessionId, setDatamodelSessionId] = useState<string | null>(null);
   const [connections, setConnections] = useState<SnowflakeConnection[]>([]);
@@ -117,9 +118,10 @@ export default function AIAssistant() {
   const startDatamodelSession = async (connectionId: string) => {
     try {
       setIsTyping(true);
+      setTypingMessage('Connecting to Snowflake database...');
       const result = await apiRequest('POST', '/api/ai-agent/datamodel/start', {
         connection_id: connectionId
-      });
+      }, { timeout: 45000 }); // 45 second timeout for database connections
       
       setDatamodelSessionId(result.session_id);
       
@@ -146,6 +148,7 @@ export default function AIAssistant() {
       });
     } finally {
       setIsTyping(false);
+      setTypingMessage('');
     }
   };
 
@@ -179,6 +182,7 @@ export default function AIAssistant() {
       toast({ title: 'AI Assistant Error', description: err?.message || 'Failed to contact AI service.', variant: 'destructive' });
     } finally {
       setIsTyping(false);
+      setTypingMessage('');
     }
   };
 
@@ -270,6 +274,7 @@ export default function AIAssistant() {
       setMessages(prev => [...prev, errMessage]);
     } finally {
       setIsTyping(false);
+      setTypingMessage('');
     }
   };
 
@@ -300,12 +305,13 @@ export default function AIAssistant() {
     const outgoing = inputValue;
     setInputValue('');
     setIsTyping(true);
+    setTypingMessage('Processing your request...');
 
     try {
       const result = await apiRequest('POST', '/api/ai-agent/datamodel/chat', {
         session_id: datamodelSessionId,
         message: outgoing
-      });
+      }, { timeout: 60000 }); // 60 second timeout for complex datamodel operations
 
       console.log('@datamodel agent response:', result);
 
@@ -332,6 +338,7 @@ export default function AIAssistant() {
       setMessages(prev => [...prev, errMessage]);
     } finally {
       setIsTyping(false);
+      setTypingMessage('');
     }
   };
 
@@ -570,10 +577,17 @@ export default function AIAssistant() {
                       <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-md flex items-center justify-center">
                         <Bot className="w-3 h-3 text-white" />
                       </div>
-                      <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                      <div className="flex flex-col">
+                        <div className="flex space-x-1 mb-2">
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                        </div>
+                        {typingMessage && (
+                          <div className="text-xs text-gray-500">
+                            {typingMessage}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
