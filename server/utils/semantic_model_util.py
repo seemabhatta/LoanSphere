@@ -9,29 +9,18 @@ from typing import Dict, Any, Tuple, Optional
 from datetime import datetime
 from loguru import logger
 
-try:
-    from google.protobuf.json_format import ParseDict
-    from utils.schema.semantic_model_pb2 import SemanticModel
-    PROTOBUF_AVAILABLE = True
-    
-    # Create a simple Pydantic model manually instead of using protobuf-to-pydantic
-    try:
-        from pydantic import BaseModel
-        from typing import List, Optional
-        
-        class PydanticSemanticModel(BaseModel):
-            name: str
-            tables: List[dict] = []
-            relationships: List[dict] = []
-            verified_queries: List[dict] = []
-            
-    except ImportError:
-        PydanticSemanticModel = None
-    
-except ImportError as e:
-    logger.warning(f"Protobuf dependencies not available: {e}")
-    PROTOBUF_AVAILABLE = False
-    PydanticSemanticModel = None
+from google.protobuf.json_format import ParseDict
+from utils.schema.semantic_model_pb2 import SemanticModel
+from pydantic import BaseModel
+from typing import List, Optional
+
+PROTOBUF_AVAILABLE = True
+
+class PydanticSemanticModel(BaseModel):
+    name: str
+    tables: List[dict] = []
+    relationships: List[dict] = []
+    verified_queries: List[dict] = []
 
 
 def convert_dates_to_strings(obj):
@@ -65,9 +54,6 @@ def validate_yaml_with_proto(yaml_str: str) -> Tuple[bool, Optional[str]]:
     Validates a YAML string against the SemanticModel protobuf schema.
     Returns (True, None) if valid, (False, error_message) if not.
     """
-    if not PROTOBUF_AVAILABLE:
-        return False, "Protobuf dependencies not available"
-        
     try:
         data = yaml.safe_load(yaml_str)
         data = convert_dates_to_strings(data)
@@ -88,7 +74,7 @@ def validate_semantic_model(yaml_str: str) -> Dict[str, Any]:
     try:
         is_valid, error = validate_yaml_with_proto(yaml_str)
         if is_valid:
-            return {"status": "success", "message": "YAML is valid against the semantic model schema."}
+            return {"status": "success", "message": "YAML is valid against protobuf schema."}
         else:
             return {"status": "error", "message": error}
     except Exception as e:

@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Dict, List, Any, Optional
 from loguru import logger
 from .metadata_functions import get_table_columns_with_connection, get_table_metadata_with_connection
-from utils.semantic_model_util import PydanticSemanticModel, PROTOBUF_AVAILABLE
+from utils.semantic_model_util import validate_semantic_model, PydanticSemanticModel
 
 
 def collect_table_intelligence_data(snowflake_connection, database_name: str, schema_name: str, 
@@ -111,9 +111,7 @@ def generate_intelligent_semantic_model(openai_client, snowflake_connection,
     """
     Generate intelligent semantic model using OpenAI structured output with LLM-powered analysis.
     """
-    if not PROTOBUF_AVAILABLE:
-        logger.warning("Protobuf not available, using simplified validation")
-        # Continue without protobuf validation
+    logger.info("Using protobuf-validated semantic model generation")
     
     if not openai_client:
         return {
