@@ -364,22 +364,20 @@ export default function AIAssistant() {
     setTypingMessage('Processing your request...');
     
     // Detect if this is a long-running operation that needs async processing
-    const isLongRunningOperation = outgoing.toLowerCase().includes('generate') || 
-                                  outgoing === '2' || 
-                                  outgoing.toLowerCase().includes('hmda') ||
-                                  outgoing.toLowerCase().includes('daily_revenue') ||
-                                  outgoing.toLowerCase().includes('product') ||
-                                  outgoing.toLowerCase().includes('region') ||
-                                  outgoing.toLowerCase().includes('mortgage');
+    // ANY datamodel operation can be slow due to Snowflake connection time
+    const isLongRunningOperation = agentMode === '@datamodel';
 
     let statusInterval: NodeJS.Timeout | null = null;
     let result;
 
     try {
+      console.log('isLongRunningOperation:', isLongRunningOperation);
+      console.log('agentMode:', agentMode);
+      
       if (isLongRunningOperation) {
         // Use async processing for long operations
-        console.log('Starting async datamodel chat request for:', outgoing);
-        setTypingMessage('Starting data analysis...');
+        console.log('Using ASYNC processing for:', outgoing);
+        setTypingMessage('Starting async data analysis...');
         
         // Start the async job
         const jobResponse = await apiRequest('POST', '/api/ai-agent/datamodel/chat/async', {
@@ -439,9 +437,9 @@ export default function AIAssistant() {
         }
         
       } else {
-        // Use synchronous processing for quick operations
-        console.log('Making synchronous datamodel chat request for:', outgoing);
-        setTypingMessage('Processing your request...');
+        // Use synchronous processing for quick operations  
+        console.log('Using SYNC processing for:', outgoing);
+        setTypingMessage('Processing your request synchronously...');
         
         result = await apiRequest('POST', '/api/ai-agent/datamodel/chat', {
           session_id: datamodelSessionId,
