@@ -18,10 +18,8 @@ build/
 .env.production.local
 
 # Database files
-*.db
 *.sqlite
 *.sqlite3
-loan_boarding.db
 
 # Logs
 logs/
