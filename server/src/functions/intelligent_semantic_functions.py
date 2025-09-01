@@ -138,8 +138,8 @@ def generate_intelligent_semantic_model(openai_client, snowflake_connection,
                 dynamic_message = message  # Default fallback
                 
                 try:
-                    from utils.dynamic_progress import generate_dynamic_progress
-                    import asyncio
+                    # Use fire-and-forget dynamic progress generation to avoid blocking
+                    from utils.dynamic_progress import generate_dynamic_progress_fire_and_forget
                     
                     # Extract session context for dynamic messaging
                     session_context = {
@@ -148,23 +148,28 @@ def generate_intelligent_semantic_model(openai_client, snowflake_connection,
                         "connection_id": connection_id
                     }
                     
-                    # Generate dynamic message (non-blocking with timeout)
-                    async def get_dynamic_message():
-                        return await generate_dynamic_progress(
-                            "datamodel", openai_client, session_context, 
-                            f"Processing {len(table_names)} tables", data, step
-                        )
+                    # Schedule background generation that will update the job progress when ready
+                    def _update_with_dynamic(msg: str):
+                        try:
+                            # Use the same percentage mapping as below
+                            step_percentages = {
+                                "1/5": 50, "2/5": 60, "3/5": 70, "4/5": 85, "5/5": 100
+                            }
+                            pct = step_percentages.get(step, 70)
+                            update_job_progress(current_job_id, "3/5 (AI)", msg, pct)
+                        except Exception as cb_e:
+                            logger.debug(f"Dynamic progress callback failed: {cb_e}")
                     
-                    # Try to get dynamic message with short timeout
-                    try:
-                        loop = asyncio.get_event_loop()
-                        if loop.is_running():
-                            task = asyncio.create_task(get_dynamic_message())
-                            dynamic_message = await asyncio.wait_for(task, timeout=2.0)
-                    except (asyncio.TimeoutError, Exception) as e:
-                        logger.debug(f"Dynamic progress timeout/error, using fallback: {e}")
-                        pass  # Use original message
-                        
+                    if openai_client:
+                        generate_dynamic_progress_fire_and_forget(
+                            "datamodel",
+                            openai_client,
+                            session_context,
+                            f"Processing {len(table_names)} tables",
+                            data,
+                            step,
+                            _update_with_dynamic,
+                        )
                 except ImportError:
                     logger.debug("Dynamic progress not available, using static message")
                     pass
@@ -175,6 +180,8 @@ def generate_intelligent_semantic_model(openai_client, snowflake_connection,
                 }
                 percentage = step_percentages.get(step, 70)
                 
+                # Emit an immediate progress update with the current (static) message;
+                # the dynamic callback above will overwrite it when ready.
                 update_job_progress(current_job_id, f"3/5 (AI)", dynamic_message, percentage)
             except Exception as e:
                 logger.error(f"Failed to update job progress: {e}")
