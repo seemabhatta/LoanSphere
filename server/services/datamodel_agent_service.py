@@ -987,7 +987,7 @@ Use the available tools to help users create comprehensive data dictionaries eff
             if not session:
                 raise ValueError("Session not found")
             
-            # No longer start auto-init here - SSE will trigger it
+            # No longer start auto-init here - SSE will trigger it immediately  
             # Return immediate response to prevent UI timeout
             return "🎉 Connected! I'm your Snowflake Data Dictionary Generator.\n\n💡 Setting up your workspace... I'll guide you through selecting databases, schemas, and tables to create YAML data dictionaries.\n\n⏳ Initializing connection..."
                 

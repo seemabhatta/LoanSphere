@@ -224,36 +224,64 @@ async def stream_datamodel_progress(session_id: str):
         try:
             logger.info(f"[SSE] Starting simple stream for session {session_id}")
             
-            # Send connection message
-            yield f"data: {json.dumps({'type': 'connected', 'message': 'SSE Connected'})}\n\n"
-            
-            # Get datamodel agent and start auto-init
+            # Get datamodel agent and start auto-init immediately
             datamodel_agent = get_datamodel_agent()
             
             if datamodel_agent and session_id in datamodel_agent.sessions:
                 session = datamodel_agent.sessions[session_id]
                 
-                # Start auto-init and send messages directly
+                # Start auto-init immediately - no connection message delay
                 try:
                     # Set current session for tools
                     datamodel_agent._current_session = session
                     
-                    # Step 1
-                    yield f"data: {json.dumps({'type': 'auto_init', 'message': '🔗 Connecting To Snowflake...'})}\n\n"
-                    
-                    # Step 2  
+                    # Step 1 - Show connecting message BEFORE attempting connection
                     yield f"data: {json.dumps({'type': 'auto_init', 'message': '📡 Connecting to Snowflake...'})}\n\n"
+                    
                     try:
+                        # Use executor to prevent blocking the SSE stream  
+                        from concurrent.futures import ThreadPoolExecutor
+                        
+                        loop = asyncio.get_event_loop()
+                        executor = ThreadPoolExecutor(max_workers=1)
+                        
+                        # _connect_to_snowflake() just returns a message, no blocking
                         connect_result = datamodel_agent._connect_to_snowflake()
                         
-                        # Step 3
-                        yield f"data: {json.dumps({'type': 'auto_init', 'message': '✅ Connected to Snowflake successfully!'})}\n\n"
+                        # Step 2 - Connection message (no delay here)
+                        yield f"data: {json.dumps({'type': 'auto_init', 'message': connect_result})}\n\n"
                         
-                        # Step 4
+                        # Step 3 - The REAL blocking happens in _get_databases()
                         yield f"data: {json.dumps({'type': 'auto_init', 'message': '📊 Scanning the DBs...'})}\n\n"
-                        databases_result = datamodel_agent._get_databases()
                         
-                        # Step 5 - Final result
+                        # Start the database scanning task (this is where the 71-second delay happens)
+                        db_task = loop.run_in_executor(
+                            executor,
+                            datamodel_agent._get_databases
+                        )
+                        
+                        # Send progress updates while the connection is actually being established
+                        # The actual blocking happens in session.get_snowflake_connection() called by _get_databases()
+                        progress_count = 0
+                        while not db_task.done():
+                            await asyncio.sleep(10)  # Wait 10 seconds between updates (connection takes ~61s)
+                            progress_count += 1
+                            
+                            if progress_count == 1:
+                                yield f"data: {json.dumps({'type': 'auto_init', 'message': '🔐 Authenticating with Snowflake...'})}\n\n"
+                            elif progress_count == 2:
+                                yield f"data: {json.dumps({'type': 'auto_init', 'message': '🌐 Establishing secure connection...'})}\n\n"
+                            elif progress_count == 3:
+                                yield f"data: {json.dumps({'type': 'auto_init', 'message': '⚡ Optimizing connection settings...'})}\n\n"
+                            elif progress_count == 4:
+                                yield f"data: {json.dumps({'type': 'auto_init', 'message': '🔗 Finalizing connection...'})}\n\n"
+                            elif progress_count >= 5:
+                                yield f"data: {json.dumps({'type': 'auto_init', 'message': '⏳ Almost ready...'})}\n\n"
+                        
+                        # Get the database result
+                        databases_result = await db_task
+                        
+                        # Step 4 - Final result
                         yield f"data: {json.dumps({'type': 'auto_init', 'message': databases_result})}\n\n"
                         
                     except Exception as db_error:
