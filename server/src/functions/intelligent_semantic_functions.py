@@ -247,166 +247,67 @@ Columns:
 
 Generate a complete semantic model with intelligent classification of all columns into measures, dimensions, and time dimensions. Include meaningful descriptions, synonyms, and relationships."""
 
-        # Call OpenAI with streaming and reasoning
-        logger.info("🧠 [PROGRESS] Starting OpenAI analysis - this is where the magic happens...")
-        logger.info("💭 [PROGRESS] AI is now thinking through your data structure step by step...")
-        send_progress('progress', 'Starting OpenAI analysis - this is where the magic happens...', 'Processing')
-        send_progress('progress', 'AI is now thinking through your data structure step by step...', 'Processing')
+        # Call OpenAI with structured output (no more manual JSON parsing!)
+        logger.info("🧠 [PROGRESS] Starting OpenAI structured output generation...")
+        logger.info("🎯 [PROGRESS] Using Pydantic/Protobuf schema for guaranteed valid output...")
+        send_progress('progress', 'Starting OpenAI structured output generation...', 'Processing')
+        send_progress('progress', 'Using Pydantic/Protobuf schema for guaranteed valid output...', 'Processing')
         
-        # Use streaming for real-time updates
+        # Use structured output API - no more parsing headaches!
         import os
-        model_name = os.getenv("OPENAI_MODEL", "gpt-5")
-        response_stream = openai_client.chat.completions.create(
-            model=model_name,
-            messages=[
-                {"role": "system", "content": system_prompt + "\n\nAfter showing your <thinking> process, return your final response as a valid JSON object. CRITICAL: Ensure the JSON is properly formatted with:\n- All strings in double quotes\n- No trailing commas\n- Properly escaped quotes within strings\n- Valid JSON structure: {'name': 'model_name', 'tables': [...], 'relationships': [...], 'verified_queries': [...]}"},
-                {"role": "user", "content": user_prompt}
-            ],
-            temperature=0.1,  # Lower temperature for more consistent results
-            stream=True  # Enable streaming for real-time updates
-        )
+        model_name = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
         
-        # Process streaming response and extract reasoning
-        full_response = ""
-        thinking_content = ""
-        in_thinking = False
+        # Validate model supports structured output
+        if not model_name.startswith(("gpt-4o", "gpt-5")):
+            logger.warning(f"⚠️ Model {model_name} may not support structured output, using gpt-4o-mini")
+            model_name = "gpt-4o-mini"
         
-        logger.info("📡 [PROGRESS] Receiving AI response stream...")
-        send_progress('progress', 'Receiving AI response stream...', 'Processing')
-        
-        for chunk in response_stream:
-            if chunk.choices[0].delta.content:
-                content = chunk.choices[0].delta.content
-                full_response += content
-                
-                # Extract thinking process
-                if "<thinking>" in content:
-                    in_thinking = True
-                    logger.info("🤔 [AI THINKING] AI has started reasoning process...")
-                    send_progress('progress', '🤔 AI has started reasoning process...', 'Processing')
-                elif "</thinking>" in content:
-                    in_thinking = False
-                    logger.info("✅ [AI THINKING] AI completed reasoning, generating final model...")
-                    send_progress('progress', '✅ AI completed reasoning, generating final model...', 'Processing')
-                elif in_thinking:
-                    thinking_content += content
-                    # Log interesting parts of thinking in real-time
-                    if any(keyword in content.lower() for keyword in ["analyzing", "examining", "identifying", "detecting", "creating"]):
-                        logger.info(f"💡 [AI THINKING] {content.strip()}")
-                        # Send key thinking updates to UI
-                        clean_content = content.strip()
-                        if clean_content:
-                            send_progress('progress', f'💡 AI: {clean_content}', 'Processing')
-        
-        # Log the complete thinking process
-        if thinking_content.strip():
-            logger.info("🧠 [AI REASONING] Complete thinking process:")
-            for line in thinking_content.strip().split('\n'):
-                if line.strip():
-                    logger.info(f"  💭 {line.strip()}")
-        
-        if not full_response.strip():
-            raise Exception("OpenAI response was empty")
-        
-        # Parse AI response
-        logger.info("🔍 [PROGRESS] Parsing AI-generated semantic model...")
-        send_progress('progress', 'Parsing AI-generated semantic model...', 'Parsing')
-        
-        # Parse JSON response (extract JSON from the full response)
-        import json
-        import re
+        logger.info(f"🤖 [PROGRESS] Using model: {model_name}")
+        send_progress('progress', f'Using model: {model_name}', 'Processing')
         
         try:
-            # Remove thinking tags first if present
-            json_content = full_response
-            if '</thinking>' in json_content:
-                # Extract everything after the closing thinking tag
-                json_content = json_content.split('</thinking>', 1)[-1].strip()
+            response = openai_client.responses.parse(
+                model=model_name,
+                input=[
+                    {"role": "system", "content": "You are a data dictionary generator. Generate a structured semantic model based on the provided table data. Focus on categorizing columns as dimensions, measures, or time dimensions based on their data types and business context."},
+                    {"role": "user", "content": user_prompt}
+                ],
+                text_format=PydanticSemanticModel
+            )
             
-            # Try multiple JSON extraction strategies
-            semantic_model_dict = None
+            logger.info("✅ [PROGRESS] Structured output generated successfully!")
+            send_progress('progress', 'Structured output generated successfully!', 'Processing')
             
-            # Strategy 1: Look for JSON code blocks
-            json_match = re.search(r'```json\s*(\{.*?\})\s*```', json_content, re.DOTALL)
-            if json_match:
-                try:
-                    semantic_model_dict = json.loads(json_match.group(1))
-                    logger.info("✅ Successfully parsed JSON from code block")
-                except json.JSONDecodeError:
-                    pass
-            
-            # Strategy 2: Find first complete JSON object
-            if not semantic_model_dict:
-                json_match = re.search(r'\{[^{]*?\}', json_content, re.DOTALL)
-                if json_match:
-                    try:
-                        semantic_model_dict = json.loads(json_match.group(0))
-                        logger.info("✅ Successfully parsed JSON from first object match")
-                    except json.JSONDecodeError:
-                        pass
-                        
-            # Strategy 3: Find largest JSON object (handles nested objects)
-            if not semantic_model_dict:
-                # Find all potential JSON objects by counting braces
-                start_pos = 0
-                while start_pos < len(json_content):
-                    brace_start = json_content.find('{', start_pos)
-                    if brace_start == -1:
-                        break
-                        
-                    brace_count = 0
-                    brace_end = brace_start
-                    
-                    for i in range(brace_start, len(json_content)):
-                        if json_content[i] == '{':
-                            brace_count += 1
-                        elif json_content[i] == '}':
-                            brace_count -= 1
-                            if brace_count == 0:
-                                brace_end = i
-                                break
-                    
-                    if brace_count == 0:  # Found complete JSON object
-                        candidate = json_content[brace_start:brace_end + 1]
-                        try:
-                            semantic_model_dict = json.loads(candidate)
-                            logger.info("✅ Successfully parsed JSON from brace matching")
-                            break
-                        except json.JSONDecodeError:
-                            pass
-                    
-                    start_pos = brace_start + 1
-            
-            # Strategy 4: Try to clean and fix common JSON issues
-            if not semantic_model_dict:
-                logger.warning("🔧 Attempting to fix common JSON formatting issues...")
+            # Extract structured data from response
+            semantic_model = response.output_parsed
+            if semantic_model is None:
+                logger.error("❌ [ERROR] Response output_parsed is None")
+                raise Exception("Response output_parsed is None - structured parsing failed")
                 
-                # Find the most likely JSON candidate
-                json_match = re.search(r'\{.*\}', json_content, re.DOTALL)
-                if json_match:
-                    candidate = json_match.group(0)
-                    
-                    # Common fixes
-                    # Fix trailing commas
-                    candidate = re.sub(r',(\s*[}\]])', r'\1', candidate)
-                    # Fix unescaped quotes in strings (basic attempt)
-                    candidate = re.sub(r'("description":\s*")([^"]*)"([^",}]*)"([^"]*")', r'\1\2\"\3\"\4', candidate)
-                    
-                    try:
-                        semantic_model_dict = json.loads(candidate)
-                        logger.info("✅ Successfully parsed JSON after cleanup")
-                    except json.JSONDecodeError:
-                        pass
+            # Convert Pydantic model to dictionary
+            semantic_model_dict = semantic_model.dict()
             
-            if not semantic_model_dict:
-                # Log more details for debugging
-                logger.error(f"📄 [DEBUG] Content after </thinking>: {json_content[:1000]}...")
-                raise json.JSONDecodeError("No valid JSON found in response after all strategies", json_content, 0)
-                    
-        except json.JSONDecodeError as e:
-            logger.error(f"❌ [ERROR] Failed to parse AI response as JSON: {e}")
-            logger.error(f"📄 [ERROR] Response content: {full_response[:500]}...")
-            raise Exception(f"Failed to parse AI response: {str(e)}")
+            # Validate the generated model
+            table_count = len(semantic_model_dict.get('tables', []))
+            logger.info(f"📊 [SUCCESS] Generated semantic model with {table_count} tables")
+            
+            if table_count == 0:
+                logger.warning("⚠️ [WARNING] No tables found in generated semantic model")
+            
+            # Log table details for debugging
+            for i, table in enumerate(semantic_model_dict.get('tables', [])[:3]):  # Log first 3 tables
+                table_name = table.get('name', 'Unknown')
+                dimensions = len(table.get('dimensions', []))
+                measures = len(table.get('measures', []))
+                logger.info(f"  📋 Table {i+1}: {table_name} - {dimensions} dimensions, {measures} measures")
+            
+        except Exception as structured_error:
+            logger.error(f"❌ [CRITICAL ERROR] Structured output failed: {structured_error}")
+            logger.error(f"📋 [ERROR DETAILS] Model: {model_name}, Error type: {type(structured_error)}")
+            raise Exception(f"Structured semantic model generation failed: {str(structured_error)}")
+        
+        logger.info("🔍 [PROGRESS] Processing structured semantic model...")
+        send_progress('progress', 'Processing structured semantic model...', 'Processing')
         
         # Finalize semantic model
         logger.info("🎯 [PROGRESS] Finalizing semantic model structure...")
@@ -415,6 +316,14 @@ Generate a complete semantic model with intelligent classification of all column
         # Ensure the model name is set
         if not semantic_model_dict.get('name'):
             semantic_model_dict['name'] = f"{database_name}_{schema_name}_intelligent_semantic_model"
+            logger.info(f"🏷️ [FIX] Set semantic model name: {semantic_model_dict['name']}")
+        
+        # Final validation
+        logger.info(f"🔍 [VALIDATION] Final model structure:")
+        logger.info(f"  📛 Name: {semantic_model_dict.get('name', 'NOT SET')}")
+        logger.info(f"  📊 Tables: {len(semantic_model_dict.get('tables', []))}")
+        logger.info(f"  🔗 Relationships: {len(semantic_model_dict.get('relationships', []))}")
+        logger.info(f"  ✅ Verified Queries: {len(semantic_model_dict.get('verified_queries', []))}")
         
         # Debug logging
         logger.info(f"OpenAI response structure: {list(semantic_model_dict.keys())}")
