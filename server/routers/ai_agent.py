@@ -10,15 +10,14 @@ from typing import Optional, Dict, Any, AsyncGenerator
 from loguru import logger
 import asyncio
 import json
+import time
 
 from services.ai_agent_service import get_ai_agent
 from services.datamodel_agent_service import get_datamodel_agent
 
 router = APIRouter()
 
-# Global progress tracking for sessions
-_progress_streams = {}
-_progress_buffers = {}  # Buffer messages until SSE stream connects
+# SSE streaming simplified - no global state needed
 
 # Simple Progress System
 _async_jobs = {}  # job_id -> {status, result, error, progress}
@@ -152,10 +151,7 @@ async def start_datamodel_agent(request: DataModelStartRequest):
         session_id = datamodel_agent.start_session(request.connection_id)
         connection_info = datamodel_agent.get_connection_info(request.connection_id)
         
-        # SSE temporarily disabled
-        # if session_id not in _progress_buffers:
-        #     _progress_buffers[session_id] = []
-        #     logger.info(f"[SSE] Initialized progress buffer for new session {session_id}")
+        # SSE now handled directly - no buffers needed
         
         # Get auto-initialization response like DataMind CLI
         initialization_message = await datamodel_agent.get_initialization_response(session_id)
@@ -222,148 +218,94 @@ async def chat_datamodel_agent(request: DataModelChatRequest):
 
 @router.get("/datamodel/progress/{session_id}")
 async def stream_datamodel_progress(session_id: str):
-    """Stream real-time progress updates for @datamodel operations"""
+    """Simple SSE stream - no queues, direct message sending"""
     
-    async def generate_progress_stream():
-        """Generate SSE stream for progress updates"""
-        logger.info(f"[SSE] Starting progress stream for session {session_id}")
+    async def simple_event_stream():
         try:
-            # Initialize progress stream for this session
-            if session_id not in _progress_streams:
-                _progress_streams[session_id] = asyncio.Queue()
-                logger.info(f"[SSE] Created new progress queue for session {session_id}")
-            else:
-                logger.info(f"[SSE] Using existing progress queue for session {session_id}")
+            logger.info(f"[SSE] Starting simple stream for session {session_id}")
             
-            queue = _progress_streams[session_id]
+            # Send connection message
+            yield f"data: {json.dumps({'type': 'connected', 'message': 'SSE Connected'})}\n\n"
             
-            # Process any buffered messages first
-            if session_id in _progress_buffers:
-                buffered_messages = _progress_buffers[session_id]
-                logger.info(f"[SSE] Processing {len(buffered_messages)} buffered messages for session {session_id}")
-                for buffered_msg in buffered_messages:
-                    queue.put_nowait(buffered_msg)
-                # Clear the buffer after processing
-                del _progress_buffers[session_id]
+            # Get datamodel agent and start auto-init
+            logger.info(f"[SSE] Getting datamodel agent...")
+            datamodel_agent = get_datamodel_agent()
+            logger.info(f"[SSE] Datamodel agent: {datamodel_agent}")
+            logger.info(f"[SSE] Available sessions: {list(datamodel_agent.sessions.keys()) if datamodel_agent else 'None'}")
             
-            logger.info(f"[SSE] Progress stream initialized, queue size: {queue.qsize()}")
-            
-            # Send initial connection message
-            connection_msg = json.dumps({'type': 'connected', 'session_id': session_id, 'message': 'Progress stream connected'})
-            yield f"data: {connection_msg}\n\n"
-            logger.info(f"[SSE] Sent connection message for session {session_id}")
-            
-            # Keep the stream alive indefinitely - no timeout
-            while True:
+            if datamodel_agent and session_id in datamodel_agent.sessions:
+                session = datamodel_agent.sessions[session_id]
+                
+                # Start auto-init and send messages directly
                 try:
-                    # Wait for progress updates with timeout
-                    progress_data = await asyncio.wait_for(queue.get(), timeout=30.0)  # 30 second timeout between messages
-                    progress_msg = json.dumps(progress_data)
-                    yield f"data: {progress_msg}\n\n"
-                    logger.info(f"[SSE] Sent progress message for session {session_id}: {progress_data.get('message', 'No message')}")
+                    # Set current session for tools
+                    datamodel_agent._current_session = session
+                    logger.info(f"[SSE] Session connection_id: {session.connection_id}")
+                    logger.info(f"[SSE] Session context: {session.agent_context.connection_id if session.agent_context else 'No context'}")
                     
-                    # If this is a completion message, close the stream after a delay
-                    if progress_data.get('type') == 'complete':
-                        logger.info(f"[SSE] Received completion message, will close stream in 30 seconds")
-                        await asyncio.sleep(30)  # Keep stream alive for 30 seconds after completion
-                        break
+                    # Step 1
+                    yield f"data: {json.dumps({'type': 'auto_init', 'message': '🔗 Connecting To Snowflake...'})}\n\n"
+                    
+                    # Step 2  
+                    yield f"data: {json.dumps({'type': 'auto_init', 'message': '📡 Connecting to Snowflake...'})}\n\n"
+                    logger.info(f"[SSE] About to call _connect_to_snowflake()")
+                    try:
+                        connect_result = datamodel_agent._connect_to_snowflake()
+                        logger.info(f"[SSE] _connect_to_snowflake() result: {connect_result}")
                         
-                except asyncio.TimeoutError:
-                    # Send keep-alive ping every 30 seconds
-                    ping_msg = json.dumps({'type': 'ping', 'timestamp': asyncio.get_event_loop().time()})
-                    yield f"data: {ping_msg}\n\n"
-                    # No idle counter - keep alive indefinitely
-                except Exception as e:
-                    logger.error(f"[SSE] Error in progress stream: {e}")
-                    break
-            
-            logger.info(f"[SSE] Stream for session {session_id} ended naturally")
+                        # Step 3
+                        yield f"data: {json.dumps({'type': 'auto_init', 'message': '✅ Connected to Snowflake successfully!'})}\n\n"
+                        
+                        # Step 4
+                        yield f"data: {json.dumps({'type': 'auto_init', 'message': '📊 Scanning the DBs...'})}\n\n"
+                        logger.info(f"[SSE] About to call _get_databases()")
+                        databases_result = datamodel_agent._get_databases()
+                        logger.info(f"[SSE] _get_databases() result: {databases_result}")
+                        
+                        # Step 5 - Final result
+                        yield f"data: {json.dumps({'type': 'auto_init', 'message': databases_result})}\n\n"
+                        logger.info(f"[SSE] Auto-init completed successfully")
+                        
+                    except Exception as db_error:
+                        logger.error(f"[SSE] Database operation failed: {db_error}")
+                        yield f"data: {json.dumps({'type': 'auto_init', 'message': f'⚠️ Database error: {str(db_error)}'})}\n\n"
                     
+                except Exception as e:
+                    error_msg = f"⚠️ Connection issue: {str(e)}"
+                    yield f"data: {json.dumps({'type': 'auto_init', 'message': error_msg})}\n\n"
+                finally:
+                    datamodel_agent._current_session = None
+            else:
+                yield f"data: {json.dumps({'type': 'auto_init', 'message': 'Session not found or agent unavailable'})}\n\n"
+            
+            # Keep stream alive
+            while True:
+                await asyncio.sleep(30)
+                yield f"data: {json.dumps({'type': 'keepalive', 'timestamp': time.time()})}\n\n"
+                
         except Exception as e:
-            logger.error(f"[SSE] Progress stream error: {e}")
-            error_msg = json.dumps({'type': 'error', 'message': str(e)})
-            yield f"data: {error_msg}\n\n"
-        finally:
-            # Clean up - but only if the stream was actually closed by the client
-            logger.info(f"[SSE] Stream for session {session_id} ended, cleaning up")
-            if session_id in _progress_streams:
-                del _progress_streams[session_id]
-                logger.info(f"[SSE] Cleaned up stream for session {session_id}")
-            if session_id in _progress_buffers:
-                del _progress_buffers[session_id]
-                logger.info(f"[SSE] Cleaned up buffer for session {session_id}")
+            logger.error(f"[SSE] Error in stream: {e}")
+            yield f"data: {json.dumps({'type': 'error', 'message': f'Stream error: {str(e)}'})}\n\n"
+            # Keep stream alive even after error
+            while True:
+                await asyncio.sleep(30)
+                yield f"data: {json.dumps({'type': 'keepalive', 'timestamp': time.time()})}\n\n"
     
     return StreamingResponse(
-        generate_progress_stream(),
+        simple_event_stream(),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
             "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Headers": "Cache-Control",
         }
     )
 
 
-def send_progress_update(session_id: str, progress_type: str, message: str, data: dict = None):
-    """Helper function to send progress updates to SSE stream"""
-    logger.info(f"[SSE] Attempting to send progress update for session {session_id}: {message}")
-    
-    update = {
-        'type': progress_type,
-        'message': message,
-        'timestamp': asyncio.get_event_loop().time()
-    }
-    if data:
-        update.update(data)
-    
-    if session_id in _progress_streams:
-        # Stream is active - send directly
-        try:
-            _progress_streams[session_id].put_nowait(update)
-            logger.info(f"[SSE] Successfully queued progress update for session {session_id}")
-        except Exception as e:
-            logger.error(f"[SSE] Failed to queue progress update: {e}")
-    else:
-        # Stream not yet connected - buffer the message
-        if session_id not in _progress_buffers:
-            _progress_buffers[session_id] = []
-        _progress_buffers[session_id].append(update)
-        logger.info(f"[SSE] Buffered progress update for session {session_id}. Buffer size: {len(_progress_buffers[session_id])}")
-        logger.warning(f"[SSE] No active progress stream for session: {session_id}. Available streams: {list(_progress_streams.keys())}")
+# send_progress_update function removed - using direct SSE yields now
 
 
-@router.post("/datamodel/init-progress/{session_id}")
-async def initialize_progress_stream(session_id: str):
-    """Initialize progress tracking for a session (called before SSE connection)"""
-    logger.info(f"[SSE] Pre-initializing progress tracking for session {session_id}")
-    
-    # Create buffer if it doesn't exist
-    if session_id not in _progress_buffers:
-        _progress_buffers[session_id] = []
-        logger.info(f"[SSE] Created progress buffer for session {session_id}")
-    
-    return {
-        "status": "initialized", 
-        "session_id": session_id, 
-        "buffer_ready": True
-    }
-
-
-@router.post("/datamodel/test-progress/{session_id}")
-async def test_progress_updates(session_id: str):
-    """Test endpoint to manually send progress updates"""
-    logger.info(f"[SSE TEST] Testing progress updates for session {session_id}")
-    
-    # Send a test progress update
-    send_progress_update(session_id, 'progress', 'Test progress message', {'test': True})
-    
-    return {
-        "status": "sent", 
-        "session_id": session_id, 
-        "available_streams": list(_progress_streams.keys()),
-        "buffered_sessions": list(_progress_buffers.keys())
-    }
+# Removed complex progress tracking endpoints - using simple SSE now
 
 
 @router.post("/datamodel/validate-yaml")

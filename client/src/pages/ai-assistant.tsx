@@ -170,6 +170,9 @@ export default function AIAssistant() {
       
       setMessages([initializationMessage]);
       
+      // Connect to SSE stream for auto-init progress updates
+      connectToProgressStream(result.session_id);
+      
       toast({
         title: '@datamodel Agent Started',
         description: `Connected to ${result.connection_name}`,
@@ -188,10 +191,53 @@ export default function AIAssistant() {
   };
 
   // Connect to SSE stream for progress updates
-  // SSE functionality temporarily disabled - using simple loading states instead
-  // const connectToProgressStream = (sessionId: string) => { ... }
+  const connectToProgressStream = (sessionId: string) => {
+    // Use direct backend URL for SSE to bypass proxy issues
+    const eventSourceUrl = `http://localhost:8000/api/ai-agent/datamodel/progress/${sessionId}`;
+    const eventSource = new EventSource(eventSourceUrl);
+    
+    eventSource.onopen = () => {
+      console.log('SSE connection opened for session:', sessionId);
+    };
+    
+    eventSource.onmessage = (event) => {
+      console.log('SSE message received:', event.data);
+      try {
+        const data = JSON.parse(event.data);
+        console.log('Parsed SSE data:', data);
+        if (data.type === 'auto_init' && data.message) {
+          console.log('Adding auto-init message:', data.message);
+          // Add auto-init message to chat
+          const autoInitMessage: Message = {
+            id: `${Date.now()}-auto-init`,
+            type: 'assistant',
+            content: data.message,
+            timestamp: new Date()
+          };
+          setMessages(prev => [...prev, autoInitMessage]);
+        } else {
+          console.log('Message type not auto_init or no message:', data);
+        }
+      } catch (err) {
+        console.error('Error parsing SSE message:', err, 'Raw data:', event.data);
+      }
+    };
+    
+    eventSource.onerror = (error) => {
+      console.error('SSE connection error:', error);
+      eventSource.close();
+    };
+    
+    // Store eventSource reference for cleanup
+    return eventSource;
+  };
 
-  // SSE cleanup temporarily disabled
+  // SSE cleanup when component unmounts
+  useEffect(() => {
+    return () => {
+      // Cleanup any active EventSource connections
+    };
+  }, []);
 
   // Helper to send a direct query (used by graph node clicks)
   const sendAgentQuery = async (query: string) => {

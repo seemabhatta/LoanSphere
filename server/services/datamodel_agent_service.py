@@ -67,7 +67,7 @@ class DataModelAgentSession:
         self._connection_config = None
         
         # Hybrid auto-initialization support
-        self.pending_auto_init_messages = []  # Queue of messages to deliver
+        # Auto-init messages delivered via SSE directly - no queue needed
         self.auto_init_completed = False
         
         # Create SQLite session for OpenAI Agent SDK if available
@@ -981,66 +981,21 @@ Use the available tools to help users create comprehensive data dictionaries eff
             raise
     
     async def get_initialization_response(self, session_id: str) -> str:
-        """Hybrid approach: Immediate response + background CLI-style auto-init via chat"""
+        """Return immediate response - auto-init will be triggered when SSE connects"""
         try:
             session = self.sessions.get(session_id)
             if not session:
                 raise ValueError("Session not found")
             
-            # Start CLI-style auto-initialization in background
-            asyncio.create_task(self._hybrid_auto_initialization(session_id))
-            
+            # No longer start auto-init here - SSE will trigger it
             # Return immediate response to prevent UI timeout
             return "🎉 Connected! I'm your Snowflake Data Dictionary Generator.\n\n💡 Setting up your workspace... I'll guide you through selecting databases, schemas, and tables to create YAML data dictionaries.\n\n⏳ Initializing connection..."
                 
         except Exception as e:
-            logger.error(f"Error starting hybrid auto-initialization: {e}")
+            logger.error(f"Error in initialization response: {e}")
             return f"🎉 Connected! I'm ready to help you generate YAML data dictionaries.\n\nPlease ask me to show databases to get started."
     
-    async def _hybrid_auto_initialization(self, session_id: str):
-        """Background CLI-style auto-init with immediate progressive updates"""
-        try:
-            session = self.sessions.get(session_id)
-            if not session:
-                logger.error(f"Session {session_id} not found for hybrid init")
-                return
-            
-            # Set current session for tools
-            self._current_session = session
-            
-            try:
-                logger.info(f"🔄 Running hybrid CLI-style auto-initialization for session {session_id}...")
-                
-                # Step 1: Immediate connecting message
-                session.pending_auto_init_messages.append("🔗 Connecting To Snowflake...")
-                
-                # Step 2: Actual connection - push update immediately when step starts
-                session.pending_auto_init_messages.append("📡 Connecting to Snowflake...")
-                connect_result = self._connect_to_snowflake()
-                logger.info(f"Connection result: {connect_result}")
-                
-                # Step 3: Connection complete confirmation
-                session.pending_auto_init_messages.append("✅ Connected to Snowflake successfully!")
-                
-                # Step 4: Scanning step - push immediately
-                session.pending_auto_init_messages.append("📊 Scanning the DBs...")
-                databases_result = self._get_databases()
-                logger.info(f"Databases result: {databases_result}")
-                
-                # Step 4: Show final result immediately
-                session.pending_auto_init_messages.append(databases_result)
-                session.auto_init_completed = True
-                
-                logger.info(f"✅ Progressive auto-initialization completed for session {session_id}")
-                    
-            finally:
-                self._current_session = None
-                
-        except Exception as e:
-            logger.error(f"Error in progressive auto-initialization for session {session_id}: {e}")
-            error_msg = f"⚠️ Connection issue: {str(e)}\n\nNo worries! You can still ask me to 'show databases' to get started manually."
-            session.pending_auto_init_messages.append(error_msg)
-            session.auto_init_completed = True
+    # _hybrid_auto_initialization method removed - SSE endpoint handles auto-init directly now
     
     async def _background_auto_initialization(self, session_id: str):
         """Background auto-initialization with progressive user feedback"""
@@ -1118,13 +1073,7 @@ Use the available tools to help users create comprehensive data dictionaries eff
             
             session.update_activity()
             
-            # Check for pending auto-initialization messages to deliver
-            if session.pending_auto_init_messages:
-                # Deliver the next message from the queue
-                pending_message = session.pending_auto_init_messages.pop(0)
-                
-                logger.info(f"Delivering pending auto-init message for session {session_id}: {pending_message[:50]}...")
-                return pending_message
+            # Auto-init messages now delivered via SSE - no queue needed
             
             # Set current session for function tools
             self._current_session = session
