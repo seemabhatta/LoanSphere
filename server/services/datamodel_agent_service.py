@@ -67,7 +67,7 @@ class DataModelAgentSession:
         self._connection_config = None
         
         # Hybrid auto-initialization support
-        self.pending_auto_init_message = None
+        self.pending_auto_init_messages = []  # Queue of messages to deliver
         self.auto_init_completed = False
         
         # Create SQLite session for OpenAI Agent SDK if available
@@ -998,55 +998,49 @@ Use the available tools to help users create comprehensive data dictionaries eff
             return f"🎉 Connected! I'm ready to help you generate YAML data dictionaries.\n\nPlease ask me to show databases to get started."
     
     async def _hybrid_auto_initialization(self, session_id: str):
-        """Background CLI-style auto-init that pushes updates via chat interface"""
+        """Background CLI-style auto-init with immediate progressive updates"""
         try:
             session = self.sessions.get(session_id)
             if not session:
                 logger.error(f"Session {session_id} not found for hybrid init")
                 return
             
-            # Build initialization prompt like CLI
-            initialization_prompt = "Please connect to Snowflake and guide me through selecting a database, schema, and tables to create a data dictionary"
-            
             # Set current session for tools
             self._current_session = session
             
             try:
-                if self.agent:
-                    from agents import Runner
-                    
-                    logger.info(f"🔄 Running hybrid CLI-style auto-initialization for session {session_id}...")
-                    
-                    # Run the CLI-style initialization
-                    result = await Runner.run(
-                        self.agent, 
-                        initialization_prompt,
-                        session=session.sqlite_session
-                    )
-                    
-                    response = result.final_output if hasattr(result, 'final_output') else str(result)
-                    
-                    # Store result for next chat interaction to pick up
-                    session.pending_auto_init_message = response
-                    session.auto_init_completed = True
-                    logger.info(f"[HYBRID UPDATE] Auto-initialization result stored: {response[:100]}...")
-                    
-                    logger.info(f"✅ Hybrid auto-initialization completed for session {session_id}")
-                    
-                else:
-                    # Fallback message
-                    fallback_msg = "I'm ready to help! Ask me to 'show databases' to get started with creating your YAML data dictionary."
-                    session.pending_auto_init_message = fallback_msg
-                    session.auto_init_completed = True
-                    logger.info(f"[HYBRID UPDATE] Fallback message stored: {fallback_msg}")
+                logger.info(f"🔄 Running hybrid CLI-style auto-initialization for session {session_id}...")
+                
+                # Step 1: Immediate connecting message
+                session.pending_auto_init_messages.append("🔗 Connecting To Snowflake...")
+                
+                # Step 2: Actual connection - push update immediately when step starts
+                session.pending_auto_init_messages.append("📡 Connecting to Snowflake...")
+                connect_result = self._connect_to_snowflake()
+                logger.info(f"Connection result: {connect_result}")
+                
+                # Step 3: Connection complete confirmation
+                session.pending_auto_init_messages.append("✅ Connected to Snowflake successfully!")
+                
+                # Step 4: Scanning step - push immediately
+                session.pending_auto_init_messages.append("📊 Scanning the DBs...")
+                databases_result = self._get_databases()
+                logger.info(f"Databases result: {databases_result}")
+                
+                # Step 4: Show final result immediately
+                session.pending_auto_init_messages.append(databases_result)
+                session.auto_init_completed = True
+                
+                logger.info(f"✅ Progressive auto-initialization completed for session {session_id}")
                     
             finally:
                 self._current_session = None
                 
         except Exception as e:
-            logger.error(f"Error in hybrid auto-initialization for session {session_id}: {e}")
-            error_msg = f"I encountered an issue during setup: {str(e)}\n\nNo worries! You can still ask me to 'show databases' to get started manually."
-            logger.info(f"[HYBRID UPDATE] Error message: {error_msg}")
+            logger.error(f"Error in progressive auto-initialization for session {session_id}: {e}")
+            error_msg = f"⚠️ Connection issue: {str(e)}\n\nNo worries! You can still ask me to 'show databases' to get started manually."
+            session.pending_auto_init_messages.append(error_msg)
+            session.auto_init_completed = True
     
     async def _background_auto_initialization(self, session_id: str):
         """Background auto-initialization with progressive user feedback"""
@@ -1124,13 +1118,12 @@ Use the available tools to help users create comprehensive data dictionaries eff
             
             session.update_activity()
             
-            # Check for pending auto-initialization result to deliver
-            if session.pending_auto_init_message:
-                # Deliver the pending message and clear it
-                pending_message = session.pending_auto_init_message
-                session.pending_auto_init_message = None
+            # Check for pending auto-initialization messages to deliver
+            if session.pending_auto_init_messages:
+                # Deliver the next message from the queue
+                pending_message = session.pending_auto_init_messages.pop(0)
                 
-                logger.info(f"Delivering pending auto-init message for session {session_id}")
+                logger.info(f"Delivering pending auto-init message for session {session_id}: {pending_message[:50]}...")
                 return pending_message
             
             # Set current session for function tools
