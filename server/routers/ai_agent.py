@@ -236,7 +236,7 @@ async def stream_datamodel_progress(session_id: str):
                     datamodel_agent._current_session = session
                     
                     # Step 1 - Show connecting message BEFORE attempting connection
-                    yield f"data: {json.dumps({'type': 'auto_init', 'message': '📡 Connecting to Snowflake...'})}\n\n"
+                    yield f"data: {json.dumps({'type': 'auto_init', 'message': '🔐 Authenticating with Snowflake...'})}\n\n"
                     
                     try:
                         # Use executor to prevent blocking the SSE stream  
@@ -245,14 +245,11 @@ async def stream_datamodel_progress(session_id: str):
                         loop = asyncio.get_event_loop()
                         executor = ThreadPoolExecutor(max_workers=1)
                         
-                        # _connect_to_snowflake() just returns a message, no blocking
-                        connect_result = datamodel_agent._connect_to_snowflake()
+                        # Skip the misleading "connected" message since real connection happens later
+                        # connect_result = datamodel_agent._connect_to_snowflake()
                         
-                        # Step 2 - Connection message (no delay here)
-                        yield f"data: {json.dumps({'type': 'auto_init', 'message': connect_result})}\n\n"
-                        
-                        # Step 3 - The REAL blocking happens in _get_databases()
-                        yield f"data: {json.dumps({'type': 'auto_init', 'message': '📊 Scanning the DBs...'})}\n\n"
+                        # The REAL blocking happens in _get_databases() when it calls session.get_snowflake_connection()
+                        # Don't show "Scanning DBs" yet since we're still connecting
                         
                         # Start the database scanning task (this is where the 71-second delay happens)
                         db_task = loop.run_in_executor(
@@ -268,14 +265,16 @@ async def stream_datamodel_progress(session_id: str):
                             progress_count += 1
                             
                             if progress_count == 1:
-                                yield f"data: {json.dumps({'type': 'auto_init', 'message': '🔐 Authenticating with Snowflake...'})}\n\n"
-                            elif progress_count == 2:
                                 yield f"data: {json.dumps({'type': 'auto_init', 'message': '🌐 Establishing secure connection...'})}\n\n"
-                            elif progress_count == 3:
+                            elif progress_count == 2:
                                 yield f"data: {json.dumps({'type': 'auto_init', 'message': '⚡ Optimizing connection settings...'})}\n\n"
-                            elif progress_count == 4:
+                            elif progress_count == 3:
                                 yield f"data: {json.dumps({'type': 'auto_init', 'message': '🔗 Finalizing connection...'})}\n\n"
-                            elif progress_count >= 5:
+                            elif progress_count == 4:
+                                yield f"data: {json.dumps({'type': 'auto_init', 'message': '✅ Connected to Snowflake successfully!'})}\n\n"
+                            elif progress_count == 5:
+                                yield f"data: {json.dumps({'type': 'auto_init', 'message': '📊 Scanning the databases...'})}\n\n"
+                            elif progress_count >= 6:
                                 yield f"data: {json.dumps({'type': 'auto_init', 'message': '⏳ Almost ready...'})}\n\n"
                         
                         # Get the database result

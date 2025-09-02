@@ -65,3 +65,4 @@ print(response.output_text)
 -   **Content Analysis**: Don't parse/analyze content to drive logic flows
 -   **Optimization Logic**: Don't add "efficiency" logic that bypasses LLM decision-making
 -   **Fallback Hierarchies**: Don't create multiple fallback layers (explicitly forbidden)
+-   **Artificial Delays**: Never add sleep() or artificial delays - deliver responses immediately
