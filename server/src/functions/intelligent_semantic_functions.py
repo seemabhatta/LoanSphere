@@ -140,15 +140,12 @@ def generate_intelligent_semantic_model(openai_client, snowflake_connection,
                 }
                 percentage = step_percentages.get(step, 70)
                 
-                # Send meaningful assistant logs with HIGH PRIORITY - these bypass stale queue detection!
-                priority = "high" if progress_type == "progress" else "normal"
-                
+                # Send meaningful assistant logs - simple direct updates
                 update_job_progress(
                     current_job_id, 
                     step or "3/5 (AI)", 
                     message,  # Use the original meaningful message directly
-                    percentage,
-                    priority=priority
+                    percentage
                 )
             except Exception as e:
                 logger.error(f"Failed to update job progress: {e}")

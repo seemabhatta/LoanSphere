@@ -377,7 +377,6 @@ export default function AIAssistant() {
       if (isLongRunningOperation) {
         // Use async processing for long operations
         console.log('Using ASYNC processing for:', outgoing);
-        setTypingMessage('Starting async data analysis...');
         
         // Start the async job
         const jobResponse = await apiRequest('POST', '/api/ai-agent/datamodel/chat/async', {

@@ -4,6 +4,14 @@
     -   Do **not** hardcode logic or workflows.\
     -   Always follow instruction-driven design (LLM interprets goals,
         not rigid code).
+    - no fallback code. If there is error - throw error.
+    - **No hardcoded logic patterns**:
+        - No if/else branches based on content analysis
+        - No template selection logic  
+        - No validation rule engines
+        - No pattern matching or classification logic
+    - **Single instruction principle**: One clear instruction to LLM, let AI interpret and execute
+    - **LLM-first approach**: When in doubt, ask LLM rather than code logic
 -   **Environment Setup**
     -   Always use `venv` for isolated environments.\
     -   Ensure dependencies are declared in `requirements.txt`.\
@@ -14,8 +22,8 @@
 -   **OpenAI API Usage**
     -   Always use the **Responses API** (`client.responses.create`) --
         no legacy endpoints.\
-    -   Default to `model="gpt-5"` (unless overridden).\
     -   Prefer **streaming responses** whenever supported.
+    -   Use model from `os.getenv("OPENAI_MODEL"). Donot add default value.
 -   **Code Example (Baseline)**\
 
 ``` python
@@ -29,7 +37,7 @@ load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 response = client.responses.create(
-    model="gpt-5",
+    model="gpt-4o-mini",
     input="Write a one-sentence bedtime story about a unicorn."
 )
 
@@ -46,3 +54,14 @@ print(response.output_text)
     -   Minimize assumptions; let LLM drive execution logic.\
     -   Separate orchestration from execution (agent coordinates, tools
         execute).
+    -   **Trust LLM capabilities**: Don't second-guess with additional logic layers
+    -   **Instruction clarity over code complexity**: Better prompt beats smarter code
+    -   **When tempted to add logic, add instruction instead**
+
+## Anti-Patterns to Avoid
+-   **Template Systems**: Don't create template selection based on context analysis
+-   **Rule Engines**: Don't build validation or classification rule systems  
+-   **Smart Logic**: Don't add "intelligent" if/else branches
+-   **Content Analysis**: Don't parse/analyze content to drive logic flows
+-   **Optimization Logic**: Don't add "efficiency" logic that bypasses LLM decision-making
+-   **Fallback Hierarchies**: Don't create multiple fallback layers (explicitly forbidden)

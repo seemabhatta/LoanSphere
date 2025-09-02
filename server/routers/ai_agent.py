@@ -19,127 +19,26 @@ router = APIRouter()
 _progress_streams = {}
 _progress_buffers = {}  # Buffer messages until SSE stream connects
 
-# Intelligent Progress Queue System
+# Simple Progress System
 _async_jobs = {}  # job_id -> {status, result, error, progress}
 _current_job_id = None  # Thread-local job ID for progress tracking
-_progress_queues = {}  # job_id -> {"queue": deque, "last_update": timestamp, "stale_threshold": 30}
 
-def update_job_progress(job_id: str, step: str, message: str, percentage: int, details: str = None, priority: str = "normal"):
-    """
-    Intelligent FIFO progress queue system
-    Priority: "high" = meaningful assistant logs, "normal" = regular updates, "fallback" = dynamic progress
-    """
+def update_job_progress(job_id: str, step: str, message: str, percentage: int, details: str = None):
+    """Simple direct progress updates - no complexity"""
     if job_id not in _async_jobs:
         return
         
-    from collections import deque
-    import time
-    
-    # Initialize progress queue for job if not exists
-    if job_id not in _progress_queues:
-        _progress_queues[job_id] = {
-            "queue": deque(),
-            "last_meaningful_update": time.time(),
-            "stale_threshold": 30,  # seconds before considering queue stale
-            "current_message": None,
-            "message_display_start": time.time()
-        }
-    
-    queue_info = _progress_queues[job_id]
-    current_time = time.time()
-    
-    # Add message to FIFO queue with metadata
-    progress_item = {
+    # Simple direct update - last message wins
+    _async_jobs[job_id]["progress"] = {
         "step": step,
         "message": message,
         "percentage": percentage,
         "details": details,
-        "priority": priority,
-        "timestamp": current_time,
         "updated_at": asyncio.get_event_loop().time()
     }
     
-    # All messages go to queue - HIGH priority goes to front, others to back
-    if priority == "high":
-        queue_info["queue"].appendleft(progress_item)
-        queue_info["last_meaningful_update"] = current_time
-        logger.info(f"[JOB {job_id}] HIGH PRIORITY: {step}: {message} ({percentage}%)")
-    else:
-        queue_info["queue"].append(progress_item)
-        if priority != "fallback":
-            queue_info["last_meaningful_update"] = current_time
-        logger.info(f"[JOB {job_id}] {priority.upper()}: {step}: {message} ({percentage}%)")
-    
-    # ONLY update display if no current message exists - NO instant replacements
-    current_message = queue_info.get("current_message")
-    if not current_message:
-        _display_next_message(job_id)
+    logger.info(f"[JOB {job_id}] {step}: {message} ({percentage}%)")
 
-def _display_next_message(job_id: str) -> None:
-    """Display next message from queue if available"""
-    if job_id not in _progress_queues:
-        return
-        
-    import time
-    queue_info = _progress_queues[job_id]
-    
-    # If there are queued messages, display the next one
-    if queue_info["queue"]:
-        current_time = time.time()
-        next_progress = queue_info["queue"].popleft()
-        queue_info["current_message"] = next_progress
-        queue_info["message_display_start"] = current_time
-        _async_jobs[job_id]["progress"] = next_progress
-        
-        logger.debug(f"Displaying next message for job {job_id}: {next_progress.get('message', 'N/A')}")
-
-def _should_advance_queue_message(job_id: str) -> bool:
-    """Check if current message has been displayed for 5 seconds (simple rule)"""
-    if job_id not in _progress_queues:
-        return True
-        
-    import time
-    queue_info = _progress_queues[job_id]
-    current_message = queue_info.get("current_message")
-    
-    if not current_message:
-        return True
-        
-    # Get display start time
-    display_start = queue_info.get("message_display_start", 0)
-    current_time = time.time()
-    display_duration = current_time - display_start
-    
-    # Simple rule: ALL messages display for exactly 5 seconds
-    return display_duration >= 5.0
-
-def is_progress_queue_stale(job_id: str) -> bool:
-    """Check if progress queue needs dynamic processor fallback"""
-    if job_id not in _progress_queues:
-        return True
-        
-    import time
-    queue_info = _progress_queues[job_id]
-    time_since_meaningful = time.time() - queue_info["last_meaningful_update"]
-    
-    # Stale if no meaningful updates AND queue is empty
-    return (time_since_meaningful > queue_info["stale_threshold"] and 
-            len(queue_info["queue"]) == 0)
-
-def get_queue_status(job_id: str) -> dict:
-    """Get current queue status for debugging"""
-    if job_id not in _progress_queues:
-        return {"status": "no_queue"}
-        
-    import time
-    queue_info = _progress_queues[job_id]
-    return {
-        "queue_length": len(queue_info["queue"]),
-        "last_meaningful_update": queue_info["last_meaningful_update"],
-        "time_since_meaningful": time.time() - queue_info["last_meaningful_update"],
-        "is_stale": is_progress_queue_stale(job_id),
-        "current_message": queue_info.get("current_message", {}).get("message", "None")
-    }
 
 def get_current_job_id():
     """Get the current job ID for progress tracking"""
@@ -592,9 +491,7 @@ async def get_async_job_status(job_id: str):
     
     job = _async_jobs[job_id]
     
-    # Check if we should advance to next queued message (only for running jobs)
-    if job["status"] == "running" and _should_advance_queue_message(job_id):
-        _display_next_message(job_id)
+    # Simple direct status - no queue management needed
     
     response = {
         "job_id": job_id,
@@ -604,17 +501,11 @@ async def get_async_job_status(job_id: str):
     
     if job["status"] == "completed":
         response["result"] = job["result"]
-        # Clean up completed job and its progress queue
+        # Clean up completed job
         del _async_jobs[job_id]
-        if job_id in _progress_queues:
-            del _progress_queues[job_id]
-            logger.debug(f"Cleaned up progress queue for completed job: {job_id}")
     elif job["status"] == "failed":
         response["error"] = job["error"]
-        # Clean up failed job and its progress queue  
+        # Clean up failed job
         del _async_jobs[job_id]
-        if job_id in _progress_queues:
-            del _progress_queues[job_id]
-            logger.debug(f"Cleaned up progress queue for failed job: {job_id}")
         
     return response
