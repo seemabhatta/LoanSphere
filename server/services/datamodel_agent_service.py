@@ -1014,17 +1014,17 @@ Use the available tools to help users create comprehensive data dictionaries eff
                 # Send progressive updates to user (simulated via logging for now)
                 self._send_background_update("🔗 Establishing Snowflake connection...")
                 
-                # Step 1: Connect to Snowflake (this is the slow part)
+                # Connect to Snowflake (this is the slow part)
                 connect_result = self._connect_to_snowflake()
                 logger.info(f"Background init - Connection: {connect_result}")
                 
                 self._send_background_update("📊 Discovering databases...")
                 
-                # Step 2: Get databases automatically  
+                # Get databases automatically  
                 databases_result = self._get_databases()
                 logger.info(f"Background init - Databases: {databases_result}")
                 
-                # Step 3: If only one database, auto-select it
+                # If only one database, auto-select it
                 context = session.agent_context
                 if context.databases_cache and len(context.databases_cache.get('databases', [])) == 1:
                     db_name = context.databases_cache['databases'][0]
@@ -1035,7 +1035,7 @@ Use the available tools to help users create comprehensive data dictionaries eff
                     
                     self._send_background_update("📂 Loading schemas...")
                     
-                    # Step 4: Get schemas for auto-selected database
+                    # Get schemas for auto-selected database
                     schemas_result = self._get_schemas()
                     logger.info(f"Background init - Schemas: {schemas_result}")
                     
@@ -1060,6 +1060,19 @@ Use the available tools to help users create comprehensive data dictionaries eff
         # TODO: Integrate with real-time progress system when needed
         # For now, these are logged and could be sent via SSE/polling later
     
+    def chat_sync(self, session_id: str, message: str) -> str:
+        """Synchronous version of chat for SSE executor pattern"""
+        import asyncio
+        
+        # Create new event loop for sync execution
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            result = loop.run_until_complete(self.chat(session_id, message))
+            return result
+        finally:
+            loop.close()
+            
     async def chat(self, session_id: str, message: str) -> str:
         """Handle chat message with @datamodel agent - hybrid auto-init aware"""
         try:

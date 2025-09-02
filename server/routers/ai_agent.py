@@ -216,6 +216,7 @@ async def chat_datamodel_agent(request: DataModelChatRequest):
         raise HTTPException(status_code=500, detail=f"Chat error: {str(e)}")
 
 
+
 @router.get("/datamodel/progress/{session_id}")
 async def stream_datamodel_progress(session_id: str):
     """Simple SSE stream - no queues, direct message sending"""
@@ -235,7 +236,7 @@ async def stream_datamodel_progress(session_id: str):
                     # Set current session for tools
                     datamodel_agent._current_session = session
                     
-                    # Step 1 - Show connecting message BEFORE attempting connection
+                    # Show connecting message BEFORE attempting connection
                     yield f"data: {json.dumps({'type': 'auto_init', 'message': '🔐 Authenticating with Snowflake...'})}\n\n"
                     
                     try:
@@ -280,7 +281,7 @@ async def stream_datamodel_progress(session_id: str):
                         # Get the database result
                         databases_result = await db_task
                         
-                        # Step 4 - Final result
+                        # Final result
                         yield f"data: {json.dumps({'type': 'auto_init', 'message': databases_result})}\n\n"
                         
                     except Exception as db_error:
@@ -312,6 +313,8 @@ async def stream_datamodel_progress(session_id: str):
             "Access-Control-Allow-Origin": "*",
         }
     )
+
+
 
 
 # send_progress_update function removed - using direct SSE yields now
@@ -527,7 +530,7 @@ async def start_async_datamodel_chat(request: DataModelChatRequest):
         "error": None,
         "started_at": asyncio.get_event_loop().time(),
         "progress": {
-            "step": "1/5",
+            "step": "Initializing",
             "message": "Initializing request...",
             "percentage": 0,
             "details": None
@@ -540,25 +543,55 @@ async def start_async_datamodel_chat(request: DataModelChatRequest):
             # Set the current job ID for progress tracking through the call chain
             set_current_job_id(job_id)
             
-            update_job_progress(job_id, "1/5", "Connecting to datamodel agent...", 10)
+            update_job_progress(job_id, "Initializing", "Connecting to datamodel agent...", 10)
             logger.info(f"[JOB {job_id}] Getting datamodel agent...")
             datamodel_agent = get_datamodel_agent()
             logger.info(f"[JOB {job_id}] Datamodel agent retrieved successfully: {type(datamodel_agent)}")
             
-            # Simple progress messages - meaningful logs from semantic functions will queue up
-            update_job_progress(job_id, "2/5", "Processing your request...", 30)
-            update_job_progress(job_id, "3/5", "Processing with datamodel agent...", 60)
+            # Enhanced progress messages with real-time updates
+            update_job_progress(job_id, "Processing", "🤔 Processing your request...", 30)
             
-            logger.info(f"[JOB {job_id}] About to call datamodel_agent.chat()")
-            response = await datamodel_agent.chat(request.session_id, request.message)
+            logger.info(f"[JOB {job_id}] About to call datamodel_agent.chat() with SSE support")
+            
+            # Use executor to prevent blocking - same pattern as working connection SSE
+            from concurrent.futures import ThreadPoolExecutor
+            
+            loop = asyncio.get_event_loop()
+            executor = ThreadPoolExecutor(max_workers=1)
+            
+            # Use simple executor pattern like the working initialization SSE
+            chat_task = loop.run_in_executor(
+                executor,
+                datamodel_agent.chat_sync,
+                request.session_id,
+                request.message
+            )
+            
+            # Send enhanced progress updates while waiting
+            progress_count = 0
+            update_job_progress(job_id, "Analyzing", "🧠 Analyzing your request...", 40)
+            
+            while not chat_task.done():
+                await asyncio.sleep(10)  # Wait 10 seconds between updates
+                progress_count += 1
+                
+                if progress_count == 1:
+                    update_job_progress(job_id, "", "⚡ Generating response...", 50)
+                elif progress_count == 2:
+                    update_job_progress(job_id, "", "🔄 Processing data...", 55)
+                elif progress_count >= 3:
+                    update_job_progress(job_id, "", "⏳ Almost ready...", 58)
+            
+            # Get the final result
+            response = await chat_task
             logger.info(f"[JOB {job_id}] Datamodel agent chat completed successfully")
             
             # Basic progress for step 4 - no blocking
-            update_job_progress(job_id, "4/5", "Gathering session context and results...", 80)
+            update_job_progress(job_id, "Finalizing", "Gathering session context and results...", 80)
                 
             context = datamodel_agent.get_session_context(request.session_id)
             
-            update_job_progress(job_id, "5/5", "Response completed successfully! 🎉", 95)
+            update_job_progress(job_id, "Complete", "Response completed successfully! 🎉", 95)
             result = DataModelChatResponse(
                 response=response,
                 session_id=request.session_id,
@@ -571,7 +604,7 @@ async def start_async_datamodel_chat(request: DataModelChatRequest):
                 }
             )
             
-            update_job_progress(job_id, "5/5", "Completed successfully!", 100)
+            update_job_progress(job_id, "Complete", "Completed successfully!", 100)
             _async_jobs[job_id]["status"] = "completed"
             _async_jobs[job_id]["result"] = result.dict()
             

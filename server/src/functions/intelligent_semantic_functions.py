@@ -134,16 +134,17 @@ def generate_intelligent_semantic_model(openai_client, snowflake_connection,
             try:
                 from routers.ai_agent import update_job_progress
                 
-                # Map step to percentage
+                # Map descriptive step to percentage
                 step_percentages = {
-                    "1/5": 50, "2/5": 60, "3/5": 70, "4/5": 85, "5/5": 100
+                    "Initializing": 50, "Analyzing": 55, "Preparing": 60, 
+                    "Processing": 70, "Parsing": 85, "Finalizing": 90, "Complete": 100
                 }
                 percentage = step_percentages.get(step, 70)
                 
                 # Send meaningful assistant logs - simple direct updates
                 update_job_progress(
                     current_job_id, 
-                    step or "3/5 (AI)", 
+                    step or "Processing (AI)", 
                     message,  # Use the original meaningful message directly
                     percentage
                 )
@@ -158,11 +159,11 @@ def generate_intelligent_semantic_model(openai_client, snowflake_connection,
     
     try:
         logger.info(f"🚀 [PROGRESS] Starting intelligent semantic model generation for {len(table_names)} tables")
-        send_progress('start', f'Starting intelligent semantic model generation for {len(table_names)} tables', '1/5')
+        send_progress('start', f'Starting intelligent semantic model generation for {len(table_names)} tables', 'Initializing')
         
-        # Step 1: Collect comprehensive table intelligence data
-        logger.info("📊 [PROGRESS] Step 1/5: Analyzing table structures and collecting metadata...")
-        send_progress('progress', 'Analyzing table structures and collecting metadata...', '1/5')
+        # Collect comprehensive table intelligence data
+        logger.info("📊 [PROGRESS] Analyzing table structures and collecting metadata...")
+        send_progress('progress', 'Analyzing table structures and collecting metadata...', 'Analyzing')
         
         intelligence_data = collect_table_intelligence_data(
             snowflake_connection, database_name, schema_name, table_names
@@ -172,11 +173,11 @@ def generate_intelligent_semantic_model(openai_client, snowflake_connection,
         logger.info(f"✅ [PROGRESS] Collected intelligence data for {len(intelligence_data.get('tables', []))} tables")
         for table in intelligence_data.get('tables', [])[:1]:  # Log first table only
             logger.info(f"📋 [PROGRESS] Table {table.get('name')} has {len(table.get('columns', []))} columns")
-            send_progress('progress', f'Table {table.get("name")} has {len(table.get("columns", []))} columns', '1/5')
+            send_progress('progress', f'Table {table.get("name")} has {len(table.get("columns", []))} columns', 'Analyzing')
         
-        # Step 2: Prepare AI analysis
-        logger.info("🤖 [PROGRESS] Step 2/5: Preparing AI analysis with chain-of-thought reasoning...")
-        send_progress('progress', 'Preparing AI analysis with chain-of-thought reasoning...', '2/5')
+        # Prepare AI analysis
+        logger.info("🤖 [PROGRESS] Preparing AI analysis with chain-of-thought reasoning...")
+        send_progress('progress', 'Preparing AI analysis with chain-of-thought reasoning...', 'Preparing')
         
         # Create detailed prompt for LLM analysis with reasoning chain
         system_prompt = """You are an expert data analyst and semantic modeling specialist. 
@@ -246,11 +247,11 @@ Columns:
 
 Generate a complete semantic model with intelligent classification of all columns into measures, dimensions, and time dimensions. Include meaningful descriptions, synonyms, and relationships."""
 
-        # Step 3: Call OpenAI with streaming and reasoning
-        logger.info("🧠 [PROGRESS] Step 3/5: Starting OpenAI analysis - this is where the magic happens...")
+        # Call OpenAI with streaming and reasoning
+        logger.info("🧠 [PROGRESS] Starting OpenAI analysis - this is where the magic happens...")
         logger.info("💭 [PROGRESS] AI is now thinking through your data structure step by step...")
-        send_progress('progress', 'Starting OpenAI analysis - this is where the magic happens...', '3/5')
-        send_progress('progress', 'AI is now thinking through your data structure step by step...', '3/5')
+        send_progress('progress', 'Starting OpenAI analysis - this is where the magic happens...', 'Processing')
+        send_progress('progress', 'AI is now thinking through your data structure step by step...', 'Processing')
         
         # Use streaming for real-time updates
         import os
@@ -271,7 +272,7 @@ Generate a complete semantic model with intelligent classification of all column
         in_thinking = False
         
         logger.info("📡 [PROGRESS] Receiving AI response stream...")
-        send_progress('progress', 'Receiving AI response stream...', '3/5')
+        send_progress('progress', 'Receiving AI response stream...', 'Processing')
         
         for chunk in response_stream:
             if chunk.choices[0].delta.content:
@@ -282,11 +283,11 @@ Generate a complete semantic model with intelligent classification of all column
                 if "<thinking>" in content:
                     in_thinking = True
                     logger.info("🤔 [AI THINKING] AI has started reasoning process...")
-                    send_progress('progress', '🤔 AI has started reasoning process...', '3/5')
+                    send_progress('progress', '🤔 AI has started reasoning process...', 'Processing')
                 elif "</thinking>" in content:
                     in_thinking = False
                     logger.info("✅ [AI THINKING] AI completed reasoning, generating final model...")
-                    send_progress('progress', '✅ AI completed reasoning, generating final model...', '3/5')
+                    send_progress('progress', '✅ AI completed reasoning, generating final model...', 'Processing')
                 elif in_thinking:
                     thinking_content += content
                     # Log interesting parts of thinking in real-time
@@ -295,7 +296,7 @@ Generate a complete semantic model with intelligent classification of all column
                         # Send key thinking updates to UI
                         clean_content = content.strip()
                         if clean_content:
-                            send_progress('progress', f'💡 AI: {clean_content}', '3/5')
+                            send_progress('progress', f'💡 AI: {clean_content}', 'Processing')
         
         # Log the complete thinking process
         if thinking_content.strip():
@@ -307,9 +308,9 @@ Generate a complete semantic model with intelligent classification of all column
         if not full_response.strip():
             raise Exception("OpenAI response was empty")
         
-        # Step 4: Parse AI response
-        logger.info("🔍 [PROGRESS] Step 4/5: Parsing AI-generated semantic model...")
-        send_progress('progress', 'Parsing AI-generated semantic model...', '4/5')
+        # Parse AI response
+        logger.info("🔍 [PROGRESS] Parsing AI-generated semantic model...")
+        send_progress('progress', 'Parsing AI-generated semantic model...', 'Parsing')
         
         # Parse JSON response (extract JSON from the full response)
         import json
@@ -333,9 +334,9 @@ Generate a complete semantic model with intelligent classification of all column
             logger.error(f"📄 [ERROR] Response content: {full_response[:500]}...")
             raise Exception(f"Failed to parse AI response: {str(e)}")
         
-        # Step 5: Finalize semantic model
-        logger.info("🎯 [PROGRESS] Step 5/5: Finalizing semantic model structure...")
-        send_progress('progress', 'Finalizing semantic model structure...', '5/5')
+        # Finalize semantic model
+        logger.info("🎯 [PROGRESS] Finalizing semantic model structure...")
+        send_progress('progress', 'Finalizing semantic model structure...', 'Finalizing')
         
         # Ensure the model name is set
         if not semantic_model_dict.get('name'):
@@ -373,7 +374,7 @@ Generate a complete semantic model with intelligent classification of all column
         logger.info(f"✅ [COMPLETE] Semantic model generation completed successfully for {total_tables} tables")
         
         # Send final success progress update
-        send_progress('complete', f'🎉 Generated semantic model with {total_measures} measures, {total_dimensions} dimensions, {total_time_dimensions} time dims, {total_relationships} relationships', '5/5', {
+        send_progress('complete', f'🎉 Generated semantic model with {total_measures} measures, {total_dimensions} dimensions, {total_time_dimensions} time dims, {total_relationships} relationships', 'Complete', {
             'total_tables': total_tables,
             'total_measures': total_measures,
             'total_dimensions': total_dimensions,
