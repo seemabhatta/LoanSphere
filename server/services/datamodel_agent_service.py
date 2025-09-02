@@ -720,15 +720,24 @@ Use the available tools to help users create comprehensive data dictionaries eff
             if not snowflake_connection:
                 return "❌ Failed to establish Snowflake connection. Please check your connection settings."
             
-            result = generate_intelligent_semantic_model(
-                self.openai_client,
-                snowflake_connection,
-                context.selected_tables,
-                context.current_database,
-                context.current_schema,
-                session.connection_id,
-                session.session_id  # Pass session_id for progress updates
-            )
+            try:
+                result = generate_intelligent_semantic_model(
+                    self.openai_client,
+                    snowflake_connection,
+                    context.selected_tables,
+                    context.current_database,
+                    context.current_schema,
+                    session.connection_id,
+                    session.session_id  # Pass session_id for progress updates
+                )
+            except Exception as structured_error:
+                logger.error(f"❌ [CRITICAL] Structured output generation failed: {structured_error}")
+                # Return graceful error response instead of crashing
+                return f"❌ I encountered an issue generating the data dictionary using structured output.\n\n" \
+                       f"**Error Details:** {str(structured_error)}\n\n" \
+                       f"This appears to be related to the OpenAI structured output configuration. " \
+                       f"The Pydantic schema may need adjustment for proper validation.\n\n" \
+                       f"Would you like to try again or select a different table?"
             
             if result["status"] == "success":
                 context.dictionary_content = result["yaml_dictionary"]
