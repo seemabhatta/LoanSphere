@@ -444,10 +444,16 @@ export default function AIAssistant() {
               if (data.type === 'chat_progress') {
                 setTypingMessage(data.message);
               } else if (data.type === 'chat_result') {
-                clearTimeout(timeout);
                 streamResult = data.data;
+                // Don't close yet - wait for complete signal
+              } else if (data.type === 'complete') {
+                clearTimeout(timeout);
                 eventSource.close();
-                resolve(data.data);
+                if (streamResult) {
+                  resolve(streamResult);
+                } else {
+                  reject(new Error('No result received before completion'));
+                }
               } else if (data.type === 'error') {
                 clearTimeout(timeout);
                 eventSource.close();

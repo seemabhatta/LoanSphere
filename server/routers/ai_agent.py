@@ -583,12 +583,21 @@ async def stream_datamodel_chat(session_id: str, message: str):
                 
                 # Final result
                 yield f"data: {json.dumps({'type': 'chat_result', 'data': result})}\n\n"
+                
+                # Send completion signal and close stream properly
+                yield f"data: {json.dumps({'type': 'complete'})}\n\n"
+                return
+                
             else:
                 yield f"data: {json.dumps({'type': 'error', 'message': 'Session not found or agent unavailable'})}\n\n"
+                yield f"data: {json.dumps({'type': 'complete'})}\n\n"
+                return
         
         except Exception as e:
             logger.error(f"[SSE] Error in chat stream: {e}")
             yield f"data: {json.dumps({'type': 'error', 'message': f'Sorry, I could not process your request right now. Error: Connection error during streaming'})}\n\n"
+            yield f"data: {json.dumps({'type': 'complete'})}\n\n"
+            return
     
     return StreamingResponse(
         chat_event_stream(),
