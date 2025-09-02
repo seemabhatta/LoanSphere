@@ -416,62 +416,65 @@ export default function AIAssistant() {
       console.log('agentMode:', agentMode);
       
       if (isLongRunningOperation) {
-        // Use async processing for long operations
-        console.log('Using ASYNC processing for:', outgoing);
+        // Use SSE streaming for @datamodel operations
+        console.log('Using SSE streaming for:', outgoing);
         
-        // Start the async job
-        const jobResponse = await apiRequest('POST', '/api/ai-agent/datamodel/chat/async', {
-          session_id: datamodelSessionId,
-          message: outgoing
-        }, { timeout: 30000 }); // Short timeout for job start
+        const eventSource = new EventSource(
+          `/api/ai-agent/datamodel/chat/stream/${datamodelSessionId}?message=${encodeURIComponent(outgoing)}`
+        );
         
-        const jobId = jobResponse.job_id;
-        console.log('Started async job:', jobId);
-        
-        // Real-time progress will update the message, no need for generic status messages
-        // statusInterval is kept for compatibility but won't override real progress
-        
-        // Poll for completion with real-time progress
-        let attempts = 0;
-        const maxAttempts = 60; // 5 minutes max (5 second intervals)
-        
-        while (attempts < maxAttempts) {
-          await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
-          attempts++;
+        let streamResult: any = null;
+        const streamPromise = new Promise((resolve, reject) => {
+          // Set a timeout to prevent infinite waiting
+          const timeout = setTimeout(() => {
+            console.warn('SSE stream timeout after 5 minutes');
+            eventSource.close();
+            if (streamResult) {
+              resolve(streamResult);
+            } else {
+              reject(new Error('Request timed out. Please try again.'));
+            }
+          }, 300000); // 5 minutes
           
-          try {
-            const statusResponse = await apiRequest('GET', `/api/ai-agent/datamodel/job/${jobId}`, null, { timeout: 10000 });
-            console.log('Job status:', statusResponse.status, 'Progress:', statusResponse.progress);
-            
-            // Update UI with real-time progress
-            if (statusResponse.progress) {
-              const progress = statusResponse.progress;
-              let progressMessage = `${progress.step} - ${progress.message}`;
-              if (progress.percentage) {
-                progressMessage += ` (${progress.percentage}%)`;
+          eventSource.onmessage = (event) => {
+            try {
+              const data = JSON.parse(event.data);
+              console.log('SSE message received:', data);
+              
+              if (data.type === 'chat_progress') {
+                setTypingMessage(data.message);
+              } else if (data.type === 'chat_result') {
+                clearTimeout(timeout);
+                streamResult = data.data;
+                eventSource.close();
+                resolve(data.data);
+              } else if (data.type === 'error') {
+                clearTimeout(timeout);
+                eventSource.close();
+                reject(new Error(data.message));
               }
-              if (progress.details) {
-                progressMessage += ` - ${progress.details}`;
-              }
-              setTypingMessage(progressMessage);
+            } catch (parseError) {
+              console.error('Error parsing SSE message:', parseError);
             }
+          };
+          
+          eventSource.onerror = (error) => {
+            console.error('SSE error:', error);
+            clearTimeout(timeout);
+            eventSource.close();
             
-            if (statusResponse.status === 'completed') {
-              result = statusResponse.result;
-              break;
-            } else if (statusResponse.status === 'failed') {
-              throw new Error(statusResponse.error || 'Async job failed');
+            // Check if we received any result before the error
+            if (streamResult) {
+              console.log('SSE connection closed but result was received, proceeding...');
+              resolve(streamResult);
+            } else {
+              // Only reject if no result was received
+              reject(new Error('Connection error during streaming'));
             }
-            // Continue polling if still processing
-          } catch (pollError) {
-            console.error('Error polling job status:', pollError);
-            // Continue trying for a bit longer
-          }
-        }
+          };
+        });
         
-        if (!result) {
-          throw new Error('Operation timed out after 5 minutes');
-        }
+        result = await streamPromise;
         
       } else {
         // Use synchronous processing for quick operations  

@@ -66,3 +66,21 @@ print(response.output_text)
 -   **Optimization Logic**: Don't add "efficiency" logic that bypasses LLM decision-making
 -   **Fallback Hierarchies**: Don't create multiple fallback layers (explicitly forbidden)
 -   **Artificial Delays**: Never add sleep() or artificial delays - deliver responses immediately
+
+## Development Best Practices
+
+### **Always Verify the Correct Endpoint**
+**CRITICAL**: Before implementing any fix, always verify which endpoint the frontend is actually using.
+
+**Common Mistake**: Modifying one endpoint while the frontend uses a different one.
+- **Example**: Fixing `/datamodel/chat` when frontend uses `/datamodel/chat/async`
+- **Result**: Perfect implementation that does nothing because it's not the code path being executed
+
+**Verification Steps**:
+1. Check frontend network calls (browser dev tools)
+2. Search codebase for multiple similar endpoints
+3. Verify the exact URL path being called
+4. Test with the actual endpoint before implementing
+5. **Double check, triple check** - as the user reminds you!
+
+**Remember**: A perfect solution for the wrong problem is worthless. Always identify the correct code path first.

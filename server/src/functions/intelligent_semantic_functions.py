@@ -259,7 +259,7 @@ Generate a complete semantic model with intelligent classification of all column
         response_stream = openai_client.chat.completions.create(
             model=model_name,
             messages=[
-                {"role": "system", "content": system_prompt + "\n\nAfter showing your <thinking> process, return your final response as a valid JSON object with the structure: {'name': 'model_name', 'tables': [...], 'relationships': [...], 'verified_queries': [...]}"},
+                {"role": "system", "content": system_prompt + "\n\nAfter showing your <thinking> process, return your final response as a valid JSON object. CRITICAL: Ensure the JSON is properly formatted with:\n- All strings in double quotes\n- No trailing commas\n- Properly escaped quotes within strings\n- Valid JSON structure: {'name': 'model_name', 'tables': [...], 'relationships': [...], 'verified_queries': [...]}"},
                 {"role": "user", "content": user_prompt}
             ],
             temperature=0.1,  # Lower temperature for more consistent results
@@ -317,17 +317,91 @@ Generate a complete semantic model with intelligent classification of all column
         import re
         
         try:
-            # First try to find JSON in the response
-            json_match = re.search(r'\{.*\}', full_response, re.DOTALL)
+            # Remove thinking tags first if present
+            json_content = full_response
+            if '</thinking>' in json_content:
+                # Extract everything after the closing thinking tag
+                json_content = json_content.split('</thinking>', 1)[-1].strip()
+            
+            # Try multiple JSON extraction strategies
+            semantic_model_dict = None
+            
+            # Strategy 1: Look for JSON code blocks
+            json_match = re.search(r'```json\s*(\{.*?\})\s*```', json_content, re.DOTALL)
             if json_match:
-                semantic_model_dict = json.loads(json_match.group(0))
-            else:
-                # Fallback: try to extract JSON from markdown code blocks
-                json_match = re.search(r'```json\s*(\{.*?\})\s*```', full_response, re.DOTALL)
-                if json_match:
+                try:
                     semantic_model_dict = json.loads(json_match.group(1))
-                else:
-                    raise json.JSONDecodeError("No JSON found in response", full_response, 0)
+                    logger.info("✅ Successfully parsed JSON from code block")
+                except json.JSONDecodeError:
+                    pass
+            
+            # Strategy 2: Find first complete JSON object
+            if not semantic_model_dict:
+                json_match = re.search(r'\{[^{]*?\}', json_content, re.DOTALL)
+                if json_match:
+                    try:
+                        semantic_model_dict = json.loads(json_match.group(0))
+                        logger.info("✅ Successfully parsed JSON from first object match")
+                    except json.JSONDecodeError:
+                        pass
+                        
+            # Strategy 3: Find largest JSON object (handles nested objects)
+            if not semantic_model_dict:
+                # Find all potential JSON objects by counting braces
+                start_pos = 0
+                while start_pos < len(json_content):
+                    brace_start = json_content.find('{', start_pos)
+                    if brace_start == -1:
+                        break
+                        
+                    brace_count = 0
+                    brace_end = brace_start
+                    
+                    for i in range(brace_start, len(json_content)):
+                        if json_content[i] == '{':
+                            brace_count += 1
+                        elif json_content[i] == '}':
+                            brace_count -= 1
+                            if brace_count == 0:
+                                brace_end = i
+                                break
+                    
+                    if brace_count == 0:  # Found complete JSON object
+                        candidate = json_content[brace_start:brace_end + 1]
+                        try:
+                            semantic_model_dict = json.loads(candidate)
+                            logger.info("✅ Successfully parsed JSON from brace matching")
+                            break
+                        except json.JSONDecodeError:
+                            pass
+                    
+                    start_pos = brace_start + 1
+            
+            # Strategy 4: Try to clean and fix common JSON issues
+            if not semantic_model_dict:
+                logger.warning("🔧 Attempting to fix common JSON formatting issues...")
+                
+                # Find the most likely JSON candidate
+                json_match = re.search(r'\{.*\}', json_content, re.DOTALL)
+                if json_match:
+                    candidate = json_match.group(0)
+                    
+                    # Common fixes
+                    # Fix trailing commas
+                    candidate = re.sub(r',(\s*[}\]])', r'\1', candidate)
+                    # Fix unescaped quotes in strings (basic attempt)
+                    candidate = re.sub(r'("description":\s*")([^"]*)"([^",}]*)"([^"]*")', r'\1\2\"\3\"\4', candidate)
+                    
+                    try:
+                        semantic_model_dict = json.loads(candidate)
+                        logger.info("✅ Successfully parsed JSON after cleanup")
+                    except json.JSONDecodeError:
+                        pass
+            
+            if not semantic_model_dict:
+                # Log more details for debugging
+                logger.error(f"📄 [DEBUG] Content after </thinking>: {json_content[:1000]}...")
+                raise json.JSONDecodeError("No valid JSON found in response after all strategies", json_content, 0)
                     
         except json.JSONDecodeError as e:
             logger.error(f"❌ [ERROR] Failed to parse AI response as JSON: {e}")

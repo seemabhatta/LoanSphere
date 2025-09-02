@@ -19,36 +19,6 @@ router = APIRouter()
 
 # SSE streaming simplified - no global state needed
 
-# Simple Progress System
-_async_jobs = {}  # job_id -> {status, result, error, progress}
-_current_job_id = None  # Thread-local job ID for progress tracking
-
-def update_job_progress(job_id: str, step: str, message: str, percentage: int, details: str = None):
-    """Simple direct progress updates - no complexity"""
-    if job_id not in _async_jobs:
-        return
-        
-    # Simple direct update - last message wins
-    _async_jobs[job_id]["progress"] = {
-        "step": step,
-        "message": message,
-        "percentage": percentage,
-        "details": details,
-        "updated_at": asyncio.get_event_loop().time()
-    }
-    
-    logger.info(f"[JOB {job_id}] {step}: {message} ({percentage}%)")
-
-
-def get_current_job_id():
-    """Get the current job ID for progress tracking"""
-    return _current_job_id
-
-def set_current_job_id(job_id: str):
-    """Set the current job ID for progress tracking"""
-    global _current_job_id
-    _current_job_id = job_id
-
 
 class ChatMessage(BaseModel):
     message: str
@@ -516,135 +486,116 @@ async def delete_datamodel_session(session_id: str):
         raise HTTPException(status_code=500, detail=f"Delete error: {str(e)}")
 
 
-# Async job processing endpoints
-@router.post("/datamodel/chat/async")
-async def start_async_datamodel_chat(request: DataModelChatRequest):
-    """Start async chat processing and return job ID"""
-    import asyncio
-    import uuid
+# SSE Chat endpoint using same pattern as initialization
+@router.get("/datamodel/chat/stream/{session_id}")
+async def stream_datamodel_chat(session_id: str, message: str):
+    """Simple SSE stream for chat - same pattern as initialization"""
     
-    job_id = str(uuid.uuid4())
-    _async_jobs[job_id] = {
-        "status": "processing",
-        "result": None,
-        "error": None,
-        "started_at": asyncio.get_event_loop().time(),
-        "progress": {
-            "step": "Initializing",
-            "message": "Initializing request...",
-            "percentage": 0,
-            "details": None
-        }
-    }
-    
-    # Start background task
-    async def process_chat():
+    async def chat_event_stream():
         try:
-            # Set the current job ID for progress tracking through the call chain
-            set_current_job_id(job_id)
+            logger.info(f"[SSE] Starting chat stream for session {session_id}")
             
-            update_job_progress(job_id, "Initializing", "Connecting to datamodel agent...", 10)
-            logger.info(f"[JOB {job_id}] Getting datamodel agent...")
             datamodel_agent = get_datamodel_agent()
-            logger.info(f"[JOB {job_id}] Datamodel agent retrieved successfully: {type(datamodel_agent)}")
             
-            # Enhanced progress messages with real-time updates
-            update_job_progress(job_id, "Processing", "🤔 Processing your request...", 30)
-            
-            logger.info(f"[JOB {job_id}] About to call datamodel_agent.chat() with SSE support")
-            
-            # Use executor to prevent blocking - same pattern as working connection SSE
-            from concurrent.futures import ThreadPoolExecutor
-            
-            loop = asyncio.get_event_loop()
-            executor = ThreadPoolExecutor(max_workers=1)
-            
-            # Use simple executor pattern like the working initialization SSE
-            chat_task = loop.run_in_executor(
-                executor,
-                datamodel_agent.chat_sync,
-                request.session_id,
-                request.message
-            )
-            
-            # Send enhanced progress updates while waiting
-            progress_count = 0
-            update_job_progress(job_id, "Analyzing", "🧠 Analyzing your request...", 40)
-            
-            while not chat_task.done():
-                await asyncio.sleep(10)  # Wait 10 seconds between updates
-                progress_count += 1
+            if datamodel_agent and session_id in datamodel_agent.sessions:
+                # Validate session is ready for chat
+                try:
+                    session = datamodel_agent.sessions[session_id]
+                    if session.is_expired():
+                        yield f"data: {json.dumps({'type': 'error', 'message': 'Session expired. Please refresh and try again.'})}\n\n"
+                        return
+                except Exception as session_error:
+                    logger.error(f"[SSE] Session validation error: {session_error}")
+                    yield f"data: {json.dumps({'type': 'error', 'message': 'Session error. Please refresh and try again.'})}\n\n"
+                    return
                 
-                if progress_count == 1:
-                    update_job_progress(job_id, "", "⚡ Generating response...", 50)
-                elif progress_count == 2:
-                    update_job_progress(job_id, "", "🔄 Processing data...", 55)
-                elif progress_count >= 3:
-                    update_job_progress(job_id, "", "⏳ Almost ready...", 58)
-            
-            # Get the final result
-            response = await chat_task
-            logger.info(f"[JOB {job_id}] Datamodel agent chat completed successfully")
-            
-            # Basic progress for step 4 - no blocking
-            update_job_progress(job_id, "Finalizing", "Gathering session context and results...", 80)
+                # Same ThreadPoolExecutor pattern as initialization
+                from concurrent.futures import ThreadPoolExecutor
+                import concurrent.futures
                 
-            context = datamodel_agent.get_session_context(request.session_id)
-            
-            update_job_progress(job_id, "Complete", "Response completed successfully! 🎉", 95)
-            result = DataModelChatResponse(
-                response=response,
-                session_id=request.session_id,
-                context={
-                    "connection_id": context.connection_id,
-                    "current_database": context.current_database,
-                    "current_schema": context.current_schema,
-                    "selected_tables": context.selected_tables,
-                    "yaml_ready": bool(context.dictionary_content)
+                loop = asyncio.get_event_loop()
+                executor = ThreadPoolExecutor(max_workers=1)
+                
+                try:
+                    # Start chat task with timeout protection
+                    chat_task = loop.run_in_executor(
+                        executor,
+                        datamodel_agent.chat_sync,
+                        session_id,
+                        message
+                    )
+                    
+                    # Progress updates while waiting (same pattern as init)
+                    progress_count = 0
+                    yield f"data: {json.dumps({'type': 'chat_progress', 'message': '🤔 Processing your request...'})}\n\n"
+                    
+                    # Add timeout protection - max 300 seconds (5 minutes)
+                    timeout_count = 0
+                    max_timeout = 30  # 30 * 10 seconds = 5 minutes
+                    
+                    while not chat_task.done():
+                        await asyncio.sleep(10)
+                        progress_count += 1
+                        timeout_count += 1
+                        
+                        if timeout_count >= max_timeout:
+                            logger.error(f"[SSE] Chat task timeout for session {session_id}")
+                            chat_task.cancel()
+                            yield f"data: {json.dumps({'type': 'error', 'message': 'Request timed out. Please try again with a simpler query.'})}\n\n"
+                            return
+                        
+                        if progress_count == 1:
+                            yield f"data: {json.dumps({'type': 'chat_progress', 'message': '🧠 Analyzing your request...'})}\n\n"
+                        elif progress_count == 2:
+                            yield f"data: {json.dumps({'type': 'chat_progress', 'message': '⚡ Generating response...'})}\n\n"
+                        elif progress_count == 3:
+                            yield f"data: {json.dumps({'type': 'chat_progress', 'message': '🔄 Processing data...'})}\n\n"
+                        elif progress_count >= 4:
+                            yield f"data: {json.dumps({'type': 'chat_progress', 'message': '⏳ Almost ready...'})}\n\n"
+                    
+                    # Get result with error handling
+                    try:
+                        response = await chat_task
+                        context = datamodel_agent.get_session_context(session_id)
+                    except Exception as task_error:
+                        logger.error(f"[SSE] Error in chat task execution: {task_error}")
+                        logger.error(f"[SSE] Session: {session_id}, Message: {message[:100]}...")
+                        logger.error(f"[SSE] Task error type: {type(task_error)}")
+                        yield f"data: {json.dumps({'type': 'error', 'message': 'Sorry, I could not process your request right now. Error: Connection error during streaming'})}\n\n"
+                        return
+                        
+                finally:
+                    # Ensure executor is properly shutdown
+                    executor.shutdown(wait=False)
+                
+                # Prepare final result in same format as original chat endpoint
+                result = {
+                    "response": response,
+                    "session_id": session_id,
+                    "context": {
+                        "connection_id": context.connection_id,
+                        "current_database": context.current_database,
+                        "current_schema": context.current_schema,
+                        "selected_tables": context.selected_tables,
+                        "yaml_ready": bool(context.dictionary_content)
+                    }
                 }
-            )
-            
-            update_job_progress(job_id, "Complete", "Completed successfully!", 100)
-            _async_jobs[job_id]["status"] = "completed"
-            _async_jobs[job_id]["result"] = result.dict()
-            
-        except Exception as e:
-            logger.error(f"Error in async @datamodel chat: {e}")
-            _async_jobs[job_id]["status"] = "failed"
-            _async_jobs[job_id]["error"] = str(e)
-        finally:
-            # Clear the job ID when done
-            set_current_job_id(None)
-    
-    # Start the background task
-    asyncio.create_task(process_chat())
-    
-    return {"job_id": job_id, "status": "processing"}
-
-
-@router.get("/datamodel/job/{job_id}")
-async def get_async_job_status(job_id: str):
-    """Get status and result of async job"""
-    if job_id not in _async_jobs:
-        raise HTTPException(status_code=404, detail="Job not found")
-    
-    job = _async_jobs[job_id]
-    
-    # Simple direct status - no queue management needed
-    
-    response = {
-        "job_id": job_id,
-        "status": job["status"],
-        "progress": job.get("progress", {})
-    }
-    
-    if job["status"] == "completed":
-        response["result"] = job["result"]
-        # Clean up completed job
-        del _async_jobs[job_id]
-    elif job["status"] == "failed":
-        response["error"] = job["error"]
-        # Clean up failed job
-        del _async_jobs[job_id]
+                
+                # Final result
+                yield f"data: {json.dumps({'type': 'chat_result', 'data': result})}\n\n"
+            else:
+                yield f"data: {json.dumps({'type': 'error', 'message': 'Session not found or agent unavailable'})}\n\n"
         
-    return response
+        except Exception as e:
+            logger.error(f"[SSE] Error in chat stream: {e}")
+            yield f"data: {json.dumps({'type': 'error', 'message': f'Sorry, I could not process your request right now. Error: Connection error during streaming'})}\n\n"
+    
+    return StreamingResponse(
+        chat_event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive", 
+            "Access-Control-Allow-Origin": "*",
+        }
+    )

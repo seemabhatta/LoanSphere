@@ -1064,14 +1064,30 @@ Use the available tools to help users create comprehensive data dictionaries eff
         """Synchronous version of chat for SSE executor pattern"""
         import asyncio
         
+        # Try to get existing loop first
+        try:
+            loop = asyncio.get_running_loop()
+            # If we're already in a loop, we can't use run_until_complete
+            # This shouldn't happen in ThreadPoolExecutor context, but handle gracefully
+            logger.warning(f"[chat_sync] Already in event loop for session {session_id}")
+            raise RuntimeError("Cannot run sync method in existing event loop")
+        except RuntimeError:
+            # No running loop, create new one (normal case for ThreadPoolExecutor)
+            pass
+            
         # Create new event loop for sync execution
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
             result = loop.run_until_complete(self.chat(session_id, message))
             return result
+        except Exception as e:
+            logger.error(f"[chat_sync] Error executing chat for session {session_id}: {e}")
+            raise
         finally:
             loop.close()
+            # Reset to no event loop
+            asyncio.set_event_loop(None)
             
     async def chat(self, session_id: str, message: str) -> str:
         """Handle chat message with @datamodel agent - hybrid auto-init aware"""
