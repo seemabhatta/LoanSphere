@@ -85,10 +85,14 @@ def save_dictionary_to_stage(connection_id: str, stage_name: str, filename: str,
     try:
         config = get_snowflake_connection(connection_id)
         
-        # Create temporary file with YAML content
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as temp_file:
+        # Create a temporary directory and write a file with the exact desired filename
+        tmp_dir = tempfile.mkdtemp(prefix="yaml_stage_")
+        # Normalize extension to .yaml
+        if filename.lower().endswith('.yml'):
+            filename = filename[:-4] + '.yaml'
+        file_path = os.path.join(tmp_dir, filename)
+        with open(file_path, 'w', encoding='utf-8') as temp_file:
             temp_file.write(yaml_content)
-            temp_file_path = temp_file.name
         
         try:
             # Connect to Snowflake
@@ -96,8 +100,9 @@ def save_dictionary_to_stage(connection_id: str, stage_name: str, filename: str,
             cursor = conn.cursor()
             
             try:
-                # Upload file to stage
-                put_sql = f"PUT file://{temp_file_path} {stage_name}/{filename}"
+                # Upload file to stage without auto-compression so the name remains as provided
+                # Note: Snowflake PUT uses the source file name; the target path must be a stage (or stage folder) only.
+                put_sql = f"PUT file://{file_path} {stage_name} AUTO_COMPRESS=FALSE OVERWRITE=TRUE"
                 cursor.execute(put_sql)
                 
                 return {
@@ -110,8 +115,14 @@ def save_dictionary_to_stage(connection_id: str, stage_name: str, filename: str,
                 conn.close()
                 
         finally:
-            # Clean up temporary file
-            os.unlink(temp_file_path)
+            # Clean up temporary file and directory
+            try:
+                os.unlink(file_path)
+            finally:
+                try:
+                    os.rmdir(tmp_dir)
+                except Exception:
+                    pass
             
     except Exception as e:
         logger.error(f"Error saving to stage: {e}")

@@ -195,6 +195,7 @@ class DataModelAgent:
             model_name = os.getenv("OPENAI_MODEL", "gpt-5")
             logger.info(f"Initializing @datamodel Agent with model: {model_name}")
             
+            #Agent initialization
             self.agent = Agent(
                 name="DataModelAgent",
                 model=model_name,
@@ -229,9 +230,9 @@ You are a Snowflake Data Dictionary Generator Assistant that helps users create 
 
 Your capabilities:
 1. Connect to Snowflake databases
-2. Browse database structures (databases, schemas, tables, stages)
+2. Browse database structures (databases, schemas, tables)
 3. Select tables for dictionary generation
-4. Generate AI-powered intelligent semantic models with LLM analysis
+4. Generate comprehensive YAML data dictionaries
 5. Save dictionaries to local files
 6. Upload dictionaries to Snowflake stages
 
@@ -306,10 +307,6 @@ EFFICIENCY RULES:
 
 Dictionary Generation Guidelines:
 - Always show progress when generating dictionaries
-- All dictionary generation uses AI-powered intelligent semantic modeling with LLM analysis
-- Semantic models use GPT intelligence for superior column classification, business-friendly descriptions, and automatic relationship detection
-- Models include measures (numeric metrics), dimensions (categorical data), time dimensions, and relationships
-- Generated with structured output validation to ensure schema compliance
 - Provide clear feedback on what tables are being processed
 - Offer to save locally and upload to stage
 - Show preview of generated content when helpful
@@ -385,6 +382,25 @@ Use the available tools to help users create comprehensive data dictionaries eff
         def show_dictionary_preview() -> str:
             """Show a preview of the generated dictionary"""
             return self._show_dictionary_preview()
+
+        @function_tool
+        def ingest_yaml_dictionary(yaml_text: str) -> str:
+            """Validate and ingest user-provided YAML into the current session for staging"""
+            session = self._get_current_session()
+            if not session:
+                return "❌ No active session"
+            if not yaml_text or not isinstance(yaml_text, str):
+                return "❌ No YAML content provided"
+            try:
+                import yaml
+                parsed = yaml.safe_load(yaml_text)
+                if not isinstance(parsed, dict):
+                    return "❌ YAML must be a mapping at the top level"
+                # Save into session context for subsequent tools (e.g., upload_to_stage)
+                session.agent_context.dictionary_content = yaml_text
+                return "✅ YAML ingested successfully. You can now call upload_to_stage('YAML_STAGE', '<filename>.yaml')."
+            except Exception as e:
+                return f"❌ Invalid YAML content: {str(e)}"
         
         return [
             connect_to_snowflake,
@@ -399,7 +415,8 @@ Use the available tools to help users create comprehensive data dictionaries eff
             save_dictionary,
             upload_to_stage,
             get_current_context,
-            show_dictionary_preview
+            show_dictionary_preview,
+            ingest_yaml_dictionary
         ]
     
     # Function tools - these wrap DataMind implementations
@@ -756,6 +773,14 @@ Use the available tools to help users create comprehensive data dictionaries eff
         if not context.dictionary_content:
             return "❌ No dictionary content available. Please generate a dictionary first."
         
+        # Validate YAML content before attempting upload (agentic safety net)
+        try:
+            is_valid, error_msg = self._validate_yaml_before_upload(context.dictionary_content)
+            if not is_valid:
+                return error_msg
+        except Exception as e:
+            return f"❌ Validation error: {str(e)}"
+
         if not context.current_database or not context.current_schema:
             return "❌ Database and schema must be selected first."
         

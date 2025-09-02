@@ -3,6 +3,7 @@ AI Agent Router for LoanSphere
 Provides chat endpoint for conversational AI interface to query loan data
 """
 from fastapi import APIRouter, HTTPException
+from fastapi import UploadFile, File
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional, Dict, Any, AsyncGenerator
@@ -343,6 +344,137 @@ async def test_progress_updates(session_id: str):
         "available_streams": list(_progress_streams.keys()),
         "buffered_sessions": list(_progress_buffers.keys())
     }
+
+
+@router.post("/datamodel/validate-yaml")
+async def validate_uploaded_yaml(file: UploadFile = File(...)):
+    """Validate that an uploaded file is YAML by content, not just extension.
+    - Rejects gzipped or binary files.
+    - Ensures UTF-8 decodable text and YAML parses successfully.
+    - Optionally checks expected dictionary-like structure.
+    """
+    import yaml
+
+    # Basic filename and content-type hints (non-authoritative)
+    filename = file.filename or "uploaded"
+    allowed_ext = (".yaml", ".yml")
+    if not any(filename.lower().endswith(ext) for ext in allowed_ext):
+        raise HTTPException(status_code=400, detail="File must have .yaml or .yml extension")
+
+    # Read a reasonable amount (e.g., up to 2MB) to avoid huge memory usage
+    max_bytes = 2 * 1024 * 1024
+    content_bytes = await file.read()
+    if len(content_bytes) > max_bytes:
+        raise HTTPException(status_code=400, detail="YAML file too large (max 2MB)")
+
+    # Detect gzip by magic header (1F 8B)
+    if len(content_bytes) >= 2 and content_bytes[0] == 0x1F and content_bytes[1] == 0x8B:
+        raise HTTPException(status_code=400, detail="Gzip-compressed files are not allowed. Please upload plain text YAML.")
+
+    # Quick binary heuristic: reject if it contains NUL bytes
+    if b"\x00" in content_bytes:
+        raise HTTPException(status_code=400, detail="Binary content detected. Please upload plain text YAML.")
+
+    # Ensure UTF-8 decodable
+    try:
+        content_text = content_bytes.decode("utf-8")
+    except UnicodeDecodeError:
+        raise HTTPException(status_code=400, detail="File is not valid UTF-8 text")
+
+    # Parse YAML safely
+    try:
+        parsed = yaml.safe_load(content_text)
+    except yaml.YAMLError as e:
+        # Provide a concise parser error back to client
+        raise HTTPException(status_code=400, detail=f"Invalid YAML: {str(e)}")
+
+    # Require top-level mapping for data dictionary use-cases
+    if not isinstance(parsed, dict):
+        raise HTTPException(status_code=400, detail="YAML must be a mapping at the top level")
+
+    # Optional structural hints: require at least one of known keys
+    if "version" not in parsed and "tables" not in parsed:
+        return {
+            "valid": True,
+            "warning": "YAML parsed but does not include 'version' or 'tables' keys",
+            "filename": filename,
+            "size": len(content_bytes),
+        }
+
+    return {
+        "valid": True,
+        "filename": filename,
+        "size": len(content_bytes),
+    }
+
+
+@router.post("/datamodel/upload-yaml")
+async def upload_yaml_via_agent(session_id: str, file: UploadFile = File(...)):
+    """Accept a YAML file upload and have the @datamodel agent stage it to Snowflake.
+    Steps:
+    - Validate content as YAML (plain text, not gzipped/binary, UTF-8, safe_load ok, mapping top-level)
+    - Store YAML in the agent session's dictionary_content
+    - Invoke agent's upload_to_staging(session_id, filename)
+    """
+    import yaml
+    from services.datamodel_agent_service import get_datamodel_agent
+
+    # Require an active session
+    datamodel_agent = get_datamodel_agent()
+    session = datamodel_agent.sessions.get(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    # Validate filename
+    filename = file.filename or "uploaded.yaml"
+    if not filename.lower().endswith((".yaml", ".yml")):
+        raise HTTPException(status_code=400, detail="File must have .yaml or .yml extension")
+
+    # Read content (limit 2MB)
+    max_bytes = 2 * 1024 * 1024
+    content_bytes = await file.read()
+    if len(content_bytes) > max_bytes:
+        raise HTTPException(status_code=400, detail="YAML file too large (max 2MB)")
+
+    # Reject gzip/binary
+    if len(content_bytes) >= 2 and content_bytes[0] == 0x1F and content_bytes[1] == 0x8B:
+        raise HTTPException(status_code=400, detail="Gzip-compressed files are not allowed. Please upload plain text YAML.")
+    if b"\x00" in content_bytes:
+        raise HTTPException(status_code=400, detail="Binary content detected. Please upload plain text YAML.")
+
+    # Decode
+    try:
+        content_text = content_bytes.decode("utf-8")
+    except UnicodeDecodeError:
+        raise HTTPException(status_code=400, detail="File is not valid UTF-8 text")
+
+    # Parse YAML
+    try:
+        parsed = yaml.safe_load(content_text)
+    except yaml.YAMLError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid YAML: {str(e)}")
+
+    # Require mapping top-level
+    if not isinstance(parsed, dict):
+        raise HTTPException(status_code=400, detail="YAML must be a mapping at the top level")
+
+    # Store in session context for agent upload path
+    session.agent_context.dictionary_content = content_text
+
+    # Normalize filename extension to .yaml
+    if filename.lower().endswith(".yml"):
+        filename = filename[:-4] + ".yaml"
+
+    # Delegate to agent (which re-validates and uploads to default stage)
+    result = datamodel_agent.upload_to_staging(session_id, filename)
+    if result.get("status") == "success":
+        return {
+            "success": True,
+            "path": result.get("path"),
+            "message": result.get("message"),
+        }
+    else:
+        raise HTTPException(status_code=400, detail=result.get("error", "Upload failed"))
 
 
 @router.get("/datamodel/context", response_model=DataModelContextResponse)
