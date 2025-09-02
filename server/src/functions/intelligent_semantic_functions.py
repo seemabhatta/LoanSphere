@@ -134,55 +134,22 @@ def generate_intelligent_semantic_model(openai_client, snowflake_connection,
             try:
                 from routers.ai_agent import update_job_progress
                 
-                # Try to generate dynamic progress message
-                dynamic_message = message  # Default fallback
-                
-                try:
-                    # Use fire-and-forget dynamic progress generation to avoid blocking
-                    from utils.dynamic_progress import generate_dynamic_progress_fire_and_forget
-                    
-                    # Extract session context for dynamic messaging
-                    session_context = {
-                        "current_database": database_name,
-                        "current_schema": schema_name,
-                        "connection_id": connection_id
-                    }
-                    
-                    # Schedule background generation that will update the job progress when ready
-                    def _update_with_dynamic(msg: str):
-                        try:
-                            # Use the same percentage mapping as below
-                            step_percentages = {
-                                "1/5": 50, "2/5": 60, "3/5": 70, "4/5": 85, "5/5": 100
-                            }
-                            pct = step_percentages.get(step, 70)
-                            update_job_progress(current_job_id, "3/5 (AI)", msg, pct)
-                        except Exception as cb_e:
-                            logger.debug(f"Dynamic progress callback failed: {cb_e}")
-                    
-                    if openai_client:
-                        generate_dynamic_progress_fire_and_forget(
-                            "datamodel",
-                            openai_client,
-                            session_context,
-                            f"Processing {len(table_names)} tables",
-                            data,
-                            step,
-                            _update_with_dynamic,
-                        )
-                except ImportError:
-                    logger.debug("Dynamic progress not available, using static message")
-                    pass
-                
                 # Map step to percentage
                 step_percentages = {
                     "1/5": 50, "2/5": 60, "3/5": 70, "4/5": 85, "5/5": 100
                 }
                 percentage = step_percentages.get(step, 70)
                 
-                # Emit an immediate progress update with the current (static) message;
-                # the dynamic callback above will overwrite it when ready.
-                update_job_progress(current_job_id, f"3/5 (AI)", dynamic_message, percentage)
+                # Send meaningful assistant logs with HIGH PRIORITY - these bypass stale queue detection!
+                priority = "high" if progress_type == "progress" else "normal"
+                
+                update_job_progress(
+                    current_job_id, 
+                    step or "3/5 (AI)", 
+                    message,  # Use the original meaningful message directly
+                    percentage,
+                    priority=priority
+                )
             except Exception as e:
                 logger.error(f"Failed to update job progress: {e}")
     
