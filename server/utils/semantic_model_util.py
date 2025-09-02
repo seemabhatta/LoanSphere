@@ -16,11 +16,42 @@ from typing import List, Optional
 
 PROTOBUF_AVAILABLE = True
 
+# Proper Pydantic models for structured output
+class Column(BaseModel):
+    name: str
+    description: str = ""
+    synonyms: List[str] = []
+
+class Dimension(BaseModel):
+    name: str
+    description: str = ""
+    synonyms: List[str] = []
+
+class Measure(BaseModel):
+    name: str
+    description: str = ""
+    synonyms: List[str] = []
+
+class Table(BaseModel):
+    name: str
+    description: str = ""
+    dimensions: List[Dimension] = []
+    measures: List[Measure] = []
+
+class Relationship(BaseModel):
+    from_table: str = ""
+    to_table: str = ""
+    description: str = ""
+
+class VerifiedQuery(BaseModel):
+    question: str = ""
+    sql: str = ""
+
 class PydanticSemanticModel(BaseModel):
     name: str
-    tables: List[dict] = []
-    relationships: List[dict] = []
-    verified_queries: List[dict] = []
+    tables: List[Table] = []
+    relationships: List[Relationship] = []
+    verified_queries: List[VerifiedQuery] = []
 
 
 def convert_dates_to_strings(obj):
