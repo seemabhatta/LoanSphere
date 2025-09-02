@@ -2,7 +2,7 @@
 AI Agent Router for LoanSphere
 Provides chat endpoint for conversational AI interface to query loan data
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Body
 from fastapi import UploadFile, File
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -171,6 +171,26 @@ async def start_datamodel_agent(request: DataModelStartRequest):
     except Exception as e:
         logger.error(f"Error starting @datamodel agent session: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to start session: {str(e)}")
+
+
+@router.post("/datamodel/auto-init")
+async def auto_initialize_datamodel_agent(session_id: str = Body(..., embed=True)):
+    """Auto-initialize @datamodel agent workflow like CLI version"""
+    try:
+        logger.info(f"Auto-initializing @datamodel agent for session: {session_id}")
+        
+        datamodel_agent = get_datamodel_agent()
+        initialization_response = await datamodel_agent.get_initialization_response(session_id)
+        
+        return {
+            "session_id": session_id,
+            "initialization_response": initialization_response,
+            "status": "success"
+        }
+    
+    except Exception as e:
+        logger.error(f"Error in auto-initialization: {e}")
+        raise HTTPException(status_code=500, detail=f"Auto-initialization failed: {str(e)}")
 
 
 @router.post("/datamodel/chat", response_model=DataModelChatResponse)

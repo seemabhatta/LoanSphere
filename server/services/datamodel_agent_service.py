@@ -5,6 +5,7 @@ Ports DataMind CLI agent functionality to service class with OpenAI Agent SDK
 import os
 import sys
 import time
+import asyncio
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -65,6 +66,10 @@ class DataModelAgentSession:
         self._snowflake_connection = None
         self._connection_config = None
         
+        # Hybrid auto-initialization support
+        self.pending_auto_init_message = None
+        self.auto_init_completed = False
+        
         # Create SQLite session for OpenAI Agent SDK if available
         if AGENTS_AVAILABLE:
             try:
@@ -102,7 +107,7 @@ class DataModelAgentSession:
                         if not conn:
                             raise ValueError(f"Connection not found: {self.connection_id}")
                         
-                        # Build connection config based on authenticator type
+                        # Build connection config with optimized timeouts
                         config = {
                             'user': conn.username,
                             'account': conn.account,
@@ -110,8 +115,11 @@ class DataModelAgentSession:
                             'database': conn.database,
                             'schema': conn.schema,
                             'role': conn.role,
-                            'connection_timeout': 10,  # Shorter timeout
-                            'network_timeout': 15      # Shorter network timeout
+                            'connection_timeout': 20,      # Reasonable connection timeout
+                            'network_timeout': 25,         # Network operations timeout  
+                            'login_timeout': 30,           # Authentication timeout
+                            'client_session_keep_alive': False,  # Don't maintain long sessions
+                            'client_request_mfa_token': False,   # Skip MFA for service accounts
                         }
                         
                         # Handle different authentication types
@@ -973,22 +981,138 @@ Use the available tools to help users create comprehensive data dictionaries eff
             raise
     
     async def get_initialization_response(self, session_id: str) -> str:
-        """Get auto-initialization response like DataMind CLI"""
+        """Hybrid approach: Immediate response + background CLI-style auto-init via chat"""
         try:
             session = self.sessions.get(session_id)
             if not session:
                 raise ValueError("Session not found")
             
-            # For now, return simple message to avoid blocking issues
-            # Auto-initialization will be added back once basic chat works
-            return "🎉 Connected! I'm ready to help you generate YAML data dictionaries. Please ask me to show databases to get started."
+            # Start CLI-style auto-initialization in background
+            asyncio.create_task(self._hybrid_auto_initialization(session_id))
+            
+            # Return immediate response to prevent UI timeout
+            return "🎉 Connected! I'm your Snowflake Data Dictionary Generator.\n\n💡 Setting up your workspace... I'll guide you through selecting databases, schemas, and tables to create YAML data dictionaries.\n\n⏳ Initializing connection..."
                 
         except Exception as e:
-            logger.error(f"Error in auto-initialization: {e}")
-            return f"🎉 Connected! I'm ready to help you generate YAML data dictionaries. Please ask me to show databases to get started."
+            logger.error(f"Error starting hybrid auto-initialization: {e}")
+            return f"🎉 Connected! I'm ready to help you generate YAML data dictionaries.\n\nPlease ask me to show databases to get started."
+    
+    async def _hybrid_auto_initialization(self, session_id: str):
+        """Background CLI-style auto-init that pushes updates via chat interface"""
+        try:
+            session = self.sessions.get(session_id)
+            if not session:
+                logger.error(f"Session {session_id} not found for hybrid init")
+                return
+            
+            # Build initialization prompt like CLI
+            initialization_prompt = "Please connect to Snowflake and guide me through selecting a database, schema, and tables to create a data dictionary"
+            
+            # Set current session for tools
+            self._current_session = session
+            
+            try:
+                if self.agent:
+                    from agents import Runner
+                    
+                    logger.info(f"🔄 Running hybrid CLI-style auto-initialization for session {session_id}...")
+                    
+                    # Run the CLI-style initialization
+                    result = await Runner.run(
+                        self.agent, 
+                        initialization_prompt,
+                        session=session.sqlite_session
+                    )
+                    
+                    response = result.final_output if hasattr(result, 'final_output') else str(result)
+                    
+                    # Store result for next chat interaction to pick up
+                    session.pending_auto_init_message = response
+                    session.auto_init_completed = True
+                    logger.info(f"[HYBRID UPDATE] Auto-initialization result stored: {response[:100]}...")
+                    
+                    logger.info(f"✅ Hybrid auto-initialization completed for session {session_id}")
+                    
+                else:
+                    # Fallback message
+                    fallback_msg = "I'm ready to help! Ask me to 'show databases' to get started with creating your YAML data dictionary."
+                    session.pending_auto_init_message = fallback_msg
+                    session.auto_init_completed = True
+                    logger.info(f"[HYBRID UPDATE] Fallback message stored: {fallback_msg}")
+                    
+            finally:
+                self._current_session = None
+                
+        except Exception as e:
+            logger.error(f"Error in hybrid auto-initialization for session {session_id}: {e}")
+            error_msg = f"I encountered an issue during setup: {str(e)}\n\nNo worries! You can still ask me to 'show databases' to get started manually."
+            logger.info(f"[HYBRID UPDATE] Error message: {error_msg}")
+    
+    async def _background_auto_initialization(self, session_id: str):
+        """Background auto-initialization with progressive user feedback"""
+        try:
+            session = self.sessions.get(session_id)
+            if not session:
+                logger.error(f"Session {session_id} not found for background init")
+                return
+            
+            # Set current session for function tools
+            self._current_session = session
+            
+            try:
+                logger.info(f"Starting background auto-initialization for session {session_id}")
+                
+                # Send progressive updates to user (simulated via logging for now)
+                self._send_background_update("🔗 Establishing Snowflake connection...")
+                
+                # Step 1: Connect to Snowflake (this is the slow part)
+                connect_result = self._connect_to_snowflake()
+                logger.info(f"Background init - Connection: {connect_result}")
+                
+                self._send_background_update("📊 Discovering databases...")
+                
+                # Step 2: Get databases automatically  
+                databases_result = self._get_databases()
+                logger.info(f"Background init - Databases: {databases_result}")
+                
+                # Step 3: If only one database, auto-select it
+                context = session.agent_context
+                if context.databases_cache and len(context.databases_cache.get('databases', [])) == 1:
+                    db_name = context.databases_cache['databases'][0]
+                    
+                    self._send_background_update(f"✅ Auto-selecting database: {db_name}")
+                    select_result = self._select_database(db_name)
+                    logger.info(f"Background init - Auto-selected: {select_result}")
+                    
+                    self._send_background_update("📂 Loading schemas...")
+                    
+                    # Step 4: Get schemas for auto-selected database
+                    schemas_result = self._get_schemas()
+                    logger.info(f"Background init - Schemas: {schemas_result}")
+                    
+                    self._send_background_update("🎉 Workspace ready! You can now select a schema or ask to see tables.")
+                else:
+                    database_count = len(context.databases_cache.get('databases', []))
+                    self._send_background_update(f"🎯 Found {database_count} databases! Please select one to continue.")
+                
+                logger.info(f"Background auto-initialization completed for session {session_id}")
+                
+            finally:
+                # Clear current session reference
+                self._current_session = None
+                
+        except Exception as e:
+            logger.error(f"Error in background auto-initialization for session {session_id}: {e}")
+            self._send_background_update(f"⚠️ Connection issue: {str(e)}. You can still use manual commands.")
+    
+    def _send_background_update(self, message: str):
+        """Send background update to user (placeholder for future progress integration)"""
+        logger.info(f"[BACKGROUND UPDATE] {message}")
+        # TODO: Integrate with real-time progress system when needed
+        # For now, these are logged and could be sent via SSE/polling later
     
     async def chat(self, session_id: str, message: str) -> str:
-        """Handle chat message with @datamodel agent"""
+        """Handle chat message with @datamodel agent - hybrid auto-init aware"""
         try:
             session = self.sessions.get(session_id)
             if not session:
@@ -999,6 +1123,15 @@ Use the available tools to help users create comprehensive data dictionaries eff
                 raise ValueError("Session expired")
             
             session.update_activity()
+            
+            # Check for pending auto-initialization result to deliver
+            if session.pending_auto_init_message:
+                # Deliver the pending message and clear it
+                pending_message = session.pending_auto_init_message
+                session.pending_auto_init_message = None
+                
+                logger.info(f"Delivering pending auto-init message for session {session_id}")
+                return pending_message
             
             # Set current session for function tools
             self._current_session = session
