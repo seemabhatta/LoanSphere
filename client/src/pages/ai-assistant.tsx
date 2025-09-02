@@ -201,12 +201,9 @@ export default function AIAssistant() {
     };
     
     eventSource.onmessage = (event) => {
-      console.log('SSE message received:', event.data);
       try {
         const data = JSON.parse(event.data);
-        console.log('Parsed SSE data:', data);
         if (data.type === 'auto_init' && data.message) {
-          console.log('Adding auto-init message:', data.message);
           // Add auto-init message to chat
           const autoInitMessage: Message = {
             id: `${Date.now()}-auto-init`,
@@ -215,11 +212,9 @@ export default function AIAssistant() {
             timestamp: new Date()
           };
           setMessages(prev => [...prev, autoInitMessage]);
-        } else {
-          console.log('Message type not auto_init or no message:', data);
         }
       } catch (err) {
-        console.error('Error parsing SSE message:', err, 'Raw data:', event.data);
+        console.error('Error parsing SSE message:', err);
       }
     };
     

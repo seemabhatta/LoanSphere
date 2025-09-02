@@ -228,10 +228,7 @@ async def stream_datamodel_progress(session_id: str):
             yield f"data: {json.dumps({'type': 'connected', 'message': 'SSE Connected'})}\n\n"
             
             # Get datamodel agent and start auto-init
-            logger.info(f"[SSE] Getting datamodel agent...")
             datamodel_agent = get_datamodel_agent()
-            logger.info(f"[SSE] Datamodel agent: {datamodel_agent}")
-            logger.info(f"[SSE] Available sessions: {list(datamodel_agent.sessions.keys()) if datamodel_agent else 'None'}")
             
             if datamodel_agent and session_id in datamodel_agent.sessions:
                 session = datamodel_agent.sessions[session_id]
@@ -240,34 +237,26 @@ async def stream_datamodel_progress(session_id: str):
                 try:
                     # Set current session for tools
                     datamodel_agent._current_session = session
-                    logger.info(f"[SSE] Session connection_id: {session.connection_id}")
-                    logger.info(f"[SSE] Session context: {session.agent_context.connection_id if session.agent_context else 'No context'}")
                     
                     # Step 1
                     yield f"data: {json.dumps({'type': 'auto_init', 'message': '🔗 Connecting To Snowflake...'})}\n\n"
                     
                     # Step 2  
                     yield f"data: {json.dumps({'type': 'auto_init', 'message': '📡 Connecting to Snowflake...'})}\n\n"
-                    logger.info(f"[SSE] About to call _connect_to_snowflake()")
                     try:
                         connect_result = datamodel_agent._connect_to_snowflake()
-                        logger.info(f"[SSE] _connect_to_snowflake() result: {connect_result}")
                         
                         # Step 3
                         yield f"data: {json.dumps({'type': 'auto_init', 'message': '✅ Connected to Snowflake successfully!'})}\n\n"
                         
                         # Step 4
                         yield f"data: {json.dumps({'type': 'auto_init', 'message': '📊 Scanning the DBs...'})}\n\n"
-                        logger.info(f"[SSE] About to call _get_databases()")
                         databases_result = datamodel_agent._get_databases()
-                        logger.info(f"[SSE] _get_databases() result: {databases_result}")
                         
                         # Step 5 - Final result
                         yield f"data: {json.dumps({'type': 'auto_init', 'message': databases_result})}\n\n"
-                        logger.info(f"[SSE] Auto-init completed successfully")
                         
                     except Exception as db_error:
-                        logger.error(f"[SSE] Database operation failed: {db_error}")
                         yield f"data: {json.dumps({'type': 'auto_init', 'message': f'⚠️ Database error: {str(db_error)}'})}\n\n"
                     
                 except Exception as e:
@@ -286,10 +275,6 @@ async def stream_datamodel_progress(session_id: str):
         except Exception as e:
             logger.error(f"[SSE] Error in stream: {e}")
             yield f"data: {json.dumps({'type': 'error', 'message': f'Stream error: {str(e)}'})}\n\n"
-            # Keep stream alive even after error
-            while True:
-                await asyncio.sleep(30)
-                yield f"data: {json.dumps({'type': 'keepalive', 'timestamp': time.time()})}\n\n"
     
     return StreamingResponse(
         simple_event_stream(),
