@@ -329,27 +329,16 @@ def _execute_llm_chart_code(df: pd.DataFrame, chart_code: str, explanation: str)
             print("DEBUG VIZ: No figure object found at all")
             return f"❌ No figure object found in generated code. Code executed but no chart was created.\n\nAvailable variables: {available_vars}\n\nGenerated code:\n```python\n{chart_code}\n```"
         
-        # Save and display the chart
-        temp_dir = tempfile.gettempdir()
-        chart_path = os.path.join(temp_dir, "nl2sql_llm_chart.html")
+        # Generate HTML for web interface display
+        print("DEBUG VIZ: Generating chart HTML for web interface...")
+        chart_html = fig.to_html(include_plotlyjs='cdn', div_id="plotly-chart")
+        print("DEBUG VIZ: Chart HTML generated successfully")
         
-        print(f"DEBUG VIZ: Saving chart to: {chart_path}")
-        fig.write_html(chart_path)
-        print("DEBUG VIZ: Chart saved successfully")
-        
-        # Try to open in browser
+        # Create response with embedded chart HTML
         success_msg = f"✅ **LLM-Generated Chart Created Successfully!**\n\n"
         success_msg += f"📊 **Explanation**: {explanation}\n\n"
-        success_msg += f"📁 **Chart saved to**: {chart_path}\n"
-        
-        try:
-            print("DEBUG VIZ: Attempting to open in browser...")
-            webbrowser.open(f"file://{chart_path}")
-            success_msg += "🌐 **Chart opened in browser**"
-            print("DEBUG VIZ: Browser opening successful")
-        except Exception as browser_error:
-            print(f"DEBUG VIZ: Browser opening failed: {str(browser_error)}")
-            success_msg += "💡 **Tip**: Open the HTML file in your browser to view the interactive chart"
+        success_msg += f"[CHART_HTML]{chart_html}[/CHART_HTML]\n"
+        success_msg += "🌐 **Interactive chart displayed above**"
         
         return success_msg
         

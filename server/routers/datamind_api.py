@@ -22,6 +22,34 @@ router = APIRouter()
 # Store active sessions with their agents
 agent_sessions = {}
 
+def parse_visualization_data(response_text: str) -> tuple[str, Optional[Dict]]:
+    """Extract visualization data from response text"""
+    if '[CHART_HTML]' not in response_text:
+        return response_text, None
+    
+    # Find and extract chart HTML
+    start_marker = '[CHART_HTML]'
+    end_marker = '[/CHART_HTML]'
+    start_idx = response_text.find(start_marker)
+    end_idx = response_text.find(end_marker)
+    
+    if start_idx == -1 or end_idx == -1:
+        return response_text, None
+    
+    # Extract the HTML content
+    chart_html = response_text[start_idx + len(start_marker):end_idx]
+    
+    # Remove the chart markers from the response text
+    clean_response = response_text[:start_idx] + response_text[end_idx + len(end_marker):]
+    clean_response = clean_response.strip()
+    
+    visualization_data = {
+        "type": "plotly",
+        "html": chart_html
+    }
+    
+    return clean_response, visualization_data
+
 class DatamindRequest(BaseModel):
     message: str
     session_id: Optional[str] = None
@@ -31,6 +59,7 @@ class DatamindResponse(BaseModel):
     response: str
     session_id: str
     initialized: bool
+    visualization: Optional[Dict] = None
 
 @router.post("/datamind/chat")
 async def datamind_chat(request: DatamindRequest):
@@ -66,13 +95,15 @@ async def datamind_chat(request: DatamindRequest):
             return DatamindResponse(
                 response=f"Timeout initializing {request.mode} agent. Please try again.",
                 session_id=session_id,
-                initialized=False
+                initialized=False,
+                visualization=None
             )
         except Exception as e:
             return DatamindResponse(
                 response=f"Error initializing {request.mode} agent: {str(e)}",
                 session_id=session_id,
-                initialized=False
+                initialized=False,
+                visualization=None
             )
         
         # Store session info
@@ -85,10 +116,12 @@ async def datamind_chat(request: DatamindRequest):
         
         # If this was just initialization, return init message
         if not request.message or request.message == "[INIT]":
+            clean_response, visualization = parse_visualization_data(init_result.final_output)
             return DatamindResponse(
-                response=init_result.final_output,
+                response=clean_response,
                 session_id=session_id,
-                initialized=True
+                initialized=True,
+                visualization=visualization
             )
         
         # Otherwise, also process the user's message
@@ -97,22 +130,27 @@ async def datamind_chat(request: DatamindRequest):
                 Runner.run(agent, request.message, session=session),
                 timeout=180.0
             )
+            combined_response = f"{init_result.final_output}\n\n{result.final_output}"
+            clean_response, visualization = parse_visualization_data(combined_response)
             return DatamindResponse(
-                response=f"{init_result.final_output}\n\n{result.final_output}",
+                response=clean_response,
                 session_id=session_id,
-                initialized=True
+                initialized=True,
+                visualization=visualization
             )
         except asyncio.TimeoutError:
             return DatamindResponse(
                 response=f"Timeout processing message. Please try again.",
                 session_id=session_id,
-                initialized=True
+                initialized=True,
+                visualization=None
             )
         except Exception as e:
             return DatamindResponse(
                 response=f"Error processing message: {str(e)}",
                 session_id=session_id,
-                initialized=True
+                initialized=True,
+                visualization=None
             )
     
     else:
@@ -127,22 +165,26 @@ async def datamind_chat(request: DatamindRequest):
                 ),
                 timeout=180.0
             )
+            clean_response, visualization = parse_visualization_data(result.final_output)
             return DatamindResponse(
-                response=result.final_output,
+                response=clean_response,
                 session_id=session_id,
-                initialized=True
+                initialized=True,
+                visualization=visualization
             )
         except asyncio.TimeoutError:
             return DatamindResponse(
                 response="Timeout processing message. Please try again.",
                 session_id=session_id,
-                initialized=True
+                initialized=True,
+                visualization=None
             )
         except Exception as e:
             return DatamindResponse(
                 response=f"Error processing message: {str(e)}",
                 session_id=session_id,
-                initialized=True
+                initialized=True,
+                visualization=None
             )
 
 @router.delete("/datamind/session/{session_id}")

@@ -7,11 +7,13 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Database, FileText, Sparkles } from 'lucide-react';
 import { apiRequest } from '@/lib/api';
+import PlotlyChart from '@/components/plotly-chart';
 
 interface Message {
   type: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  visualization?: { type: string; html: string };
 }
 
 export default function AIAssistantDatamind() {
@@ -42,7 +44,12 @@ export default function AIAssistantDatamind() {
       });
       setSessionId(data.session_id);
       setMessages([
-        { type: 'assistant', content: data.response, timestamp: new Date() }
+        { 
+          type: 'assistant', 
+          content: data.response, 
+          timestamp: new Date(),
+          visualization: data.visualization
+        }
       ]);
     } catch (error) {
       console.error('Error initializing agent:', error);
@@ -87,7 +94,8 @@ export default function AIAssistantDatamind() {
       setMessages(prev => [...prev, { 
         type: 'assistant', 
         content: data.response, 
-        timestamp: new Date() 
+        timestamp: new Date(),
+        visualization: data.visualization
       }]);
     } catch (error) {
       console.error('Error sending message:', error);
@@ -173,6 +181,9 @@ export default function AIAssistantDatamind() {
                     <div className="whitespace-pre-wrap text-sm">
                       {msg.content}
                     </div>
+                    {msg.visualization && msg.visualization.type === 'plotly' && (
+                      <PlotlyChart html={msg.visualization.html} />
+                    )}
                     <div className={`text-xs mt-1 opacity-70`}>
                       {msg.timestamp.toLocaleTimeString()}
                     </div>
