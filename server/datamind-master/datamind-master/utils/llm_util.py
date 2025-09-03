@@ -1,6 +1,5 @@
 import os
 import re
-import streamlit as st
 import pathlib
 import sys
 from openai import OpenAI
@@ -17,7 +16,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 import config
 from utils import file_utils
 
-load_dotenv()
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', '.env'))
 
 BASE_DIR = pathlib.Path(__file__).parent.resolve()
 llm_model = config.LLM_MODEL

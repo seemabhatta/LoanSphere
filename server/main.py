@@ -19,6 +19,7 @@ from routers import loans, exceptions, compliance, documents, metrics, staging, 
 from routers import settings_snowflake, settings_agent_config, settings_databricks
 from routers import graph as graph_router
 from routers import agent as unified_agent
+from routers import datamind_api
 from services.loan_service import LoanService
 
 # WebSocket connection manager
@@ -101,6 +102,7 @@ app.include_router(commitments.router, prefix="/api/commitments", tags=["commitm
 app.include_router(loan_data.router, prefix="/api/loan-data", tags=["loan-data"])
 app.include_router(ai_agent.router, prefix="/api/ai-agent", tags=["ai-agent"])
 app.include_router(unified_agent.router, prefix="/api/agent", tags=["unified-agent"])  # New unified agent router
+app.include_router(datamind_api.router, prefix="/api", tags=["datamind"])
 app.include_router(graph_router.router, prefix="/api/graph", tags=["graph"])
 app.include_router(settings_snowflake.router, prefix="/api", tags=["settings-snowflake"])
 app.include_router(settings_databricks.router, prefix="/api", tags=["settings-databricks"])
