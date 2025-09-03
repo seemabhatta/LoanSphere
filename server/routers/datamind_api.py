@@ -17,38 +17,27 @@ from agents.memory.session import SQLiteSession
 from src.cli.agentic_query_cli import snowflake_agent
 from src.cli.agentic_generate_yaml_cli import dictionary_agent
 
+# Import visualization storage
+from src.cli.tools.visualization_store import get_latest_visualization
+
 router = APIRouter()
 
 # Store active sessions with their agents
 agent_sessions = {}
 
-def parse_visualization_data(response_text: str) -> tuple[str, Optional[Dict]]:
-    """Extract visualization data from response text"""
-    if '[CHART_HTML]' not in response_text:
-        return response_text, None
+def get_visualization_data(response_text: str) -> tuple[str, Optional[Dict]]:
+    """Check for visualization data from the shared store"""
+    # Try to get visualization from the store
+    chart_html = get_latest_visualization()
     
-    # Find and extract chart HTML
-    start_marker = '[CHART_HTML]'
-    end_marker = '[/CHART_HTML]'
-    start_idx = response_text.find(start_marker)
-    end_idx = response_text.find(end_marker)
+    if chart_html:
+        visualization_data = {
+            "type": "plotly", 
+            "html": chart_html
+        }
+        return response_text, visualization_data
     
-    if start_idx == -1 or end_idx == -1:
-        return response_text, None
-    
-    # Extract the HTML content
-    chart_html = response_text[start_idx + len(start_marker):end_idx]
-    
-    # Remove the chart markers from the response text
-    clean_response = response_text[:start_idx] + response_text[end_idx + len(end_marker):]
-    clean_response = clean_response.strip()
-    
-    visualization_data = {
-        "type": "plotly",
-        "html": chart_html
-    }
-    
-    return clean_response, visualization_data
+    return response_text, None
 
 class DatamindRequest(BaseModel):
     message: str
@@ -116,7 +105,7 @@ async def datamind_chat(request: DatamindRequest):
         
         # If this was just initialization, return init message
         if not request.message or request.message == "[INIT]":
-            clean_response, visualization = parse_visualization_data(init_result.final_output)
+            clean_response, visualization = get_visualization_data(init_result.final_output)
             return DatamindResponse(
                 response=clean_response,
                 session_id=session_id,
@@ -131,7 +120,7 @@ async def datamind_chat(request: DatamindRequest):
                 timeout=180.0
             )
             combined_response = f"{init_result.final_output}\n\n{result.final_output}"
-            clean_response, visualization = parse_visualization_data(combined_response)
+            clean_response, visualization = get_visualization_data(combined_response)
             return DatamindResponse(
                 response=clean_response,
                 session_id=session_id,
@@ -165,7 +154,7 @@ async def datamind_chat(request: DatamindRequest):
                 ),
                 timeout=180.0
             )
-            clean_response, visualization = parse_visualization_data(result.final_output)
+            clean_response, visualization = get_visualization_data(result.final_output)
             return DatamindResponse(
                 response=clean_response,
                 session_id=session_id,

@@ -15,6 +15,7 @@ from typing import Optional, List, Dict, Any
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
 
 from utils import llm_util
+from src.cli.tools.visualization_store import store_latest_visualization
 
 
 def visualize_data_impl(agent_context, user_request: str = "create a chart") -> str:
@@ -166,6 +167,8 @@ IMPORTANT RULES:
 - Include proper error handling
 - Make charts visually appealing with titles, labels, and colors
 - Consider the data types and relationships when choosing chart types
+- NEVER use fig.show(), fig.write_html(), or any commands that open browsers
+- Only create the figure object and assign it to variable 'fig'
 
 Return your response as JSON with these keys:
 - chart_type: string (e.g., "bar", "line", "scatter", "pie", "histogram", "box")
@@ -300,9 +303,18 @@ def _execute_llm_chart_code(df: pd.DataFrame, chart_code: str, explanation: str)
         print("DEBUG VIZ: Safe execution environment created")
         print(f"DEBUG VIZ: DataFrame in environment shape: {safe_globals['df'].shape}")
         
-        # Execute the LLM-generated code
+        # Sanitize code to remove any browser-opening commands
+        print("DEBUG VIZ: Sanitizing chart code...")
+        sanitized_code = chart_code
+        # Remove any .show() calls
+        sanitized_code = sanitized_code.replace('.show()', '# .show() removed')
+        sanitized_code = sanitized_code.replace('fig.show()', '# fig.show() removed')
+        sanitized_code = sanitized_code.replace('fig.write_html(', '# fig.write_html(')
+        print("DEBUG VIZ: Code sanitized")
+        
+        # Execute the sanitized LLM-generated code
         print("DEBUG VIZ: Executing chart code...")
-        exec(chart_code, safe_globals)
+        exec(sanitized_code, safe_globals)
         print("DEBUG VIZ: Code execution completed")
         
         # Look for the figure object
@@ -334,10 +346,12 @@ def _execute_llm_chart_code(df: pd.DataFrame, chart_code: str, explanation: str)
         chart_html = fig.to_html(include_plotlyjs='cdn', div_id="plotly-chart")
         print("DEBUG VIZ: Chart HTML generated successfully")
         
-        # Create response with embedded chart HTML
+        # Store visualization in shared storage (bypasses agent text sanitization)
+        store_latest_visualization(chart_html)
+        
+        # Return only text response (HTML will be retrieved separately)
         success_msg = f"✅ **LLM-Generated Chart Created Successfully!**\n\n"
         success_msg += f"📊 **Explanation**: {explanation}\n\n"
-        success_msg += f"[CHART_HTML]{chart_html}[/CHART_HTML]\n"
         success_msg += "🌐 **Interactive chart displayed above**"
         
         return success_msg
