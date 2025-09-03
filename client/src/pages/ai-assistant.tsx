@@ -192,8 +192,8 @@ export default function AIAssistant() {
 
   // Connect to SSE stream for progress updates
   const connectToProgressStream = (sessionId: string) => {
-    // Use direct backend URL for SSE to bypass proxy issues
-    const eventSourceUrl = `http://localhost:8000/api/ai-agent/datamodel/progress/${sessionId}`;
+    // Use relative URL that works both locally and in production
+    const eventSourceUrl = `/api/ai-agent/datamodel/progress/${sessionId}?connection_id=${selectedConnection}`;
     const eventSource = new EventSource(eventSourceUrl);
     
     eventSource.onopen = () => {
@@ -420,7 +420,7 @@ export default function AIAssistant() {
         console.log('Using SSE streaming for:', outgoing);
         
         const eventSource = new EventSource(
-          `/api/ai-agent/datamodel/chat/stream/${datamodelSessionId}?message=${encodeURIComponent(outgoing)}`
+          `/api/ai-agent/datamodel/chat/stream/${datamodelSessionId}?message=${encodeURIComponent(outgoing)}&connection_id=${selectedConnection}`
         );
         
         let streamResult: any = null;
@@ -443,6 +443,8 @@ export default function AIAssistant() {
               
               if (data.type === 'chat_progress') {
                 setTypingMessage(data.message);
+              } else if (data.type === 'session_recreated') {
+                setTypingMessage(data.message + ' - Continuing...');
               } else if (data.type === 'chat_result') {
                 streamResult = data.data;
                 clearTimeout(timeout);

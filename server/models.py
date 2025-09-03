@@ -191,6 +191,7 @@ class AgentConfigurationModel(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
 
+
 class DatabricksConnectionModel(Base):
     __tablename__ = "databricks_connections"
 

@@ -195,7 +195,7 @@ async def chat_datamodel_agent(request: DataModelChatRequest):
 
 
 @router.get("/datamodel/progress/{session_id}")
-async def stream_datamodel_progress(session_id: str):
+async def stream_datamodel_progress(session_id: str, connection_id: str = None):
     """Simple SSE stream - no queues, direct message sending"""
     
     async def simple_event_stream():
@@ -205,6 +205,19 @@ async def stream_datamodel_progress(session_id: str):
             # Get datamodel agent and start auto-init immediately
             datamodel_agent = get_datamodel_agent()
             
+            # Auto-create session if it doesn't exist
+            if datamodel_agent and session_id not in datamodel_agent.sessions and connection_id:
+                try:
+                    logger.info(f"[SSE] Auto-creating session {session_id} with connection {connection_id}")
+                    new_session_id = datamodel_agent.start_session(connection_id)
+                    # Use the provided session_id instead of generated one
+                    if new_session_id != session_id:
+                        datamodel_agent.sessions[session_id] = datamodel_agent.sessions.pop(new_session_id)
+                except Exception as e:
+                    logger.error(f"[SSE] Failed to auto-create session: {e}")
+                    yield f"data: {json.dumps({'type': 'auto_init', 'message': f'Failed to recreate session: {str(e)}'})}\n\n"
+                    return
+                    
             if datamodel_agent and session_id in datamodel_agent.sessions:
                 session = datamodel_agent.sessions[session_id]
                 
@@ -495,7 +508,7 @@ async def delete_datamodel_session(session_id: str):
 
 # SSE Chat endpoint using StreamingResponse like initialization SSE
 @router.get("/datamodel/chat/stream/{session_id}")
-async def stream_datamodel_chat(session_id: str, message: str):
+async def stream_datamodel_chat(session_id: str, message: str, connection_id: str = None):
     """SSE stream for chat using StreamingResponse with manual formatting"""
     
     async def chat_event_generator():
@@ -504,9 +517,26 @@ async def stream_datamodel_chat(session_id: str, message: str):
             
             datamodel_agent = get_datamodel_agent()
             
-            if not datamodel_agent or session_id not in datamodel_agent.sessions:
-                yield f"data: {json.dumps({'type': 'error', 'message': 'Session not found or agent unavailable'})}\n\n"
+            if not datamodel_agent:
+                yield f"data: {json.dumps({'type': 'error', 'message': 'Agent unavailable'})}\n\n"
                 return
+                
+            # Auto-create session if it doesn't exist
+            if session_id not in datamodel_agent.sessions:
+                if not connection_id:
+                    yield f"data: {json.dumps({'type': 'error', 'message': 'Session not found and no connection_id provided to recreate it'})}\n\n"
+                    return
+                try:
+                    logger.info(f"[SSE] Auto-creating session {session_id} with connection {connection_id}")
+                    new_session_id = datamodel_agent.start_session(connection_id)
+                    # Use the provided session_id instead of generated one
+                    if new_session_id != session_id:
+                        datamodel_agent.sessions[session_id] = datamodel_agent.sessions.pop(new_session_id)
+                    yield f"data: {json.dumps({'type': 'session_recreated', 'message': 'Session recreated after restart'})}\n\n"
+                except Exception as e:
+                    logger.error(f"[SSE] Failed to auto-create session: {e}")
+                    yield f"data: {json.dumps({'type': 'error', 'message': f'Failed to recreate session: {str(e)}'})}\n\n"
+                    return
                 
             # Validate session is ready for chat
             try:
