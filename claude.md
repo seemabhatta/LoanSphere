@@ -84,3 +84,4 @@ print(response.output_text)
 5. **Double check, triple check** - as the user reminds you!
 
 **Remember**: A perfect solution for the wrong problem is worthless. Always identify the correct code path first.
+- use the attached_assets\datamind-master\datamind-master\src\cli as your source reference
