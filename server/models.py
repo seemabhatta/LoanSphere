@@ -208,3 +208,42 @@ class DatabricksConnectionModel(Base):
     last_connected = Column(DateTime)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
+# SSE Event Models for real-time streaming communication
+from pydantic import BaseModel
+from typing import Optional, Dict, Any, List
+
+
+class ChatProgressEvent(BaseModel):
+    """Event for chat progress updates during processing."""
+    type: str = "chat_progress"
+    message: str
+
+
+class ChatResultEvent(BaseModel):
+    """Event for final chat result with complete response."""
+    type: str = "chat_result"
+    data: Dict[str, Any]
+
+
+class ChatErrorEvent(BaseModel):
+    """Event for error messages during chat processing."""
+    type: str = "error"
+    message: str
+
+
+class DataModelContextEvent(BaseModel):
+    """Event containing datamodel context information."""
+    connection_id: Optional[str] = None
+    current_database: Optional[str] = None
+    current_schema: Optional[str] = None
+    selected_tables: List[str] = []
+    yaml_ready: bool = False
+
+
+class DataModelResultData(BaseModel):
+    """Complete data structure for datamodel chat results."""
+    response: str
+    session_id: str
+    context: DataModelContextEvent

@@ -445,15 +445,9 @@ export default function AIAssistant() {
                 setTypingMessage(data.message);
               } else if (data.type === 'chat_result') {
                 streamResult = data.data;
-                // Don't close yet - wait for complete signal
-              } else if (data.type === 'complete') {
                 clearTimeout(timeout);
                 eventSource.close();
-                if (streamResult) {
-                  resolve(streamResult);
-                } else {
-                  reject(new Error('No result received before completion'));
-                }
+                resolve(streamResult);
               } else if (data.type === 'error') {
                 clearTimeout(timeout);
                 eventSource.close();
