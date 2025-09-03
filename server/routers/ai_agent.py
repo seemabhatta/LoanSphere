@@ -5,7 +5,6 @@ Provides chat endpoint for conversational AI interface to query loan data
 from fastapi import APIRouter, HTTPException, Body
 from fastapi import UploadFile, File
 from fastapi.responses import StreamingResponse
-from fastapi_sse import sse_response
 from pydantic import BaseModel
 from typing import Optional, Dict, Any, AsyncGenerator
 from loguru import logger
@@ -494,10 +493,10 @@ async def delete_datamodel_session(session_id: str):
         raise HTTPException(status_code=500, detail=f"Delete error: {str(e)}")
 
 
-# SSE Chat endpoint using fastapi-sse for clean implementation
+# SSE Chat endpoint using StreamingResponse like initialization SSE
 @router.get("/datamodel/chat/stream/{session_id}")
 async def stream_datamodel_chat(session_id: str, message: str):
-    """Clean SSE stream for chat using fastapi-sse library"""
+    """SSE stream for chat using StreamingResponse with manual formatting"""
     
     async def chat_event_generator():
         try:
@@ -506,18 +505,18 @@ async def stream_datamodel_chat(session_id: str, message: str):
             datamodel_agent = get_datamodel_agent()
             
             if not datamodel_agent or session_id not in datamodel_agent.sessions:
-                yield ChatErrorEvent(message="Session not found or agent unavailable")
+                yield f"data: {json.dumps({'type': 'error', 'message': 'Session not found or agent unavailable'})}\n\n"
                 return
                 
             # Validate session is ready for chat
             try:
                 session = datamodel_agent.sessions[session_id]
                 if session.is_expired():
-                    yield ChatErrorEvent(message="Session expired. Please refresh and try again.")
+                    yield f"data: {json.dumps({'type': 'error', 'message': 'Session expired. Please refresh and try again.'})}\n\n"
                     return
             except Exception as session_error:
                 logger.error(f"[SSE] Session validation error: {session_error}")
-                yield ChatErrorEvent(message="Session error. Please refresh and try again.")
+                yield f"data: {json.dumps({'type': 'error', 'message': 'Session error. Please refresh and try again.'})}\n\n"
                 return
             
             # Use ThreadPoolExecutor for synchronous chat operation
@@ -526,44 +525,43 @@ async def stream_datamodel_chat(session_id: str, message: str):
             loop = asyncio.get_event_loop()
             executor = ThreadPoolExecutor(max_workers=1)
             
-            try:
-                # Start chat task
-                chat_task = loop.run_in_executor(
-                    executor,
-                    datamodel_agent.chat_sync,
-                    session_id,
-                    message
-                )
-                
+            # Start chat task
+            chat_task = loop.run_in_executor(
+                executor,
+                datamodel_agent.chat_sync,
+                session_id,
+                message
+            )
+            
+            # Send progress updates
+            progress_messages = [
+                "🤔 Processing your request...",
+                "🧠 Analyzing your request...", 
+                "⚡ Generating response...",
+                "🔄 Processing data...",
+                "⏳ Almost ready..."
+            ]
+            
+            progress_count = 0
+            timeout_count = 0
+            max_timeout = 30  # 30 * 10 seconds = 5 minutes
+            
+            yield f"data: {json.dumps({'type': 'chat_progress', 'message': progress_messages[0]})}\n\n"
+            
+            while not chat_task.done():
+                await asyncio.sleep(10)
+                progress_count += 1
+                timeout_count += 1
+                    
+                if timeout_count >= max_timeout:
+                    logger.error(f"[SSE] Chat task timeout for session {session_id}")
+                    chat_task.cancel()
+                    yield f"data: {json.dumps({'type': 'error', 'message': 'Request timed out. Please try again with a simpler query.'})}\n\n"
+                    return
+                    
                 # Send progress updates
-                progress_messages = [
-                    "🤔 Processing your request...",
-                    "🧠 Analyzing your request...", 
-                    "⚡ Generating response...",
-                    "🔄 Processing data...",
-                    "⏳ Almost ready..."
-                ]
-                
-                progress_count = 0
-                timeout_count = 0
-                max_timeout = 30  # 30 * 10 seconds = 5 minutes
-                
-                yield ChatProgressEvent(message=progress_messages[0])
-                
-                while not chat_task.done():
-                    await asyncio.sleep(10)
-                    progress_count += 1
-                    timeout_count += 1
-                    
-                    if timeout_count >= max_timeout:
-                        logger.error(f"[SSE] Chat task timeout for session {session_id}")
-                        chat_task.cancel()
-                        yield ChatErrorEvent(message="Request timed out. Please try again with a simpler query.")
-                        return
-                    
-                    # Send progress updates
-                    if progress_count < len(progress_messages):
-                        yield ChatProgressEvent(message=progress_messages[progress_count])
+                if progress_count < len(progress_messages):
+                    yield f"data: {json.dumps({'type': 'chat_progress', 'message': progress_messages[progress_count]})}\n\n"
                 
                 # Get result
                 try:
@@ -583,20 +581,25 @@ async def stream_datamodel_chat(session_id: str, message: str):
                         )
                     )
                     
-                    yield ChatResultEvent(data=result_data.dict())
+                    yield f"data: {json.dumps({'type': 'chat_result', 'data': result_data.dict()})}\n\n"
                     
                 except Exception as task_error:
                     logger.error(f"[SSE] Error in chat task execution: {task_error}")
                     logger.error(f"[SSE] Session: {session_id}, Message: {message[:100]}...")
-                    yield ChatErrorEvent(message="Sorry, I could not process your request right now. Please try again.")
-                    return
+                    yield f"data: {json.dumps({'type': 'error', 'message': 'Sorry, I could not process your request right now. Please try again.'})}\n\n"
                     
-            finally:
-                # Ensure executor is properly shutdown
-                executor.shutdown(wait=False)
+                return
                 
         except Exception as e:
             logger.error(f"[SSE] Error in chat stream: {e}")
-            yield ChatErrorEvent(message="Connection error during streaming. Please try again.")
+            yield f"data: {json.dumps({'type': 'error', 'message': 'Connection error during streaming. Please try again.'})}\n\n"
     
-    return sse_response(chat_event_generator())
+    return StreamingResponse(
+        chat_event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "Access-Control-Allow-Origin": "*",
+        }
+    )
