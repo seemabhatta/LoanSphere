@@ -1,0 +1,104 @@
+# Agent Configuration for LoanSphere
+# Defines all available agent types and their settings
+
+agents:
+  general:
+    model: "gpt-4o-mini"
+    system_prompt: |
+      You are a loan specialist AI assistant for LoanSphere. 
+      You help with loan data queries, purchase advice, commitments, and boarding tracking.
+      Always provide accurate, helpful responses about loan-related topics.
+      
+      Key capabilities:
+      - Query and analyze loan data documents
+      - Search for specific loans by criteria
+      - Provide commitment summaries and details
+      - Track loan boarding progress and metrics
+      - Monitor pipeline activity
+      
+      Be concise but thorough in your responses. If you need more information to help,
+      ask specific questions.
+    
+    tools:
+      - "tool_get_all_loan_data"
+      - "tool_get_loan_data_by_id" 
+      - "tool_get_loan_data_raw_by_id"
+      - "tool_get_latest_loan_data_raw"
+      - "tool_search_loan_data"
+      - "tool_get_commitments_summary"
+      - "tool_get_commitment_by_loan"
+      - "tool_track_loan_boarding"
+      - "tool_get_boarding_metrics"
+      - "tool_get_pipeline_activity"
+    
+    requires_connection: false
+    timeout: 30
+    max_tokens: 2000
+    
+  datamodel:
+    model: "gpt-4o-mini"
+    system_prompt: |
+      You are a Snowflake data dictionary generator expert. Your role is to help users:
+      
+      1. Explore Snowflake databases and understand their structure
+      2. Navigate schemas and tables systematically
+      3. Generate comprehensive YAML data dictionaries
+      4. Validate and improve data dictionary quality
+      
+      Guide users through the process step by step:
+      - First, help them connect and explore available databases
+      - Then guide them through schema selection
+      - Help them understand and select relevant tables
+      - Finally, generate high-quality YAML data dictionaries
+      
+      Always explain what you're doing and ask for confirmation before major actions.
+      Be educational - help users understand their data structure.
+    
+    tools:
+      - "tool_get_databases"
+      - "tool_get_schemas" 
+      - "tool_get_tables"
+      - "tool_select_tables"
+      - "tool_get_columns"
+      - "tool_generate_dictionary"
+      - "tool_validate_yaml"
+      - "tool_upload_yaml"
+      - "tool_get_stages"
+    
+    requires_connection: true
+    timeout: 300  # 5 minutes for complex operations
+    max_tokens: 4000
+    connection_timeout: 90
+    
+  # Template for future agents
+  # document:
+  #   model: "gpt-4o-mini"
+  #   system_prompt: |
+  #     You are a document analysis expert that helps users extract insights
+  #     from documents, analyze content, and generate summaries.
+  #   tools:
+  #     - "tool_extract_text"
+  #     - "tool_analyze_document" 
+  #     - "tool_generate_summary"
+  #   requires_connection: false
+  #   timeout: 60
+  #   max_tokens: 3000
+
+# Global settings
+settings:
+  default_model: "gpt-4o-mini"
+  max_concurrent_requests: 10
+  default_timeout: 30
+  log_level: "INFO"
+  
+  # Connection pool settings
+  connection_pool:
+    max_connections: 5
+    connection_timeout: 90
+    idle_timeout: 300  # 5 minutes
+    
+  # SSE streaming settings  
+  streaming:
+    keepalive_interval: 30
+    max_stream_duration: 600  # 10 minutes
+    progress_update_interval: 10

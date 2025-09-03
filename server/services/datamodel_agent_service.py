@@ -1121,11 +1121,15 @@ Use the available tools to help users create comprehensive data dictionaries eff
                     # Import Runner here to avoid import issues
                     from agents import Runner
                     
-                    # Use OpenAI Agent SDK  
-                    result = await Runner.run(
-                        self.agent, 
-                        message, 
-                        session=session.sqlite_session
+                    # Use OpenAI Agent SDK with timeout
+                    import asyncio
+                    result = await asyncio.wait_for(
+                        Runner.run(
+                            self.agent, 
+                            message, 
+                            session=session.sqlite_session
+                        ),
+                        timeout=180.0  # 180 second timeout for YAML generation
                     )
                     
                     response = result.final_output if hasattr(result, 'final_output') else str(result)
@@ -1134,14 +1138,22 @@ Use the available tools to help users create comprehensive data dictionaries eff
                     response = "❌ OpenAI Agent SDK not available. Please ensure proper configuration."
                 
                 logger.debug(f"@datamodel agent response: {response}")
+                # Clear current session reference after successful completion
+                self._current_session = None
                 return response
                 
-            finally:
-                # Clear current session reference
-                self._current_session = None
+            except asyncio.TimeoutError:
+                logger.error(f"@datamodel agent chat timed out after 60 seconds for session {session_id}")
+                self._current_session = None  # Clear session reference
+                raise Exception("Agent response timed out. Please try again with a simpler request.")
+            except Exception as e:
+                logger.error(f"Error in @datamodel agent chat: {e}")
+                self._current_session = None  # Clear session reference on error
+                raise
                 
         except Exception as e:
             logger.error(f"Error in @datamodel agent chat: {e}")
+            self._current_session = None  # Clear session reference on error  
             raise
     
     # Removed _fallback_response method - using OpenAI Agent SDK only

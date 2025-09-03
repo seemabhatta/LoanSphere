@@ -37,9 +37,10 @@ import {
 
 const navigationSections = [
   {
-    title: "OVERVIEW",
+    title: "OVERVIEW", 
     items: [
       { name: "Assistant", href: "/", icon: Bot, description: "Natural language interface" },
+      { name: "AI Assistant (New)", href: "/ai-new", icon: Brain, description: "Unified agent system" },
       { name: "Command Center", href: "/command-center", icon: Home, description: "Mission control dashboard" },
     ]
   },

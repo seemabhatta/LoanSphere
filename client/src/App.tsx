@@ -11,6 +11,7 @@ import Landing from "@/pages/landing";
 import Profile from "@/pages/profile";
 import CommandCenter from "@/pages/command-center";
 import AIAssistant from "@/pages/ai-assistant";
+import AIAssistantNew from "@/pages/ai-assistant-new";
 import PipelineMonitor from "@/pages/pipeline-monitor";
 import DocProcessing from "@/pages/doc-processing";
 import Exceptions from "@/pages/exceptions";
@@ -300,6 +301,19 @@ function Router() {
                 <div className="flex-1 p-4 transition-all duration-300 overflow-hidden">
                   <div className="bg-white rounded-lg shadow-sm h-full overflow-y-auto">
                     <IntegrationsPage />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Route>
+          <Route path="/ai-new">
+            <div className="h-screen flex flex-col bg-gray-100">
+              <TopHeader onToggleSidebar={toggleSidebar} sidebarCollapsed={sidebarCollapsed} />
+              <div className="flex-1 flex overflow-hidden">
+                <Sidebar isOpen={true} onClose={() => {}} collapsed={sidebarCollapsed} />
+                <div className="flex-1 p-4 transition-all duration-300 overflow-hidden">
+                  <div className="bg-white rounded-lg shadow-sm h-full overflow-y-auto">
+                    <AIAssistantNew />
                   </div>
                 </div>
               </div>
