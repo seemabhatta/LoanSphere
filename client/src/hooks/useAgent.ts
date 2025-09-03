@@ -6,7 +6,7 @@ import { useReducer, useRef, useCallback, useEffect } from 'react';
 import { apiRequest } from '@/lib/api';
 
 // Types
-export type AgentMode = '@general' | '@datamodel';
+export type AgentMode = '@general' | '@datamodel' | '@query';
 
 export interface Message {
   id: string;
@@ -194,9 +194,9 @@ export const useAgent = () => {
     loadAvailableModes();
   }, []);
   
-  // Load connections when switching to datamodel mode
+  // Load connections when switching to modes that require connections
   useEffect(() => {
-    if (state.mode === '@datamodel' && state.connections.length === 0 && !state.connectionsLoading) {
+    if ((state.mode === '@datamodel' || state.mode === '@query') && state.connections.length === 0 && !state.connectionsLoading) {
       loadConnections();
     }
   }, [state.mode]);
@@ -311,12 +311,18 @@ export const useAgent = () => {
   
   // No cleanup needed for simple HTTP requests
 
-  // Auto-trigger initialization when connection is selected for datamodel mode
+  // Auto-trigger initialization when connection is selected for modes that require it
   useEffect(() => {
-    if (state.mode === '@datamodel' && state.selectedConnection && state.messages.length === 0) {
-      // Send initialization trigger message to agent
+    if (state.selectedConnection && state.messages.length === 0) {
       const connectionName = state.connections.find(c => c.id === state.selectedConnection)?.name || 'Unknown';
-      sendMessage(`[INITIALIZE] Connection selected: ${connectionName}. Please connect to Snowflake and show me the available databases.`);
+      
+      if (state.mode === '@datamodel') {
+        // Datamodel initialization - explore databases and schema structure
+        sendMessage(`[INITIALIZE] Connection selected: ${connectionName}. Please connect to Snowflake and show me the available databases.`);
+      } else if (state.mode === '@query') {
+        // Query initialization - set up for natural language querying
+        sendMessage(`[INITIALIZE] Connection selected: ${connectionName}. Please connect to Snowflake, explore the available data structures, and get ready for natural language queries.`);
+      }
     }
   }, [state.mode, state.selectedConnection, state.connections, sendMessage]);
   

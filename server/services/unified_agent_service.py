@@ -8,7 +8,11 @@ import asyncio
 from typing import Dict, Any, List, Optional, Union
 from dataclasses import dataclass, field
 from datetime import datetime
-from loguru import logger
+try:
+    from loguru import logger
+except ImportError:
+    import logging
+    logger = logging.getLogger(__name__)
 from concurrent.futures import ThreadPoolExecutor
 
 # OpenAI Agent SDK imports
@@ -27,12 +31,17 @@ from sqlalchemy.orm import Session
 from database import get_db, SessionLocal
 from models import SnowflakeConnectionModel
 
+# Import shared connection pool
+from .connection_manager import SharedConnectionPool
+
 # Import existing tools (available as module-level functions)
 from services.ai_agent_service import (
     tool_get_all_loan_data, tool_get_loan_data_by_id, tool_get_loan_data_raw_by_id,
     tool_get_latest_loan_data_raw, tool_get_all_commitments, tool_get_commitment_by_id,
     tool_search_by_loan_number, tool_get_loan_tracking_records
 )
+
+# Query agent tools imported at runtime to avoid SQLAlchemy dependency at module load
 
 # Note: Datamodel agent tools are defined as inner functions and need special handling
 # For now, we'll create placeholder tools and integrate with existing service
@@ -74,88 +83,6 @@ class RequestContext:
         }
 
 
-class ConnectionPool:
-    """Centralized connection pool for expensive resources"""
-    _connections: Dict[str, Any] = {}
-    _executor = ThreadPoolExecutor(max_workers=3)
-    
-    @classmethod
-    async def get_snowflake_connection(cls, connection_id: str):
-        """Get or create Snowflake connection"""
-        if connection_id not in cls._connections:
-            cls._connections[connection_id] = await cls._create_snowflake_connection(connection_id)
-        return cls._connections[connection_id]
-    
-    @classmethod
-    async def _create_snowflake_connection(cls, connection_id: str):
-        """Create Snowflake connection using existing logic"""
-        return await asyncio.get_event_loop().run_in_executor(
-            cls._executor, 
-            cls._create_snowflake_connection_sync, 
-            connection_id
-        )
-    
-    @classmethod
-    def _create_snowflake_connection_sync(cls, connection_id: str):
-        """Synchronous Snowflake connection creation (from existing code)"""
-        try:
-            db = SessionLocal()
-            try:
-                conn = db.query(SnowflakeConnectionModel).filter_by(id=connection_id).first()
-                if not conn:
-                    raise ValueError(f"Connection not found: {connection_id}")
-                
-                # Build connection config (copied from existing logic)
-                config = {
-                    'user': conn.username,
-                    'account': conn.account,
-                    'warehouse': conn.warehouse,
-                    'database': conn.database,
-                    'schema': conn.schema,
-                    'role': conn.role,
-                    'connection_timeout': 20,
-                    'network_timeout': 25,
-                    'login_timeout': 30,
-                    'client_session_keep_alive': False,
-                    'client_request_mfa_token': False,
-                }
-                
-                # Handle different authentication types
-                if conn.authenticator == 'RSA':
-                    if conn.private_key:
-                        import tempfile
-                        with tempfile.NamedTemporaryFile(mode='w', suffix='.pem', delete=False) as f:
-                            f.write(conn.private_key)
-                            config['private_key_file'] = f.name
-                    else:
-                        raise ValueError("RSA authentication selected but no private key provided")
-                elif conn.authenticator == 'PAT':
-                    config['token'] = conn.password
-                    config['authenticator'] = 'oauth'
-                elif conn.authenticator == 'oauth':
-                    config['token'] = conn.password
-                    config['authenticator'] = 'oauth'
-                else:
-                    config['password'] = conn.password
-                    config['authenticator'] = conn.authenticator or 'snowflake'
-                
-                # Create connection
-                import snowflake.connector
-                snowflake_conn = snowflake.connector.connect(**config)
-                logger.info(f"✅ Created Snowflake connection for {connection_id}")
-                return snowflake_conn
-                
-            finally:
-                db.close()
-        except Exception as e:
-            logger.error(f"❌ Failed to create Snowflake connection: {e}")
-            raise
-    
-    @classmethod
-    async def run_blocking(cls, func, *args, **kwargs):
-        """Run blocking operation in thread pool"""
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(cls._executor, func, *args, **kwargs)
 
 
 class UnifiedAgentService:
@@ -270,6 +197,130 @@ Use the available tools to help users create comprehensive data dictionaries eff
             ],
             "requires_connection": True,
             "timeout": 180  # Allow time for YAML schema generation
+        },
+        "query": {
+            "model": "gpt-4o-mini",
+            "system_prompt": """You are a Snowflake Query Assistant that helps users interact with their Snowflake data using natural language.
+
+Your capabilities:
+1. Connect to Snowflake databases
+2. Browse database structures (databases, schemas, stages)
+3. Load and parse YAML data dictionaries
+4. Convert natural language queries to SQL
+5. Execute SQL queries and show results
+6. Generate AI summaries of query results
+7. Create LLM-powered interactive visualizations from query results
+8. Provide intelligent visualization suggestions based on data analysis
+
+IMPORTANT BEHAVIORAL GUIDELINES:
+- Always consider the context of your previous message when interpreting user responses
+- When you present options/lists to users, remember what you just showed them
+- Be proactive in using tools when users give clear directives or selections
+- If a user gives a brief response, consider it in context of what you just presented
+- Don't ask for clarification if the user's intent is clear from context
+
+CONTEXTUAL RESPONSE EXAMPLES:
+Example 1:
+Assistant: "I found 2 databases: 1. CORTES_DEMO_2  2. SNOWFLAKE. Which would you like to explore?"
+User: "1"
+Assistant: [calls select_database("CORTES_DEMO_2") immediately]
+
+Example 2:
+Assistant: "Here are the YAML files: 1. dict0.yaml  2. dict01.yaml  3. dict1.yaml"
+User: "load the first one"
+Assistant: [calls load_yaml_file("dict0.yaml") immediately]
+
+Example 3:
+Assistant: "I found 3 schemas: PUBLIC, STAGING, PROD"
+User: "public"
+Assistant: [calls select_schema("PUBLIC") immediately]
+
+Example 4:
+User: "give me sample queries"
+Assistant: [calls get_yaml_content() first to analyze the data structure, then provides contextual sample queries based on actual tables and columns]
+
+Example 5:
+User: "load hmda_v4.yaml"
+Assistant: [calls load_yaml_file("hmda_v4.yaml") directly - does NOT call connect_to_snowflake() again since already connected]
+
+Workflow:
+1. When asked to initialize, automatically: connect to Snowflake → get databases → select first database → get schemas → select first schema → get stages → select first stage → get YAML files → show available YAML files to user
+2. When user selects a YAML file, load it and auto-connect to the database/schema specified in the YAML
+3. Process their natural language queries using the loaded data dictionary
+4. Generate and execute SQL based on the YAML table structure
+5. Provide clear, helpful results
+
+Auto-initialization Steps:
+- Connect to Snowflake immediately
+- Get databases, select the first one directly
+- Get schemas, select the first one directly  
+- Get stages, select the first one directly
+- Present YAML files for user selection
+- Once YAML is loaded, the system is ready for queries
+
+EFFICIENCY RULES:
+- Avoid duplicate API calls - don't verify selections that were just made
+- Use the most direct path to get to YAML files
+- Don't call the same endpoint multiple times unnecessarily
+- Once connected, reuse the same connection for all operations
+- NEVER call connect_to_snowflake() more than once per session
+- Check connection status before attempting to reconnect
+
+Guidelines:
+- Be action-oriented and use tools proactively
+- Guide users through the workflow step by step
+- Handle errors gracefully and suggest solutions
+- Provide clear feedback on what's happening
+- When users ask for sample queries, analyze the actual YAML content to provide relevant examples
+
+CRITICAL: QUERY EXECUTION BEHAVIOR
+- If a YAML file is already loaded and user asks a data query, IMMEDIATELY use generate_sql() tool
+- Do NOT suggest loading different files if you already have relevant data loaded
+- Always check get_current_context() to see what data is available before suggesting alternatives
+- If user asks a query that can be answered with current data, generate SQL and execute it immediately
+
+Query Execution Examples:
+User: "List the number of loans by agency"
+Assistant: [calls generate_sql() immediately with the user's query, then execute_sql() with the result]
+
+User: "Show me the top 10 customers"  
+Assistant: [calls generate_sql() immediately, then execute_sql()]
+
+User: "What's the average loan amount?"
+Assistant: [calls generate_sql() immediately, then execute_sql()]
+
+VISUALIZATION CAPABILITIES:
+After executing queries, you can create visualizations:
+
+User: "Show me a chart of this data"
+Assistant: [calls visualize_data() with user request to create LLM-powered chart]
+
+User: "What charts would work best for this data?"  
+Assistant: [calls get_visualization_suggestions() to get LLM analysis and recommendations]
+
+User: "Create a bar chart showing sales by region"
+Assistant: [calls visualize_data("Create a bar chart showing sales by region")]
+
+The LLM will:
+- Analyze the data structure automatically
+- Choose the most appropriate chart type
+- Generate interactive plotly charts
+- Provide explanations for visualization choices
+- Create charts that open in the user's browser
+
+VISUALIZATION WORKFLOW:
+1. User runs a query (data gets stored automatically)
+2. User requests visualization ("create a chart", "show me graphs", etc.)
+3. You call visualize_data() with their request
+4. LLM analyzes data and generates appropriate chart code
+5. Interactive chart opens in browser
+
+Do NOT ask for clarification or suggest loading different files if you have data that can answer the question.
+
+Use the available tools to help users accomplish their goals efficiently.""",
+            "tools": [],  # Tools imported at runtime
+            "requires_connection": True,
+            "timeout": 180  # Allow time for query execution and analysis
         }
     }
     
@@ -302,8 +353,8 @@ Use the available tools to help users create comprehensive data dictionaries eff
         if not AGENTS_AVAILABLE:
             return None
             
-        # Create agent key (mode + connection for datamodel agents)
-        if context.mode == "datamodel" and context.connection_id:
+        # Create agent key (mode + connection for datamodel and query agents)
+        if context.mode in ["datamodel", "query"] and context.connection_id:
             agent_key = f"{context.mode}_{context.connection_id}"
         else:
             agent_key = context.mode
@@ -321,18 +372,32 @@ Use the available tools to help users create comprehensive data dictionaries eff
         
         model_name = os.getenv("OPENAI_MODEL", config["model"])
         
-        # Set up connection context for datamodel agents
-        if context.mode == "datamodel" and context.connection_id:
+        # Set up connection context for datamodel and query agents
+        if context.mode in ["datamodel", "query"] and context.connection_id:
             # Get connection to validate it exists
-            await ConnectionPool.get_snowflake_connection(context.connection_id)
+            await SharedConnectionPool.get_snowflake_connection(context.connection_id)
+        
+        # Import tools at runtime for query mode to avoid SQLAlchemy dependency at module load
+        tools = config["tools"]
+        if context.mode == "query":
+            from services.query_agent_tools import QUERY_AGENT_TOOLS
+            tools = QUERY_AGENT_TOOLS
         
         logger.info(f"Creating {context.mode} agent with model: {model_name}")
+        
+        # For query mode, prepend connection info to instructions
+        instructions = config["system_prompt"]
+        if context.mode == "query" and context.connection_id:
+            connection_prefix = f"""IMPORTANT: You have been initialized with connection_id: {context.connection_id}. This Snowflake connection is already established and ready to use. You can directly call get_databases() to start exploring without calling connect_to_snowflake() first.
+
+"""
+            instructions = connection_prefix + instructions
         
         agent = Agent(
             name=f"{context.mode.title()}Agent",
             model=model_name,
-            instructions=config["system_prompt"],
-            tools=config["tools"],
+            instructions=instructions,
+            tools=tools,
         )
         
         return agent
@@ -343,6 +408,11 @@ Use the available tools to help users create comprehensive data dictionaries eff
             # For datamodel mode, delegate to existing service for complex operations
             if context.mode == "datamodel" and context.connection_id:
                 return await self._handle_datamodel_chat(message, context)
+            
+            # For query mode, set up connection context before agent creation
+            if context.mode == "query" and context.connection_id:
+                from services.query_agent_tools import set_connection_context
+                set_connection_context(context.connection_id)
             
             agent = await self.get_or_create_agent(context)
             if not agent:
@@ -355,8 +425,8 @@ Use the available tools to help users create comprehensive data dictionaries eff
             session_id = f"{context.mode}_{context.connection_id or 'default'}_{datetime.now().strftime('%Y%m%d')}"
             sqlite_session = SQLiteSession(session_id)
             
-            # Run agent
-            result = await Runner.run(agent, message, session=sqlite_session)
+            # Run agent with increased max_turns for complex operations
+            result = await Runner.run(agent, message, session=sqlite_session, max_turns=30)
             response = result.final_output if hasattr(result, 'final_output') else str(result)
             
             logger.debug(f"{context.mode} agent response: {response}")

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Mic, MicOff, Send, MessageSquare, Database, Trash2, RefreshCcw } from "lucide-react";
+import { Mic, MicOff, Send, MessageSquare, Database, Trash2, RefreshCcw, Search } from "lucide-react";
 
 import { useAgent, type AgentMode, type Message } from "@/hooks/useAgent";
 
@@ -55,6 +55,8 @@ export default function AIAssistantNew() {
         return <MessageSquare className="w-4 h-4" />;
       case '@datamodel':
         return <Database className="w-4 h-4" />;
+      case '@query':
+        return <Search className="w-4 h-4" />;
       default:
         return <MessageSquare className="w-4 h-4" />;
     }
@@ -165,7 +167,7 @@ export default function AIAssistantNew() {
           )}
           
           {/* Connection Status */}
-          {state.mode === '@datamodel' && state.selectedConnection && (
+          {(state.mode === '@datamodel' || state.mode === '@query') && state.selectedConnection && (
             <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
               <p className="text-sm text-green-800">
                 ✅ Connected to {state.connections.find(c => c.id === state.selectedConnection)?.name}
@@ -189,10 +191,14 @@ export default function AIAssistantNew() {
                   <p className="text-muted-foreground max-w-md">
                     {state.mode === '@general' 
                       ? "Ask me about loan data, commitments, boarding metrics, or any loan-related questions."
-                      : "I'll help you explore Snowflake databases and generate YAML data dictionaries. Make sure you've selected a connection above."
+                      : state.mode === '@datamodel'
+                        ? "I'll help you explore Snowflake databases and generate YAML data dictionaries. Make sure you've selected a connection above."
+                        : state.mode === '@query'
+                          ? "I'll help you query your Snowflake data using natural language. I can generate SQL queries, execute them, and create visualizations from the results."
+                          : "How can I help you today?"
                     }
                   </p>
-                  {state.mode === '@datamodel' && !state.selectedConnection && (
+                  {(state.mode === '@datamodel' || state.mode === '@query') && !state.selectedConnection && (
                     <p className="text-sm text-orange-600 mt-2">
                       Please select a Snowflake connection to get started.
                     </p>
@@ -238,15 +244,19 @@ export default function AIAssistantNew() {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               placeholder={
-                state.mode === '@datamodel' && !state.selectedConnection
+                (state.mode === '@datamodel' || state.mode === '@query') && !state.selectedConnection
                   ? "Select a connection first..."
                   : state.mode === '@general'
                     ? "Ask about loans, commitments, or boarding metrics..."
-                    : "Ask about databases, schemas, or request YAML generation..."
+                    : state.mode === '@datamodel'
+                      ? "Ask about databases, schemas, or request YAML generation..."
+                      : state.mode === '@query'
+                        ? "Ask natural language questions about your data, request SQL queries or charts..."
+                        : "How can I help you today?"
               }
               disabled={
                 state.isTyping || 
-                (state.mode === '@datamodel' && !state.selectedConnection)
+                ((state.mode === '@datamodel' || state.mode === '@query') && !state.selectedConnection)
               }
               className="flex-1"
             />
@@ -255,7 +265,7 @@ export default function AIAssistantNew() {
               disabled={
                 !inputValue.trim() || 
                 state.isTyping || 
-                (state.mode === '@datamodel' && !state.selectedConnection)
+                ((state.mode === '@datamodel' || state.mode === '@query') && !state.selectedConnection)
               }
             >
               <Send className="w-4 h-4" />

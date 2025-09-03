@@ -9,9 +9,6 @@ loguru==0.7.2
 python-dotenv==0.21.0
 rdflib==7.0.0
 tinydb==4.8.0
-PyPDF2==3.0.1
-pytesseract==0.3.10
-Pillow==10.0.1
 websockets==11.0.3
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
