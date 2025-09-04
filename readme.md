@@ -123,9 +123,23 @@ npm run dev
 
 ### 1. Environment Variables
 ```bash
+# Authentication
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret  
 SESSION_SECRET=your_session_secret
+
+# DataMind AI Assistant
+OPENAI_API_KEY=your_openai_api_key
+OPENAI_MODEL=gpt-4o-mini
+SNOWFLAKE_ACCOUNT=your_snowflake_account
+SNOWFLAKE_USER=your_snowflake_user
+SNOWFLAKE_PASSWORD=your_snowflake_password
+SNOWFLAKE_WAREHOUSE=your_warehouse
+SNOWFLAKE_DATABASE=your_database
+SNOWFLAKE_SCHEMA=your_schema
+SNOWFLAKE_ROLE=your_role
+
+# Deployment
 NODE_ENV=production
 PORT=8080
 APP_URL=https://your-railway-app-url
@@ -153,6 +167,27 @@ Railway will:
 - `GET /api/auth/google` - Google OAuth login
 - `GET /api/auth/user` - Current user info
 - `POST /api/auth/logout` - Logout
+
+### DataMind AI Assistant
+- `POST /api/datamind/chat` - Natural language data queries and visualization
+- `DELETE /api/datamind/session/{id}` - Clear session
+
+## DataMind AI Assistant
+
+AI-powered natural language data analysis with interactive visualizations.
+
+### Features
+- **Natural Language Querying**: Ask questions about your data in plain English
+- **Interactive Visualizations**: Automatic chart generation with Plotly
+- **Data Dictionary Generation**: Automated YAML schema documentation
+- **Snowflake Integration**: Direct connection to enterprise data warehouses
+- **Session Memory**: Maintains context across conversations
+
+### Access
+Navigate to `/datamind` in your application to access the DataMind Assistant.
+
+### Documentation
+📖 **[Full DataMind Documentation](./docs/DATAMIND.md)** - Complete setup guide, architecture details, and usage examples.
 
 ## Testing
 
